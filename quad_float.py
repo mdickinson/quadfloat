@@ -237,7 +237,9 @@ class QuadFloat(object):
         # q ~ n * 2**-e
         if e > 0:
             q = n >> e
-            rtype = 2 * bool(n & (1 << (e-1))) + bool(n & ((1 << (e-1)) - 1))
+            rtype = (
+                2 * bool(n & (1 << (e - 1))) + bool(n & ((1 << (e - 1)) - 1))
+            )
         else:
             q = n << -e
             rtype = 0
@@ -582,9 +584,8 @@ class FiniteQuadFloat(QuadFloat):
 
     def __mul__(self, other):
         if other.is_nan():
-
             if other.is_signaling():
-                return _handle_invalid(snan = other)
+                return _handle_invalid(snan=other)
             else:
                 # finite * nan -> nan
                 return NanQuadFloat(
@@ -764,7 +765,8 @@ class InfiniteQuadFloat(QuadFloat):
 
 class NanQuadFloat(QuadFloat):
     def __new__(cls, sign=False, payload=0, signaling=False):
-        # Payload must be at least 1 for a signaling nan.
+        # Payload must be at least 1 for a signaling nan, to avoid confusion
+        # with the bit pattern for an infinity.
         if not bool(signaling) <= payload < 2 ** (cls._format.precision - 2):
             raise ValueError("NaN payload out of range.")
 
