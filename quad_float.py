@@ -558,6 +558,13 @@ class FiniteQuadFloat(QuadFloat):
             significand=self._significand,
         )
 
+    def __abs__(self):
+        return FiniteQuadFloat(
+            sign=False,
+            exponent=self._exponent,
+            significand=self._significand,
+        )
+
     def __add__(self, other):
         if other.is_infinite():
             return other
@@ -713,6 +720,9 @@ class InfiniteQuadFloat(QuadFloat):
     def __neg__(self):
         return InfiniteQuadFloat(sign=not self._sign)
 
+    def __abs__(self):
+        return InfiniteQuadFloat(sign=False)
+
     def __add__(self, other):
         if other.is_nan():
             # infinity + nan -> nan
@@ -791,6 +801,13 @@ class NanQuadFloat(QuadFloat):
     def __neg__(self):
         return NanQuadFloat(
             sign=not self._sign,
+            payload=self._payload,
+            signaling=self._signaling,
+        )
+
+    def __abs__(self):
+        return NanQuadFloat(
+            sign=False,
             payload=self._payload,
             signaling=self._signaling,
         )

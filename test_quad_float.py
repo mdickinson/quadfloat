@@ -552,6 +552,22 @@ class TestQuadFloat(unittest.TestCase):
         self.assertInterchangeable(-QuadFloat('-snan(123)'), QuadFloat('snan(123)'))
         self.assertInterchangeable(-QuadFloat('snan(123)'), QuadFloat('-snan(123)'))
 
+    def test_abs(self):
+        self.assertInterchangeable(abs(QuadFloat('-2.0')), QuadFloat('2.0'))
+        self.assertInterchangeable(abs(QuadFloat('2.0')), QuadFloat('2.0'))
+        self.assertInterchangeable(abs(QuadFloat('-0.0')), QuadFloat('0.0'))
+        self.assertInterchangeable(abs(QuadFloat('0.0')), QuadFloat('0.0'))
+        self.assertInterchangeable(abs(QuadFloat('-inf')), QuadFloat('inf'))
+        self.assertInterchangeable(abs(QuadFloat('inf')), QuadFloat('inf'))
+        self.assertInterchangeable(abs(QuadFloat('-nan')), QuadFloat('nan'))
+        self.assertInterchangeable(abs(QuadFloat('nan')), QuadFloat('nan'))
+        self.assertInterchangeable(abs(QuadFloat('-snan')), QuadFloat('snan'))
+        self.assertInterchangeable(abs(QuadFloat('snan')), QuadFloat('snan'))
+        self.assertInterchangeable(abs(QuadFloat('-nan(123)')), QuadFloat('nan(123)'))
+        self.assertInterchangeable(abs(QuadFloat('nan(123)')), QuadFloat('nan(123)'))
+        self.assertInterchangeable(abs(QuadFloat('-snan(123)')), QuadFloat('snan(123)'))
+        self.assertInterchangeable(abs(QuadFloat('snan(123)')), QuadFloat('snan(123)'))
+
 
 if __name__ == '__main__':
     unittest.main()
