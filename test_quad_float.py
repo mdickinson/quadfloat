@@ -470,6 +470,72 @@ class TestQuadFloat(unittest.TestCase):
         self.assertInterchangeable(a * b, QuadFloat('-nan(789)'))
         self.assertInterchangeable(b * a, QuadFloat('-nan(789)'))
 
+    def test_add(self):
+        # Cases where zeros are involved.
+        a = QuadFloat('0.0')
+        b = QuadFloat('0.0')
+        self.assertInterchangeable(a + b, QuadFloat('0.0'))
+
+        a = QuadFloat('0.0')
+        b = QuadFloat('-0.0')
+        self.assertInterchangeable(a + b, QuadFloat('0.0'))
+        self.assertInterchangeable(b + a, QuadFloat('0.0'))
+
+        a = QuadFloat('-0.0')
+        b = QuadFloat('-0.0')
+        self.assertInterchangeable(a + b, QuadFloat('-0.0'))
+
+        a = QuadFloat('2.0')
+        b = QuadFloat('0.0')
+        self.assertInterchangeable(a + b, QuadFloat('2.0'))
+        self.assertInterchangeable(b + a, QuadFloat('2.0'))
+
+        a = QuadFloat('2.0')
+        b = QuadFloat('-2.0')
+        self.assertInterchangeable(a + b, QuadFloat('0.0'))
+        self.assertInterchangeable(b + a, QuadFloat('0.0'))
+
+        a = QuadFloat('2.0')
+        b = QuadFloat('3.0')
+        self.assertInterchangeable(a + b, QuadFloat('5.0'))
+        self.assertInterchangeable(b + a, QuadFloat('5.0'))
+
+        # Infinities.
+        a = QuadFloat('inf')
+        b = QuadFloat('2.0')
+        self.assertInterchangeable(a + b, QuadFloat('inf'))
+        self.assertInterchangeable(b + a, QuadFloat('inf'))
+
+        a = QuadFloat('inf')
+        b = QuadFloat('-2.0')
+        self.assertInterchangeable(a + b, QuadFloat('inf'))
+        self.assertInterchangeable(b + a, QuadFloat('inf'))
+
+        a = QuadFloat('-inf')
+        b = QuadFloat('2.0')
+        self.assertInterchangeable(a + b, QuadFloat('-inf'))
+        self.assertInterchangeable(b + a, QuadFloat('-inf'))
+
+        a = QuadFloat('-inf')
+        b = QuadFloat('-2.0')
+        self.assertInterchangeable(a + b, QuadFloat('-inf'))
+        self.assertInterchangeable(b + a, QuadFloat('-inf'))
+
+        a = QuadFloat('-inf')
+        b = QuadFloat('inf')
+        self.assertInterchangeable(a + b, QuadFloat('nan'))
+        self.assertInterchangeable(b + a, QuadFloat('nan'))
+
+        a = QuadFloat('inf')
+        b = QuadFloat('inf')
+        self.assertInterchangeable(a + b, QuadFloat('inf'))
+        self.assertInterchangeable(b + a, QuadFloat('inf'))
+
+        a = QuadFloat('-inf')
+        b = QuadFloat('-inf')
+        self.assertInterchangeable(a + b, QuadFloat('-inf'))
+        self.assertInterchangeable(b + a, QuadFloat('-inf'))
+
 
 if __name__ == '__main__':
     unittest.main()

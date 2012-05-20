@@ -549,6 +549,37 @@ class FiniteQuadFloat(QuadFloat):
 
     # Arithmetic operations.
 
+    def __add__(self, other):
+        if other.is_infinite():
+            return other
+
+        if not other.is_finite():
+            raise NotImplementedError(
+                "Addition for non-finite numbers not yet implemented."
+            )
+
+        # Finite case.
+        #
+        # XXX To do: optimize for the case that the exponents are significantly
+        # different.
+        # XXX. Sign is incorrect for some rounding modes.
+
+        exponent = min(self._exponent, other._exponent)
+        significand = (
+            (self._significand * (-1) ** self._sign <<
+             self._exponent - exponent) +
+            (other._significand * (-1) ** other._sign <<
+             other._exponent - exponent)
+        )
+        sign = (significand < 0 or
+                significand == 0 and self._sign and other._sign)
+
+        return FiniteQuadFloat._round_from_triple(
+            sign=sign,
+            exponent=exponent,
+            significand=abs(significand),
+        )
+
     def __mul__(self, other):
         if other.is_nan():
 
@@ -573,6 +604,15 @@ class FiniteQuadFloat(QuadFloat):
         sign = self._sign ^ other._sign
         significand = self._significand * other._significand
         exponent = self._exponent + other._exponent
+
+        return FiniteQuadFloat._round_from_triple(
+            sign=sign,
+            exponent=exponent,
+            significand=significand,
+        )
+
+    @classmethod
+    def _round_from_triple(self, sign, exponent, significand):
 
         # Round the value significand * 2**exponent to the format.
         if significand == 0:
@@ -662,6 +702,24 @@ class InfiniteQuadFloat(QuadFloat):
 
     # Arithmetic operations.
 
+    def __add__(self, other):
+        if other.is_nan():
+            # infinity + nan -> nan
+            if other.is_signaling():
+                return _handle_invalid(snan=other)
+            else:
+                return other
+
+        elif other.is_infinite():
+            # same sign -> infinity; opposite signs -> nan
+            if self._sign == other._sign:
+                return self
+            else:
+                return _handle_invalid()
+
+        else:
+            return self
+
     def __mul__(self, other):
         if other.is_nan():
             # infinity * nan -> nan
@@ -715,6 +773,16 @@ class NanQuadFloat(QuadFloat):
         self._payload = int(payload)
         self._signaling = bool(signaling)
         return self
+
+    # Arithmetic operations.
+
+    def __add__(self, other):
+        if self.is_signaling():
+            return _handle_invalid(snan=self)
+        elif other.is_signaling():
+            return _handle_invalid(snan=other)
+        else:
+            return self
 
     def __mul__(self, other):
         if self.is_signaling():
