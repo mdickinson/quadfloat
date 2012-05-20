@@ -409,6 +409,28 @@ class QuadFloat(object):
             "QuadFloat.encode is implemented by concrete subclasses."
         )
 
+    # Binary operations.
+
+    def subtraction(self, other):
+        return self.addition(other.negate())
+
+    # Python overloads for binary operators.
+
+    def __neg__(self):
+        return self.negate()
+
+    def __abs__(self):
+        return self.abs()
+
+    def __add__(self, other):
+        return self.addition(other)
+
+    def __sub__(self, other):
+        return self.addition(other.negate())
+
+    def __mul__(self, other):
+        return self.multiplication(other)
+
 
 class FiniteQuadFloat(QuadFloat):
     def __new__(cls, sign, exponent, significand):
@@ -551,21 +573,21 @@ class FiniteQuadFloat(QuadFloat):
 
     # Arithmetic operations.
 
-    def __neg__(self):
+    def negate(self):
         return FiniteQuadFloat(
             sign=not self._sign,
             exponent=self._exponent,
             significand=self._significand,
         )
 
-    def __abs__(self):
+    def abs(self):
         return FiniteQuadFloat(
             sign=False,
             exponent=self._exponent,
             significand=self._significand,
         )
 
-    def __add__(self, other):
+    def addition(self, other):
         if other.is_infinite():
             return other
 
@@ -596,7 +618,7 @@ class FiniteQuadFloat(QuadFloat):
             significand=abs(significand),
         )
 
-    def __mul__(self, other):
+    def multiplication(self, other):
         if other.is_nan():
             if other.is_signaling():
                 return _handle_invalid(snan=other)
@@ -717,13 +739,13 @@ class InfiniteQuadFloat(QuadFloat):
 
     # Arithmetic operations.
 
-    def __neg__(self):
+    def negate(self):
         return InfiniteQuadFloat(sign=not self._sign)
 
-    def __abs__(self):
+    def abs(self):
         return InfiniteQuadFloat(sign=False)
 
-    def __add__(self, other):
+    def addition(self, other):
         if other.is_nan():
             # infinity + nan -> nan
             if other.is_signaling():
@@ -741,7 +763,7 @@ class InfiniteQuadFloat(QuadFloat):
         else:
             return self
 
-    def __mul__(self, other):
+    def multiplication(self, other):
         if other.is_nan():
             # infinity * nan -> nan
             if other.is_signaling():
@@ -798,21 +820,21 @@ class NanQuadFloat(QuadFloat):
 
     # Arithmetic operations.
 
-    def __neg__(self):
+    def negate(self):
         return NanQuadFloat(
             sign=not self._sign,
             payload=self._payload,
             signaling=self._signaling,
         )
 
-    def __abs__(self):
+    def abs(self):
         return NanQuadFloat(
             sign=False,
             payload=self._payload,
             signaling=self._signaling,
         )
 
-    def __add__(self, other):
+    def addition(self, other):
         if self.is_signaling():
             return _handle_invalid(snan=self)
         elif other.is_signaling():
@@ -820,7 +842,7 @@ class NanQuadFloat(QuadFloat):
         else:
             return self
 
-    def __mul__(self, other):
+    def multiplication(self, other):
         if self.is_signaling():
             return _handle_invalid(snan=self)
         elif other.is_signaling():
