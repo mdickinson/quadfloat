@@ -208,6 +208,8 @@ class TestQuadFloat(unittest.TestCase):
     def test_is_finite(self):
         self.assertTrue(QuadFloat('0.0').is_finite())
         self.assertTrue(QuadFloat('-0.0').is_finite())
+        self.assertTrue(QuadFloat('8e-4933').is_finite())
+        self.assertTrue(QuadFloat('-8e-4933').is_finite())
         self.assertTrue(QuadFloat('2.3').is_finite())
         self.assertTrue(QuadFloat('-2.3').is_finite())
         self.assertFalse(QuadFloat('Infinity').is_finite())
@@ -217,9 +219,25 @@ class TestQuadFloat(unittest.TestCase):
         self.assertFalse(QuadFloat('sNaN').is_finite())
         self.assertFalse(QuadFloat('-sNaN').is_finite())
 
+    def test_is_subnormal(self):
+        self.assertFalse(QuadFloat('0.0').is_subnormal())
+        self.assertFalse(QuadFloat('-0.0').is_subnormal())
+        self.assertTrue(QuadFloat('8e-4933').is_subnormal())
+        self.assertTrue(QuadFloat('-8e-4933').is_subnormal())
+        self.assertFalse(QuadFloat('2.3').is_subnormal())
+        self.assertFalse(QuadFloat('-2.3').is_subnormal())
+        self.assertFalse(QuadFloat('Infinity').is_subnormal())
+        self.assertFalse(QuadFloat('-Infinity').is_subnormal())
+        self.assertFalse(QuadFloat('NaN').is_subnormal())
+        self.assertFalse(QuadFloat('-NaN').is_subnormal())
+        self.assertFalse(QuadFloat('sNaN').is_subnormal())
+        self.assertFalse(QuadFloat('-sNaN').is_subnormal())
+
     def test_is_sign_minus(self):
         self.assertFalse(QuadFloat('0.0').is_sign_minus())
         self.assertTrue(QuadFloat('-0.0').is_sign_minus())
+        self.assertFalse(QuadFloat('8e-4933').is_sign_minus())
+        self.assertTrue(QuadFloat('-8e-4933').is_sign_minus())
         self.assertFalse(QuadFloat('2.3').is_sign_minus())
         self.assertTrue(QuadFloat('-2.3').is_sign_minus())
         self.assertFalse(QuadFloat('Infinity').is_sign_minus())
@@ -232,6 +250,8 @@ class TestQuadFloat(unittest.TestCase):
     def test_is_infinite(self):
         self.assertFalse(QuadFloat('0.0').is_infinite())
         self.assertFalse(QuadFloat('-0.0').is_infinite())
+        self.assertFalse(QuadFloat('8e-4933').is_infinite())
+        self.assertFalse(QuadFloat('-8e-4933').is_infinite())
         self.assertFalse(QuadFloat('2.3').is_infinite())
         self.assertFalse(QuadFloat('-2.3').is_infinite())
         self.assertTrue(QuadFloat('Infinity').is_infinite())
@@ -244,6 +264,8 @@ class TestQuadFloat(unittest.TestCase):
     def test_is_nan(self):
         self.assertFalse(QuadFloat('0.0').is_nan())
         self.assertFalse(QuadFloat('-0.0').is_nan())
+        self.assertFalse(QuadFloat('8e-4933').is_nan())
+        self.assertFalse(QuadFloat('-8e-4933').is_nan())
         self.assertFalse(QuadFloat('2.3').is_nan())
         self.assertFalse(QuadFloat('-2.3').is_nan())
         self.assertFalse(QuadFloat('Infinity').is_nan())
@@ -256,6 +278,8 @@ class TestQuadFloat(unittest.TestCase):
     def test_is_signaling(self):
         self.assertFalse(QuadFloat('0.0').is_signaling())
         self.assertFalse(QuadFloat('-0.0').is_signaling())
+        self.assertFalse(QuadFloat('8e-4933').is_signaling())
+        self.assertFalse(QuadFloat('-8e-4933').is_signaling())
         self.assertFalse(QuadFloat('2.3').is_signaling())
         self.assertFalse(QuadFloat('-2.3').is_signaling())
         self.assertFalse(QuadFloat('Infinity').is_signaling())
@@ -268,6 +292,8 @@ class TestQuadFloat(unittest.TestCase):
     def test_is_zero(self):
         self.assertTrue(QuadFloat('0.0').is_zero())
         self.assertTrue(QuadFloat('-0.0').is_zero())
+        self.assertFalse(QuadFloat('8e-4933').is_zero())
+        self.assertFalse(QuadFloat('-8e-4933').is_zero())
         self.assertFalse(QuadFloat('2.3').is_zero())
         self.assertFalse(QuadFloat('-2.3').is_zero())
         self.assertFalse(QuadFloat('Infinity').is_zero())

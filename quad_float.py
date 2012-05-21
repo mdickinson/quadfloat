@@ -352,6 +352,8 @@ class QuadFloatBase(object):
     def __str__(self):
         return self._to_str()
 
+    # IEEE 5.7.2: General operations.
+
     def is_finite(self):
         return self._type == FINITE
 
@@ -371,6 +373,17 @@ class QuadFloatBase(object):
 
     def is_signaling(self):
         return self._type == NAN and self._signaling
+
+    def is_subnormal(self):
+        """
+        Return True if self is subnormal, False otherwise.
+
+        """
+        return (
+            self._type == FINITE and
+            self._exponent == self._format.qmin and
+            self._significand != 0
+        )
 
     def is_zero(self):
         return self._type == FINITE and self._significand == 0
