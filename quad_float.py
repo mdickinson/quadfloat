@@ -214,6 +214,15 @@ class QuadFloatBase(object):
     def __str__(self):
         return self._to_str()
 
+    def is_finite(self):
+        return self.type == FINITE
+
+    def is_infinite(self):
+        return self.type == INFINITE
+
+    def is_nan(self):
+        return self.type == NAN
+
     def is_sign_minus(self):
         """
         Return True if self has a negative sign.  This applies to zeros and
@@ -221,6 +230,12 @@ class QuadFloatBase(object):
 
         """
         return self._sign
+
+    def is_signaling(self):
+        return self.type == NAN and self._signaling
+
+    def is_zero(self):
+        return self.type == FINITE and self._significand == 0
 
     @classmethod
     def _from_float(cls, value):
@@ -585,21 +600,6 @@ class FiniteQuadFloat(QuadFloatBase):
             )
         )
 
-    def is_finite(self):
-        return True
-
-    def is_infinite(self):
-        return False
-
-    def is_nan(self):
-        return False
-
-    def is_signaling(self):
-        return False
-
-    def is_zero(self):
-        return self._significand == 0
-
     def _is_subnormal_or_zero(self):
         """
         Return True if this instance is subnormal or zero, else False.
@@ -857,21 +857,6 @@ class InfiniteQuadFloat(QuadFloatBase):
     def _to_str(self):
         return '-Infinity' if self._sign else 'Infinity'
 
-    def is_finite(self):
-        return False
-
-    def is_infinite(self):
-        return True
-
-    def is_nan(self):
-        return False
-
-    def is_signaling(self):
-        return False
-
-    def is_zero(self):
-        return False
-
     # Arithmetic operations.
 
     def negate(self):
@@ -1015,21 +1000,6 @@ class NanQuadFloat(QuadFloatBase):
         pieces.append('NaN')
         pieces.append('({})'.format(self._payload))
         return ''.join(pieces)
-
-    def is_finite(self):
-        return False
-
-    def is_infinite(self):
-        return False
-
-    def is_nan(self):
-        return True
-
-    def is_signaling(self):
-        return self._signaling
-
-    def is_zero(self):
-        return False
 
     def encode(self, *, byteorder='little'):
         """
