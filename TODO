@@ -1,5 +1,3 @@
-# Fix all occurrences of 'QuadFloat' in comments, docstrings, ...
-# Fix name of classes.
 # Implement short float repr.
 # Remove dependence on decimal.
 # Factor out repeated rounding code.
