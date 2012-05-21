@@ -376,17 +376,17 @@ class BinaryFloatBase(object):
 
         if math.isnan(value):
             # XXX Think about transfering signaling bit and payload.
-            return QuadFloatBase(
+            return cls(
                 type=NAN,
                 sign=sign,
             )
 
         if math.isinf(value):
-            return QuadFloatBase(type=INFINITE, sign=sign)
+            return cls(type=INFINITE, sign=sign)
 
         # Zeros
         if value == 0.0:
-            return QuadFloatBase(
+            return cls(
                 type=FINITE,
                 sign=sign,
                 exponent=cls._format.qmin,
@@ -405,7 +405,7 @@ class BinaryFloatBase(object):
         shift = cls._format.precision - m.bit_length()
         m, e = m << shift, e - shift
 
-        return QuadFloatBase(
+        return cls(
             type=FINITE,
             sign=sign,
             exponent=e,
@@ -419,7 +419,7 @@ class BinaryFloatBase(object):
 
         """
         if n == 0:
-            return QuadFloatBase(
+            return cls(
                 type=FINITE,
                 sign=False,
                 exponent=cls._format.qmin,
@@ -458,7 +458,7 @@ class BinaryFloatBase(object):
         if e > cls._format.qmax:
             return _handle_overflow(sign)
 
-        return QuadFloatBase(
+        return cls(
             type=FINITE,
             sign=sign,
             exponent=e,
@@ -486,7 +486,7 @@ class BinaryFloatBase(object):
 
             # quick return for zeros
             if not a:
-                return QuadFloatBase(
+                return cls(
                     type=FINITE,
                     sign=sign,
                     exponent=cls._format.qmin,
@@ -515,7 +515,7 @@ class BinaryFloatBase(object):
             if e > cls._format.qmax:
                 return _handle_overflow(sign)
 
-            return QuadFloatBase(
+            return cls(
                 type=FINITE,
                 sign=sign,
                 exponent=e,
@@ -524,7 +524,7 @@ class BinaryFloatBase(object):
 
         elif m.group('infinite'):
             # Infinity.
-            return QuadFloatBase(
+            return cls(
                 type=INFINITE,
                 sign=sign,
             )
@@ -542,7 +542,7 @@ class BinaryFloatBase(object):
             elif payload > max_payload:
                 payload = max_payload
 
-            return QuadFloatBase(
+            return cls(
                 type=NAN,
                 sign=sign,
                 signaling=signaling,
@@ -576,7 +576,7 @@ class BinaryFloatBase(object):
             # Infinities, Nans.
             if significand_field == 0:
                 # Infinities.
-                return QuadFloatBase(type=INFINITE, sign=sign)
+                return cls(type=INFINITE, sign=sign)
             else:
                 # Nan.
                 payload_width = significand_field_width - 1
@@ -586,7 +586,7 @@ class BinaryFloatBase(object):
                 # quiet (1) or signaling (0).
                 assert 0 <= significand_field <= 1
                 signaling = not significand_field
-                return QuadFloatBase(
+                return cls(
                     type=NAN,
                     sign=sign,
                     payload=payload,
@@ -594,7 +594,7 @@ class BinaryFloatBase(object):
                 )
         elif exponent_field == 0:
             # Subnormals, Zeros.
-            return QuadFloatBase(
+            return cls(
                 type=FINITE,
                 sign=sign,
                 exponent=cls._format.qmin,
@@ -602,7 +602,7 @@ class BinaryFloatBase(object):
             )
         else:
             significand = significand_field + 2 ** (cls._format.precision - 1)
-            return QuadFloatBase(
+            return cls(
                 type=FINITE,
                 sign=sign,
                 exponent=exponent_field - cls._format.qbias,
@@ -714,14 +714,14 @@ class BinaryFloatBase(object):
         return self.division(other)
 
     @classmethod
-    def _round_from_triple(self, sign, exponent, significand):
+    def _round_from_triple(cls, sign, exponent, significand):
 
         # Round the value significand * 2**exponent to the format.
         if significand == 0:
-            return QuadFloatBase(
+            return cls(
                 type=FINITE,
                 sign=sign,
-                exponent=self._format.qmin,
+                exponent=cls._format.qmin,
                 significand=0,
             )
 
@@ -731,7 +731,7 @@ class BinaryFloatBase(object):
         d = exponent + significand.bit_length()
 
         # Exponent of result.
-        e = max(d - self._format.precision, self._format.qmin)
+        e = max(d - cls._format.precision, cls._format.qmin)
 
         # significand * 2**exponent ~ q * 2**e.
         # significand * 2**(exponent - e) ~ q
@@ -753,20 +753,20 @@ class BinaryFloatBase(object):
             else:
                 rtype = 0
 
-        assert q.bit_length() <= self._format.precision
+        assert q.bit_length() <= cls._format.precision
 
         # Round.
         if rtype == 3 or rtype == 2 and q & 1:
             q += 1
-            if q.bit_length() == self._format.precision + 1:
+            if q.bit_length() == cls._format.precision + 1:
                 q //= 2
                 e += 1
 
         # Overflow.
-        if e > self._format.qmax:
+        if e > cls._format.qmax:
             return _handle_overflow(sign)
 
-        return QuadFloatBase(
+        return cls(
             type=FINITE,
             sign=sign,
             exponent=e,
