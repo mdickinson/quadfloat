@@ -874,14 +874,16 @@ class _BinaryFloatBase(object):
     @classmethod
     def addition(cls, self, other):
         if self._type == _FINITE:
-            if other.is_infinite():
+            if other._type == _INFINITE:
                 return other
 
-            if not other.is_finite():
-                raise NotImplementedError(
-                    "Addition for non-finite numbers not yet implemented."
-                )
-
+            elif other._type == _NAN:
+                if other.is_signaling():
+                    return _handle_invalid(cls, snan=other)
+                else:
+                    # finite * nan -> nan
+                    return other
+                 
             # Finite case.
             #
             # XXX To do: optimize for the case that the exponents are
@@ -923,9 +925,9 @@ class _BinaryFloatBase(object):
                 return self
 
         elif self._type == _NAN:
-            if self.is_signaling():
+            if self._signaling:
                 return _handle_invalid(cls, snan=self)
-            elif other.is_signaling():
+            elif other._type == _NAN and other._signaling:
                 return _handle_invalid(cls, snan=other)
             else:
                 return self
@@ -937,16 +939,12 @@ class _BinaryFloatBase(object):
     def multiplication(cls, self, other):
         if self._type == _FINITE:
 
-            if other.is_nan():
+            if other._type == _NAN:
                 if other.is_signaling():
                     return _handle_invalid(cls, snan=other)
                 else:
                     # finite * nan -> nan
-                    return cls(
-                        type=_NAN,
-                        sign=self._sign ^ other._sign,
-                        payload=other._payload,
-                    )
+                    return other
 
             elif other.is_infinite():
                 if self.is_zero():
@@ -973,11 +971,7 @@ class _BinaryFloatBase(object):
                 if other.is_signaling():
                     return _handle_invalid(cls, snan=other)
                 else:
-                    return cls(
-                        type=_NAN,
-                        sign=self._sign ^ other._sign,
-                        payload=other._payload,
-                    )
+                    return other
 
             elif other.is_infinite() or not other.is_zero():
                 # infinity * infinity -> infinity;
@@ -988,16 +982,12 @@ class _BinaryFloatBase(object):
                 return _handle_invalid(cls)
 
         elif self._type == _NAN:
-            if self.is_signaling():
+            if self._signaling:
                 return _handle_invalid(cls, snan=self)
-            elif other.is_signaling():
+            elif other._type == _NAN and other._signaling:
                 return _handle_invalid(cls, snan=other)
             else:
-                return cls(
-                    type=_NAN,
-                    sign=self._sign ^ other._sign,
-                    payload=self._payload,
-                )
+                return self
 
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
@@ -1005,9 +995,20 @@ class _BinaryFloatBase(object):
     @classmethod
     def division(cls, self, other):
         if self._type == _FINITE:
+            if other._type == _NAN:
+                if other._signaling:
+                    return _handle_invalid(cls, snan=other)
+                else:
+                    return other
 
-            if not other.is_finite():
-                raise NotImplementedError("Division not yet implemented for non-finite numbers.")
+            elif other._type == _INFINITE:
+                # finite / infinite -> zero
+                return cls(
+                    type=_FINITE,
+                    sign=self._sign ^ other._sign,
+                    exponent=self._format.qmin,
+                    significand=0,
+                )
 
             # Finite / finite case.
             sign = self._sign ^ other._sign
@@ -1070,12 +1071,32 @@ class _BinaryFloatBase(object):
                 significand=q,
             )
         elif self._type == _INFINITE:
+            if other._type == _NAN:
+                if other._signaling:
+                    return _handle_invalid(cls, snan=other)
+                else:
+                    return other
 
-            raise NotImplementedError("Division not yet implemented for non-finite numbers.")
+            elif other._type == _INFINITE:
+                return _handle_invalid(cls)
 
+            # infinite / finite -> infinite
+            elif other._type == _FINITE:
+                return cls(
+                    type=_INFINITE,
+                    sign=self._sign ^ other._sign,
+                )
+
+            else:
+                raise ValueError("invalid _type attribute: {}".format(other._type))
 
         elif self._type == _NAN:
-            raise NotImplementedError("Division not yet implemented for non-finite numbers.")
+            if self._signaling:
+                return _handle_invalid(cls, snan=self)
+            elif other._type == _NAN and other._signaling:
+                return _handle_invalid(cls, snan=other)
+            else:
+                return self
 
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))

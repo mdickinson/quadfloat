@@ -1,7 +1,8 @@
 # Implement short float repr.
 # Remove dependence on decimal.
 # Factor out repeated rounding code.
-# Complete div implementation.
 # Add operator overloads, with suitable semantics.
-# Fix add, mul for nans.
 # Tests for subtraction.
+# Be consistent about internal uses of is_finite, is_infinite versus ._type tests.
+# Float64 tests: random tests comparing with float.
+# Cache zeros, make use of them (format method for zeros?)

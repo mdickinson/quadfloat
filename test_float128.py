@@ -487,8 +487,8 @@ class TestFloat128(unittest.TestCase):
 
         a = Float128('-2.0')
         b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('-nan(789)'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('-nan(789)'))
+        self.assertInterchangeable(Float128.multiplication(a, b), Float128('nan(789)'))
+        self.assertInterchangeable(Float128.multiplication(b, a), Float128('nan(789)'))
 
         a = Float128('inf')
         b = Float128('nan(789)')
@@ -497,8 +497,8 @@ class TestFloat128(unittest.TestCase):
 
         a = Float128('-inf')
         b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('-nan(789)'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('-nan(789)'))
+        self.assertInterchangeable(Float128.multiplication(a, b), Float128('nan(789)'))
+        self.assertInterchangeable(Float128.multiplication(b, a), Float128('nan(789)'))
 
     def test_addition(self):
         # Cases where zeros are involved.
@@ -566,6 +566,54 @@ class TestFloat128(unittest.TestCase):
         self.assertInterchangeable(Float128.addition(a, b), Float128('-inf'))
         self.assertInterchangeable(Float128.addition(b, a), Float128('-inf'))
 
+        # signaling nans?
+        a = Float128('-snan(123)')
+        b = Float128('2.3')
+        self.assertInterchangeable(Float128.addition(a, b), Float128('-nan(123)'))
+        self.assertInterchangeable(Float128.addition(b, a), Float128('-nan(123)'))
+
+        a = Float128('-snan(123)')
+        b = Float128('nan(456)')
+        self.assertInterchangeable(Float128.addition(a, b), Float128('-nan(123)'))
+        self.assertInterchangeable(Float128.addition(b, a), Float128('-nan(123)'))
+
+        a = Float128('-snan(123)')
+        b = Float128('-inf')
+        self.assertInterchangeable(Float128.addition(a, b), Float128('-nan(123)'))
+        self.assertInterchangeable(Float128.addition(b, a), Float128('-nan(123)'))
+
+        a = Float128('-snan(123)')
+        b = Float128('-2.3')
+        self.assertInterchangeable(Float128.addition(a, b), Float128('-nan(123)'))
+        self.assertInterchangeable(Float128.addition(b, a), Float128('-nan(123)'))
+
+        # first snan wins
+        a = Float128('snan(123)')
+        b = Float128('-snan(456)')
+        self.assertInterchangeable(Float128.addition(a, b), Float128('nan(123)'))
+        self.assertInterchangeable(Float128.addition(b, a), Float128('-nan(456)'))
+
+        # quiet nans with payload
+        a = Float128('2.0')
+        b = Float128('nan(789)')
+        self.assertInterchangeable(Float128.addition(a, b), Float128('nan(789)'))
+        self.assertInterchangeable(Float128.addition(b, a), Float128('nan(789)'))
+
+        a = Float128('-2.0')
+        b = Float128('nan(789)')
+        self.assertInterchangeable(Float128.addition(a, b), Float128('nan(789)'))
+        self.assertInterchangeable(Float128.addition(b, a), Float128('nan(789)'))
+
+        a = Float128('inf')
+        b = Float128('nan(789)')
+        self.assertInterchangeable(Float128.addition(a, b), Float128('nan(789)'))
+        self.assertInterchangeable(Float128.addition(b, a), Float128('nan(789)'))
+
+        a = Float128('-inf')
+        b = Float128('nan(789)')
+        self.assertInterchangeable(Float128.addition(a, b), Float128('nan(789)'))
+        self.assertInterchangeable(Float128.addition(b, a), Float128('nan(789)'))
+
     def test_subtraction(self):
         # XXX Needs some tests!
         # Pay particular attention to handling of NaNs:  subtraction is *not* the
@@ -620,7 +668,104 @@ class TestFloat128(unittest.TestCase):
         b = Float128('0.0')
         self.assertTrue(Float128.division(a, b).is_nan())
 
-        # XXX Tests for infinities and nans as inputs.
+        a = Float128('-0.0')
+        b = Float128('0.0')
+        self.assertTrue(Float128.division(a, b).is_nan())
+
+        a = Float128('-0.0')
+        b = Float128('-0.0')
+        self.assertTrue(Float128.division(a, b).is_nan())
+
+        a = Float128('0.0')
+        b = Float128('-0.0')
+        self.assertTrue(Float128.division(a, b).is_nan())
+
+        # One or other arguments is infinity.
+        a = Float128('inf')
+        b = Float128('2.3')
+        self.assertInterchangeable(Float128.division(a, b), Float128('inf'))
+        self.assertInterchangeable(Float128.division(b, a), Float128('0.0'))
+
+        a = Float128('-inf')
+        b = Float128('2.3')
+        self.assertInterchangeable(Float128.division(a, b), Float128('-inf'))
+        self.assertInterchangeable(Float128.division(b, a), Float128('-0.0'))
+
+        a = Float128('-inf')
+        b = Float128('-2.3')
+        self.assertInterchangeable(Float128.division(a, b), Float128('inf'))
+        self.assertInterchangeable(Float128.division(b, a), Float128('0.0'))
+
+        a = Float128('inf')
+        b = Float128('-2.3')
+        self.assertInterchangeable(Float128.division(a, b), Float128('-inf'))
+        self.assertInterchangeable(Float128.division(b, a), Float128('-0.0'))
+
+        # Both arguments are infinity.
+        a = Float128('inf')
+        b = Float128('inf')
+        self.assertTrue(Float128.division(a, b).is_nan())
+
+        a = Float128('-inf')
+        b = Float128('inf')
+        self.assertTrue(Float128.division(a, b).is_nan())
+
+        a = Float128('-inf')
+        b = Float128('-inf')
+        self.assertTrue(Float128.division(a, b).is_nan())
+
+        a = Float128('inf')
+        b = Float128('-inf')
+        self.assertTrue(Float128.division(a, b).is_nan())
+        
+        # signaling nans?
+        a = Float128('-snan(123)')
+        b = Float128('2.3')
+        self.assertInterchangeable(Float128.division(a, b), Float128('-nan(123)'))
+        self.assertInterchangeable(Float128.division(b, a), Float128('-nan(123)'))
+
+        a = Float128('-snan(123)')
+        b = Float128('nan(456)')
+        self.assertInterchangeable(Float128.division(a, b), Float128('-nan(123)'))
+        self.assertInterchangeable(Float128.division(b, a), Float128('-nan(123)'))
+
+        a = Float128('-snan(123)')
+        b = Float128('-inf')
+        self.assertInterchangeable(Float128.division(a, b), Float128('-nan(123)'))
+        self.assertInterchangeable(Float128.division(b, a), Float128('-nan(123)'))
+
+        a = Float128('-snan(123)')
+        b = Float128('-2.3')
+        self.assertInterchangeable(Float128.division(a, b), Float128('-nan(123)'))
+        self.assertInterchangeable(Float128.division(b, a), Float128('-nan(123)'))
+
+        # first snan wins
+        a = Float128('snan(123)')
+        b = Float128('-snan(456)')
+        self.assertInterchangeable(Float128.division(a, b), Float128('nan(123)'))
+        self.assertInterchangeable(Float128.division(b, a), Float128('-nan(456)'))
+
+        # quiet nans with payload
+        a = Float128('2.0')
+        b = Float128('nan(789)')
+        self.assertInterchangeable(Float128.division(a, b), Float128('nan(789)'))
+        self.assertInterchangeable(Float128.division(b, a), Float128('nan(789)'))
+
+        a = Float128('-2.0')
+        b = Float128('nan(789)')
+        self.assertInterchangeable(Float128.division(a, b), Float128('nan(789)'))
+        self.assertInterchangeable(Float128.division(b, a), Float128('nan(789)'))
+
+        a = Float128('inf')
+        b = Float128('nan(789)')
+        self.assertInterchangeable(Float128.division(a, b), Float128('nan(789)'))
+        self.assertInterchangeable(Float128.division(b, a), Float128('nan(789)'))
+
+        a = Float128('-inf')
+        b = Float128('nan(789)')
+        self.assertInterchangeable(Float128.division(a, b), Float128('nan(789)'))
+        self.assertInterchangeable(Float128.division(b, a), Float128('nan(789)'))
+
         # XXX Tests for correct rounding.
         # XXX Tests for subnormal results, underflow.
 
