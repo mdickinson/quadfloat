@@ -1070,3 +1070,9 @@ class _BinaryFloatBase(object):
 
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
+
+    def __neg__(self):
+        return self.negate()
+
+    def __abs__(self):
+        return self.abs()
