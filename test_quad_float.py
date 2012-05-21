@@ -1,3 +1,6 @@
+# XXX: test_mul should be test_multiply; should call the multiply method rather
+# than __mul__.  Similarly for other operations.
+
 import math
 import unittest
 
@@ -535,6 +538,58 @@ class TestQuadFloat(unittest.TestCase):
         b = QuadFloat('-inf')
         self.assertInterchangeable(a + b, QuadFloat('-inf'))
         self.assertInterchangeable(b + a, QuadFloat('-inf'))
+
+    def test_division(self):
+        # Finite: check all combinations of signs.
+        a = QuadFloat('1.0')
+        b = QuadFloat('2.0')
+        self.assertInterchangeable(a.division(b), QuadFloat('0.5'))
+        self.assertInterchangeable(b.division(a), QuadFloat('2.0'))
+
+        a = QuadFloat('-1.0')
+        b = QuadFloat('2.0')
+        self.assertInterchangeable(a.division(b), QuadFloat('-0.5'))
+        self.assertInterchangeable(b.division(a), QuadFloat('-2.0'))
+
+        a = QuadFloat('1.0')
+        b = QuadFloat('-2.0')
+        self.assertInterchangeable(a.division(b), QuadFloat('-0.5'))
+        self.assertInterchangeable(b.division(a), QuadFloat('-2.0'))
+
+        a = QuadFloat('-1.0')
+        b = QuadFloat('-2.0')
+        self.assertInterchangeable(a.division(b), QuadFloat('0.5'))
+        self.assertInterchangeable(b.division(a), QuadFloat('2.0'))
+
+        # One or other argument zero (but not both).
+        a = QuadFloat('0.0')
+        b = QuadFloat('2.0')
+        self.assertInterchangeable(a.division(b), QuadFloat('0.0'))
+        self.assertInterchangeable(b.division(a), QuadFloat('inf'))
+
+        a = QuadFloat('0.0')
+        b = QuadFloat('-2.0')
+        self.assertInterchangeable(a.division(b), QuadFloat('-0.0'))
+        self.assertInterchangeable(b.division(a), QuadFloat('-inf'))
+
+        a = QuadFloat('-0.0')
+        b = QuadFloat('2.0')
+        self.assertInterchangeable(a.division(b), QuadFloat('-0.0'))
+        self.assertInterchangeable(b.division(a), QuadFloat('-inf'))
+
+        a = QuadFloat('-0.0')
+        b = QuadFloat('-2.0')
+        self.assertInterchangeable(a.division(b), QuadFloat('0.0'))
+        self.assertInterchangeable(b.division(a), QuadFloat('inf'))
+
+        # Zero divided by zero.
+        a = QuadFloat('0.0')
+        b = QuadFloat('0.0')
+        self.assertTrue(a.division(b).is_nan())
+
+        # XXX Tests for infinities and nans as inputs.
+        # XXX Tests for correct rounding.
+        # XXX Tests for subnormal results, underflow.
 
     def test_negate(self):
         self.assertInterchangeable(-QuadFloat('-2.0'), QuadFloat('2.0'))

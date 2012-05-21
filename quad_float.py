@@ -431,6 +431,9 @@ class QuadFloat(object):
     def __mul__(self, other):
         return self.multiplication(other)
 
+    def __truediv__(self, other):
+        return self.division(other)
+
 
 class FiniteQuadFloat(QuadFloat):
     def __new__(cls, sign, exponent, significand):
@@ -648,6 +651,69 @@ class FiniteQuadFloat(QuadFloat):
             significand=significand,
         )
 
+    def division(self, other):
+        if not other.is_finite():
+            raise NotImplementedError("Division not yet implemented for non-finite numbers.")
+
+        # Finite / finite case.
+        sign = self._sign ^ other._sign
+
+        if self.is_zero():
+            if other.is_zero():
+                return _handle_invalid()
+
+            return FiniteQuadFloat(
+                sign=sign,
+                exponent=self._format.qmin,
+                significand=0,
+            )
+
+        if other.is_zero():
+            return InfiniteQuadFloat(sign=sign)
+
+        # First find d such that 2**(d-1) <= abs(self) / abs(other) < 2**d.
+        a = self._significand
+        b = other._significand
+        d = a.bit_length() - b.bit_length()
+        d += (a >> d if d >= 0 else a << -d) >= b
+        d += self._exponent - other._exponent
+
+        # Exponent of result.
+        e = max(d - self._format.precision, self._format.qmin)
+
+        # Round (self / other) * 2**-e to nearest integer.
+        # self / other * 2**-e == self._significand / other._significand * 2**shift, where...
+        shift = self._exponent - other._exponent - e
+
+        a, b = a << max(shift, 0), b << max(0, -shift)
+        q, r = divmod(a, b)
+        rtype = 2 * (2 * r > b) + (r != 0)
+
+        # Now result approximated by (-1)**sign * q * 2**e.
+        # Double check parameters.
+        assert sign in (0, 1)
+        assert e >= self._format.qmin
+        assert q.bit_length() <= self._format.precision
+        assert e == self._format.qmin or q.bit_length() == self._format.precision
+        assert 0 <= rtype <= 3
+
+        # Round.
+        if rtype == 3 or rtype == 2 and q & 1:
+            q += 1
+            if q.bit_length() == self._format.precision + 1:
+                q //= 2
+                e += 1
+
+        # Overflow.
+        if e > self._format.qmax:
+            return _handle_overflow(sign)
+
+        return FiniteQuadFloat(
+            sign=sign,
+            exponent=e,
+            significand=q,
+        )
+
     @classmethod
     def _round_from_triple(self, sign, exponent, significand):
 
@@ -782,6 +848,9 @@ class InfiniteQuadFloat(QuadFloat):
         elif other.is_zero():
             return _handle_invalid()
 
+    def division(self, other):
+        raise NotImplementedError("Division not yet implemented for non-finite numbers.")
+
     def encode(self, *, byteorder='little'):
         """
         Encode an InfiniteQuadFloat instance as a 16-character bytestring.
@@ -852,6 +921,9 @@ class NanQuadFloat(QuadFloat):
                 sign=self._sign ^ other._sign,
                 payload=self._payload,
             )
+
+    def division(self, other):
+        raise NotImplementedError("Division not yet implemented for non-finite numbers.")
 
     def _equivalent(self, other):
         return (
