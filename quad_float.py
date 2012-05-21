@@ -192,13 +192,11 @@ class QuadFloatBase(object):
             if not normalized:
                 raise ValueError("Unnormalized significand or exponent.")
 
-            # XXX Eventually replace with cls.
-            self = object.__new__(FiniteQuadFloat)
+            self = object.__new__(cls)
             self._exponent = int(exponent)
             self._significand = int(significand)
         elif type == INFINITE:
-            # XXX Eventually replace with cls.
-            self = object.__new__(InfiniteQuadFloat)
+            self = object.__new__(cls)
         elif type == NAN:
             # XXX Not sure why we're giving defaults here;  maybe we should
             # always specify on construction (and use nice defaults in suitable
@@ -211,8 +209,7 @@ class QuadFloatBase(object):
             if not bool(signaling) <= payload < 2 ** (cls._format.precision - 2):
                 raise ValueError("NaN payload out of range.")
 
-            # XXX Eventually replace with cls.
-            self = object.__new__(NanQuadFloat)
+            self = object.__new__(cls)
             self._payload = int(payload)
             self._signaling = bool(signaling)
 
@@ -821,227 +818,229 @@ class QuadFloatBase(object):
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
 
-
-
-class FiniteQuadFloat(QuadFloatBase):
-    # Arithmetic operations.
-
     def abs(self):
-        return QuadFloatBase(
-            type=FINITE,
-            sign=False,
-            exponent=self._exponent,
-            significand=self._significand,
-        )
+        if self._type == FINITE:
+            return QuadFloatBase(
+                type=FINITE,
+                sign=False,
+                exponent=self._exponent,
+                significand=self._significand,
+            )
+        elif self._type == INFINITE:
+            return QuadFloatBase(type=INFINITE, sign=False)
+        elif self._type == NAN:
+            return QuadFloatBase(
+                type=NAN,
+                sign=False,
+                payload=self._payload,
+                signaling=self._signaling,
+            )
+        else:
+            raise ValueError("invalid _type attribute: {}".format(self._type))
 
     def addition(self, other):
-        if other.is_infinite():
-            return other
+        if self._type == FINITE:
+            if other.is_infinite():
+                return other
 
-        if not other.is_finite():
-            raise NotImplementedError(
-                "Addition for non-finite numbers not yet implemented."
+            if not other.is_finite():
+                raise NotImplementedError(
+                    "Addition for non-finite numbers not yet implemented."
+                )
+
+            # Finite case.
+            #
+            # XXX To do: optimize for the case that the exponents are significantly
+            # different.
+            # XXX. Sign is incorrect for some rounding modes.
+
+            exponent = min(self._exponent, other._exponent)
+            significand = (
+                (self._significand * (-1) ** self._sign <<
+                 self._exponent - exponent) +
+                (other._significand * (-1) ** other._sign <<
+                 other._exponent - exponent)
+            )
+            sign = (significand < 0 or
+                    significand == 0 and self._sign and other._sign)
+
+            return QuadFloatBase._round_from_triple(
+                sign=sign,
+                exponent=exponent,
+                significand=abs(significand),
             )
 
-        # Finite case.
-        #
-        # XXX To do: optimize for the case that the exponents are significantly
-        # different.
-        # XXX. Sign is incorrect for some rounding modes.
+        elif self._type == INFINITE:
+            if other.is_nan():
+                # infinity + nan -> nan
+                if other.is_signaling():
+                    return _handle_invalid(snan=other)
+                else:
+                    return other
 
-        exponent = min(self._exponent, other._exponent)
-        significand = (
-            (self._significand * (-1) ** self._sign <<
-             self._exponent - exponent) +
-            (other._significand * (-1) ** other._sign <<
-             other._exponent - exponent)
-        )
-        sign = (significand < 0 or
-                significand == 0 and self._sign and other._sign)
+            elif other.is_infinite():
+                # same sign -> infinity; opposite signs -> nan
+                if self._sign == other._sign:
+                    return self
+                else:
+                    return _handle_invalid()
 
-        return QuadFloatBase._round_from_triple(
-            sign=sign,
-            exponent=exponent,
-            significand=abs(significand),
-        )
+            else:
+                return self
 
-    def multiplication(self, other):
-        if other.is_nan():
-            if other.is_signaling():
+        elif self._type == NAN:
+            if self.is_signaling():
+                return _handle_invalid(snan=self)
+            elif other.is_signaling():
                 return _handle_invalid(snan=other)
             else:
-                # finite * nan -> nan
+                return self
+
+        else:
+            raise ValueError("invalid _type attribute: {}".format(self._type))
+
+
+    def multiplication(self, other):
+        if self._type == FINITE:
+
+            if other.is_nan():
+                if other.is_signaling():
+                    return _handle_invalid(snan=other)
+                else:
+                    # finite * nan -> nan
+                    return QuadFloatBase(
+                        type=NAN,
+                        sign=self._sign ^ other._sign,
+                        payload=other._payload,
+                    )
+
+            elif other.is_infinite():
+                if self.is_zero():
+                    # zero * infinity -> nan
+                    return _handle_invalid()
+
+                # non-zero finite * infinity -> infinity
+                return QuadFloatBase(type=INFINITE, sign=self._sign ^ other._sign)
+
+            # finite * finite case.
+            sign = self._sign ^ other._sign
+            significand = self._significand * other._significand
+            exponent = self._exponent + other._exponent
+
+            return QuadFloatBase._round_from_triple(
+                sign=sign,
+                exponent=exponent,
+                significand=significand,
+            )
+
+        elif self._type == INFINITE:
+            if other.is_nan():
+                # infinity * nan -> nan
+                if other.is_signaling():
+                    return _handle_invalid(snan=other)
+                else:
+                    return QuadFloatBase(
+                        type=NAN,
+                        sign=self._sign ^ other._sign,
+                        payload=other._payload,
+                    )
+
+            elif other.is_infinite() or not other.is_zero():
+                # infinity * infinity -> infinity;
+                # infinity * nonzero finite -> infinity
+                return QuadFloatBase(type=INFINITE, sign=self._sign ^ other._sign)
+
+            elif other.is_zero():
+                return _handle_invalid()
+
+        elif self._type == NAN:
+            if self.is_signaling():
+                return _handle_invalid(snan=self)
+            elif other.is_signaling():
+                return _handle_invalid(snan=other)
+            else:
                 return QuadFloatBase(
                     type=NAN,
                     sign=self._sign ^ other._sign,
-                    payload=other._payload,
+                    payload=self._payload,
                 )
 
-        elif other.is_infinite():
-            if self.is_zero():
-                # zero * infinity -> nan
-                return _handle_invalid()
-
-            # non-zero finite * infinity -> infinity
-            return QuadFloatBase(type=INFINITE, sign=self._sign ^ other._sign)
-
-        # finite * finite case.
-        sign = self._sign ^ other._sign
-        significand = self._significand * other._significand
-        exponent = self._exponent + other._exponent
-
-        return QuadFloatBase._round_from_triple(
-            sign=sign,
-            exponent=exponent,
-            significand=significand,
-        )
+        else:
+            raise ValueError("invalid _type attribute: {}".format(self._type))
 
     def division(self, other):
-        if not other.is_finite():
-            raise NotImplementedError("Division not yet implemented for non-finite numbers.")
+        if self._type == FINITE:
 
-        # Finite / finite case.
-        sign = self._sign ^ other._sign
+            if not other.is_finite():
+                raise NotImplementedError("Division not yet implemented for non-finite numbers.")
 
-        if self.is_zero():
+            # Finite / finite case.
+            sign = self._sign ^ other._sign
+
+            if self.is_zero():
+                if other.is_zero():
+                    return _handle_invalid()
+
+                return QuadFloatBase(
+                    type=FINITE,
+                    sign=sign,
+                    exponent=self._format.qmin,
+                    significand=0,
+                )
+
             if other.is_zero():
-                return _handle_invalid()
+                return QuadFloatBase(type=INFINITE, sign=sign)
+
+            # First find d such that 2**(d-1) <= abs(self) / abs(other) < 2**d.
+            a = self._significand
+            b = other._significand
+            d = a.bit_length() - b.bit_length()
+            d += (a >> d if d >= 0 else a << -d) >= b
+            d += self._exponent - other._exponent
+
+            # Exponent of result.
+            e = max(d - self._format.precision, self._format.qmin)
+
+            # Round (self / other) * 2**-e to nearest integer.
+            # self / other * 2**-e == self._significand / other._significand * 2**shift, where...
+            shift = self._exponent - other._exponent - e
+
+            a, b = a << max(shift, 0), b << max(0, -shift)
+            q, r = divmod(a, b)
+            rtype = 2 * (2 * r > b) + (r != 0)
+
+            # Now result approximated by (-1)**sign * q * 2**e.
+            # Double check parameters.
+            assert sign in (0, 1)
+            assert e >= self._format.qmin
+            assert q.bit_length() <= self._format.precision
+            assert e == self._format.qmin or q.bit_length() == self._format.precision
+            assert 0 <= rtype <= 3
+
+            # Round.
+            if rtype == 3 or rtype == 2 and q & 1:
+                q += 1
+                if q.bit_length() == self._format.precision + 1:
+                    q //= 2
+                    e += 1
+
+            # Overflow.
+            if e > self._format.qmax:
+                return _handle_overflow(sign)
 
             return QuadFloatBase(
                 type=FINITE,
                 sign=sign,
-                exponent=self._format.qmin,
-                significand=0,
+                exponent=e,
+                significand=q,
             )
+        elif self._type == INFINTE:
 
-        if other.is_zero():
-            return QuadFloatBase(type=INFINITE, sign=sign)
-
-        # First find d such that 2**(d-1) <= abs(self) / abs(other) < 2**d.
-        a = self._significand
-        b = other._significand
-        d = a.bit_length() - b.bit_length()
-        d += (a >> d if d >= 0 else a << -d) >= b
-        d += self._exponent - other._exponent
-
-        # Exponent of result.
-        e = max(d - self._format.precision, self._format.qmin)
-
-        # Round (self / other) * 2**-e to nearest integer.
-        # self / other * 2**-e == self._significand / other._significand * 2**shift, where...
-        shift = self._exponent - other._exponent - e
-
-        a, b = a << max(shift, 0), b << max(0, -shift)
-        q, r = divmod(a, b)
-        rtype = 2 * (2 * r > b) + (r != 0)
-
-        # Now result approximated by (-1)**sign * q * 2**e.
-        # Double check parameters.
-        assert sign in (0, 1)
-        assert e >= self._format.qmin
-        assert q.bit_length() <= self._format.precision
-        assert e == self._format.qmin or q.bit_length() == self._format.precision
-        assert 0 <= rtype <= 3
-
-        # Round.
-        if rtype == 3 or rtype == 2 and q & 1:
-            q += 1
-            if q.bit_length() == self._format.precision + 1:
-                q //= 2
-                e += 1
-
-        # Overflow.
-        if e > self._format.qmax:
-            return _handle_overflow(sign)
-
-        return QuadFloatBase(
-            type=FINITE,
-            sign=sign,
-            exponent=e,
-            significand=q,
-        )
+            raise NotImplementedError("Division not yet implemented for non-finite numbers.")
 
 
-
-class InfiniteQuadFloat(QuadFloatBase):
-    # Arithmetic operations.
-
-    def abs(self):
-        return QuadFloatBase(type=INFINITE, sign=False)
-
-    def addition(self, other):
-        if other.is_nan():
-            # infinity + nan -> nan
-            if other.is_signaling():
-                return _handle_invalid(snan=other)
-            else:
-                return other
-
-        elif other.is_infinite():
-            # same sign -> infinity; opposite signs -> nan
-            if self._sign == other._sign:
-                return self
-            else:
-                return _handle_invalid()
+        elif self._type == NAN:
+            raise NotImplementedError("Division not yet implemented for non-finite numbers.")
 
         else:
-            return self
-
-    def multiplication(self, other):
-        if other.is_nan():
-            # infinity * nan -> nan
-            if other.is_signaling():
-                return _handle_invalid(snan=other)
-            else:
-                return QuadFloatBase(
-                    type=NAN,
-                    sign=self._sign ^ other._sign,
-                    payload=other._payload,
-                )
-
-        elif other.is_infinite() or not other.is_zero():
-            # infinity * infinity -> infinity;
-            # infinity * nonzero finite -> infinity
-            return QuadFloatBase(type=INFINITE, sign=self._sign ^ other._sign)
-
-        elif other.is_zero():
-            return _handle_invalid()
-
-    def division(self, other):
-        raise NotImplementedError("Division not yet implemented for non-finite numbers.")
-
-
-
-class NanQuadFloat(QuadFloatBase):
-    # Arithmetic operations.
-    def abs(self):
-        return QuadFloatBase(
-            type=NAN,
-            sign=False,
-            payload=self._payload,
-            signaling=self._signaling,
-        )
-
-    def addition(self, other):
-        if self.is_signaling():
-            return _handle_invalid(snan=self)
-        elif other.is_signaling():
-            return _handle_invalid(snan=other)
-        else:
-            return self
-
-    def multiplication(self, other):
-        if self.is_signaling():
-            return _handle_invalid(snan=self)
-        elif other.is_signaling():
-            return _handle_invalid(snan=other)
-        else:
-            return QuadFloatBase(
-                type=NAN,
-                sign=self._sign ^ other._sign,
-                payload=self._payload,
-            )
-
-    def division(self, other):
-        raise NotImplementedError("Division not yet implemented for non-finite numbers.")
-
+            raise ValueError("invalid _type attribute: {}".format(self._type))
