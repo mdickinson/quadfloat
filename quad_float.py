@@ -150,7 +150,10 @@ def _handle_invalid(snan=None):
 
     # For now, just return a quiet NaN.  Someday this should be more
     # sophisticated.
-    return QuadFloatBase(type=NAN)
+    return QuadFloatBase(
+        type=NAN,
+        sign=False,
+    )
 
 
 def QuadFloat(value=0):
@@ -171,16 +174,85 @@ class QuadFloatBase(object):
 
     def __new__(cls, **kwargs):
         type = kwargs.pop('type')
+        sign = kwargs.pop('sign')
         if type == FINITE:
-            self = FiniteQuadFloat(**kwargs)
+            exponent = kwargs.pop('exponent')
+            significand = kwargs.pop('significand')
+
+            if not cls._format.qmin <= exponent <= cls._format.qmax:
+                raise ValueError("exponent {} out of range".format(exponent))
+            if not 0 <= significand < 2 ** cls._format.precision:
+                raise ValueError("significand out of range")
+
+            # Check normalization.
+            normalized = (
+                significand >= 2 ** (cls._format.precision - 1) or
+                exponent == cls._format.qmin
+            )
+            if not normalized:
+                raise ValueError("Unnormalized significand or exponent.")
+
+            # XXX Eventually replace FiniteQuadFloat with cls.
+            self = object.__new__(FiniteQuadFloat)
+            self._exponent = int(exponent)
+            self._significand = int(significand)
         elif type == INFINITE:
-            self = InfiniteQuadFloat(**kwargs)
+            # XXX Eventually replace InfiniteQuadFloat with cls.
+            self = object.__new__(InfiniteQuadFloat)
         elif type == NAN:
-            self = NanQuadFloat(**kwargs)
+            # XXX Not sure why we're giving defaults here;  maybe we should
+            # always specify on construction (and use nice defaults in suitable
+            # helper functions).
+            payload = kwargs.pop('payload', 0)
+            signaling = kwargs.pop('signaling', False)
+
+            # Payload must be at least 1 for a signaling nan, to avoid
+            # confusion with the bit pattern for an infinity.
+            if not bool(signaling) <= payload < 2 ** (cls._format.precision - 2):
+                raise ValueError("NaN payload out of range.")
+
+            # XXX Eventually replace NanQuadFlaot with cls.
+            self = object.__new__(NanQuadFloat)
+            self._payload = int(payload)
+            self._signaling = bool(signaling)
+
         else:
             raise ValueError("Unrecognized type: {}".format(type))
+
         self._type = type
+        self._sign = bool(sign)
         return self
+
+    def _equivalent(self, other):
+        """
+        Private method to determine whether self and other have the same
+        structure.  Note that this is a much stronger check than equality: for
+        example, -0.0 and 0.0 do not have the same structure; NaNs with
+        different payloads are considered inequivalent (but those with the same
+        payload are considered equivalent).
+
+        Used only in testing.
+        XXX: could replace this with a comparison of corresponding byte strings.
+
+        """
+        if self._type == other._type == FINITE:
+            return (
+                self._sign == other._sign and
+                self._exponent == other._exponent and
+                self._significand == other._significand
+            )
+        elif self._type == other._type == INFINITE:
+            return (
+                self._sign == other._sign
+            )
+        elif self._type == other._type == NAN:
+            return (
+                self._sign == other._sign and
+                self._payload == other._payload and
+                self._signaling == other._signaling
+            )
+        else:
+            return False
 
     @classmethod
     def _from_value(cls, value=0):
@@ -207,6 +279,72 @@ class QuadFloatBase(object):
                 "Cannot construct a QuadFloat instance from a "
                 "value of type {}".format(type(value))
             )
+
+    def _to_str(self, places=None):
+        """
+        Convert to a Decimal string with a given
+        number of significant digits.
+
+        """
+        if self._type == FINITE:
+            if self._significand == 0:
+                if self._sign:
+                    return '-0.0'
+                else:
+                    return '0.0'
+
+            if places is None:
+                # Sufficient places to recover the value.
+                places = self._format._decimal_places
+
+            # Find a, b such that a / b = abs(self)
+            a = self._significand << max(self._exponent, 0)
+            b = 1 << max(0, -self._exponent)
+
+            # Compute exponent m for result.
+            n = len(str(a)) - len(str(b))
+            n += (a // 10 ** n if n >= 0 else a * 10 ** -n) >= b
+            # Invariant: 10 ** (n - 1) <= abs(self) < 10 ** n.
+            m = n - places
+
+            # Approximate a / b by a number of the form q * 10 ** m
+            a, b = a * 10 ** max(-m, 0), b * 10 ** max(0, m)
+
+            # Now divide to get quotient and remainder.
+            q, r = divmod(a, b)
+            assert 10 ** (places - 1) <= q < 10 ** places
+            if 2 * r > b or 2 * r == b and q & 1:
+                q += 1
+                if q == 10 ** places:
+                    q //= 10
+                    m += 1
+
+            # Cheat by getting the decimal module to do the string formatting
+            # (insertion of decimal point, etc.) for us.
+            return str(
+                decimal.Decimal(
+                    '{0}{1}e{2}'.format(
+                        '-' if self._sign else '',
+                        q,
+                        m,
+                    )
+                )
+            )
+        elif self._type == INFINITE:
+            return '-Infinity' if self._sign else 'Infinity'
+
+        elif self._type == NAN:
+            pieces = []
+            if self._sign:
+                pieces.append('-')
+            if self._signaling:
+                pieces.append('s')
+            pieces.append('NaN')
+            pieces.append('({})'.format(self._payload))
+            return ''.join(pieces)
+
+        else:
+            raise ValueError("invalid _type attribute: {}".format(self._type))
 
     def __repr__(self):
         return "QuadFloat('{}')".format(self._to_str())
@@ -247,7 +385,10 @@ class QuadFloatBase(object):
 
         if math.isnan(value):
             # XXX Think about transfering signaling bit and payload.
-            return QuadFloatBase(type=NAN, sign=sign)
+            return QuadFloatBase(
+                type=NAN,
+                sign=sign,
+            )
 
         if math.isinf(value):
             return QuadFloatBase(type=INFINITE, sign=sign)
@@ -513,93 +654,6 @@ class QuadFloatBase(object):
 
 
 class FiniteQuadFloat(QuadFloatBase):
-    def __new__(cls, sign, exponent, significand):
-        """
-        Create a finite QuadFloat from an integer triple.
-
-        Returns the QuadFloat with value
-
-            (-1) ** sign * 2 ** exponent * significand
-
-        """
-        if not cls._format.qmin <= exponent <= cls._format.qmax:
-            raise ValueError("exponent {} out of range".format(exponent))
-        if not 0 <= significand < 2 ** cls._format.precision:
-            raise ValueError("significand out of range")
-
-        # Check normalization.
-        normalized = (
-            significand >= 2 ** (cls._format.precision - 1) or
-            exponent == cls._format.qmin
-        )
-        if not normalized:
-            raise ValueError("Unnormalized significand or exponent.")
-
-        self = object.__new__(cls)
-        self._sign = bool(sign)
-        self._exponent = int(exponent)
-        self._significand = int(significand)
-
-        return self
-
-    def _equivalent(self, other):
-        return (
-            isinstance(other, FiniteQuadFloat) and
-            self._sign == other._sign and
-            self._exponent == other._exponent and
-            self._significand == other._significand
-        )
-
-    def _to_str(self, places=None):
-        """
-        Convert to a Decimal string with a given
-        number of significant digits.
-
-        """
-        if self._significand == 0:
-            if self._sign:
-                return '-0.0'
-            else:
-                return '0.0'
-
-        if places is None:
-            # Sufficient places to recover the value.
-            places = self._format._decimal_places
-
-        # Find a, b such that a / b = abs(self)
-        a = self._significand << max(self._exponent, 0)
-        b = 1 << max(0, -self._exponent)
-
-        # Compute exponent m for result.
-        n = len(str(a)) - len(str(b))
-        n += (a // 10 ** n if n >= 0 else a * 10 ** -n) >= b
-        # Invariant: 10 ** (n - 1) <= abs(self) < 10 ** n.
-        m = n - places
-
-        # Approximate a / b by a number of the form q * 10 ** m
-        a, b = a * 10 ** max(-m, 0), b * 10 ** max(0, m)
-
-        # Now divide to get quotient and remainder.
-        q, r = divmod(a, b)
-        assert 10 ** (places - 1) <= q < 10 ** places
-        if 2 * r > b or 2 * r == b and q & 1:
-            q += 1
-            if q == 10 ** places:
-                q //= 10
-                m += 1
-
-        # Cheat by getting the decimal module to do the string formatting
-        # (insertion of decimal point, etc.) for us.
-        return str(
-            decimal.Decimal(
-                '{0}{1}e{2}'.format(
-                    '-' if self._sign else '',
-                    q,
-                    m,
-                )
-            )
-        )
-
     def _is_subnormal_or_zero(self):
         """
         Return True if this instance is subnormal or zero, else False.
@@ -843,20 +897,6 @@ class FiniteQuadFloat(QuadFloatBase):
 
 
 class InfiniteQuadFloat(QuadFloatBase):
-    def __new__(cls, sign):
-        self = object.__new__(cls)
-        self._sign = bool(sign)
-        return self
-
-    def _equivalent(self, other):
-        return (
-            isinstance(other, InfiniteQuadFloat) and
-            self._sign == other._sign
-        )
-
-    def _to_str(self):
-        return '-Infinity' if self._sign else 'Infinity'
-
     # Arithmetic operations.
 
     def negate(self):
@@ -930,18 +970,6 @@ class InfiniteQuadFloat(QuadFloatBase):
 
 
 class NanQuadFloat(QuadFloatBase):
-    def __new__(cls, sign=False, payload=0, signaling=False):
-        # Payload must be at least 1 for a signaling nan, to avoid confusion
-        # with the bit pattern for an infinity.
-        if not bool(signaling) <= payload < 2 ** (cls._format.precision - 2):
-            raise ValueError("NaN payload out of range.")
-
-        self = object.__new__(cls)
-        self._sign = bool(sign)
-        self._payload = int(payload)
-        self._signaling = bool(signaling)
-        return self
-
     # Arithmetic operations.
 
     def negate(self):
@@ -982,24 +1010,6 @@ class NanQuadFloat(QuadFloatBase):
 
     def division(self, other):
         raise NotImplementedError("Division not yet implemented for non-finite numbers.")
-
-    def _equivalent(self, other):
-        return (
-            isinstance(other, NanQuadFloat) and
-            self._sign == other._sign and
-            self._payload == other._payload and
-            self._signaling == other._signaling
-        )
-
-    def _to_str(self):
-        pieces = []
-        if self._sign:
-            pieces.append('-')
-        if self._signaling:
-            pieces.append('s')
-        pieces.append('NaN')
-        pieces.append('({})'.format(self._payload))
-        return ''.join(pieces)
 
     def encode(self, *, byteorder='little'):
         """
