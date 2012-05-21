@@ -754,26 +754,6 @@ class _BinaryFloatBase(object):
     def subtraction(self, other):
         return self.addition(other.negate())
 
-    # Python overloads for binary operators.
-
-    def __neg__(self):
-        return self.negate()
-
-    def __abs__(self):
-        return self.abs()
-
-    def __add__(self, other):
-        return self.addition(other)
-
-    def __sub__(self, other):
-        return self.addition(other.negate())
-
-    def __mul__(self, other):
-        return self.multiplication(other)
-
-    def __truediv__(self, other):
-        return self.division(other)
-
     @classmethod
     def _round_from_triple(cls, sign, exponent, significand):
 
