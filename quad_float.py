@@ -1,7 +1,7 @@
-import decimal
-import math
-import re
-import sys
+import decimal as _decimal
+import math as _math
+import re as _re
+import sys as _sys
 
 
 _BINARY_INTERCHANGE_FORMAT_PRECISIONS = {
@@ -15,7 +15,7 @@ _INFINITE = 'infinite_type'
 _NAN = 'nan_type'
 
 
-_number_parser = re.compile(r"""        # A numeric string consists of:
+_number_parser = _re.compile(r"""        # A numeric string consists of:
     (?P<sign>[-+])?                     # an optional sign, then either ...
     (?:
         (?P<finite>                     # a finite number
@@ -36,7 +36,7 @@ _number_parser = re.compile(r"""        # A numeric string consists of:
         )
     )
     \Z
-""", re.VERBOSE | re.IGNORECASE).match
+""", _re.VERBOSE | _re.IGNORECASE).match
 
 
 class BinaryInterchangeFormat(object):
@@ -114,7 +114,7 @@ class BinaryInterchangeFormat(object):
     @property
     def class_(self):
         if self not in BinaryInterchangeFormat._class__cache:
-            class BinaryFormat(BinaryFloatBase):
+            class BinaryFormat(_BinaryFloatBase):
                 _format = self
             # XXX Set suitable name here.  Perhaps don't allow the user to override, since
             # this won't make sense for cached classes.
@@ -167,7 +167,7 @@ def _handle_invalid(cls, snan=None):
     )
 
 
-class BinaryFloatBase(object):
+class _BinaryFloatBase(object):
     def __new__(cls, **kwargs):
         type = kwargs.pop('type')
         sign = kwargs.pop('sign')
@@ -315,7 +315,7 @@ class BinaryFloatBase(object):
             # Cheat by getting the decimal module to do the string formatting
             # (insertion of decimal point, etc.) for us.
             return str(
-                decimal.Decimal(
+                _decimal.Decimal(
                     '{0}{1}e{2}'.format(
                         '-' if self._sign else '',
                         q,
@@ -430,16 +430,16 @@ class BinaryFloatBase(object):
         Convert an integer to a QuadFloat instance.
 
         """
-        sign = math.copysign(1.0, value) < 0
+        sign = _math.copysign(1.0, value) < 0
 
-        if math.isnan(value):
+        if _math.isnan(value):
             # XXX Think about transfering signaling bit and payload.
             return cls(
                 type=_NAN,
                 sign=sign,
             )
 
-        if math.isinf(value):
+        if _math.isinf(value):
             return cls(type=_INFINITE, sign=sign)
 
         # Zeros
@@ -452,9 +452,9 @@ class BinaryFloatBase(object):
             )
 
         # Now value is finite;  abs(value) = m * 2**e.
-        m, e = math.frexp(math.fabs(value))
-        m *= 2 ** sys.float_info.mant_dig
-        e -= sys.float_info.mant_dig
+        m, e = _math.frexp(_math.fabs(value))
+        m *= 2 ** _sys.float_info.mant_dig
+        e -= _sys.float_info.mant_dig
         assert m == int(m)
         m = int(m)
 
