@@ -151,8 +151,10 @@ class TestQuadFloat(unittest.TestCase):
     def test_is_subnormal(self):
         self.assertFalse(QuadFloat('0.0').is_subnormal())
         self.assertFalse(QuadFloat('-0.0').is_subnormal())
-        self.assertTrue(QuadFloat('8e-4933').is_subnormal())
-        self.assertTrue(QuadFloat('-8e-4933').is_subnormal())
+        self.assertTrue(QuadFloat('3.3e-4932').is_subnormal())
+        self.assertTrue(QuadFloat('-3.3e-4932').is_subnormal())
+        self.assertFalse(QuadFloat('3.4e-4932').is_subnormal())
+        self.assertFalse(QuadFloat('-3.4e-4932').is_subnormal())
         self.assertFalse(QuadFloat('2.3').is_subnormal())
         self.assertFalse(QuadFloat('-2.3').is_subnormal())
         self.assertFalse(QuadFloat('Infinity').is_subnormal())

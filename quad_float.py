@@ -377,7 +377,7 @@ class BinaryFloatBase(object):
         return (
             self._type == _FINITE and
             self._exponent == self._format.qmin and
-            self._significand != 0
+            0 < self._significand < 2 ** (self._format.precision - 1)
         )
 
     def is_zero(self):
