@@ -116,8 +116,7 @@ class BinaryInterchangeFormat(object):
         if self not in BinaryInterchangeFormat._class__cache:
             class BinaryFormat(_BinaryFloatBase):
                 _format = self
-            # XXX Set suitable name here.  Perhaps don't allow the user to override, since
-            # this won't make sense for cached classes.
+            BinaryFormat.__name__ = 'Float{}'.format(self.width)
             BinaryInterchangeFormat._class__cache[self] = BinaryFormat
 
         return BinaryInterchangeFormat._class__cache[self]
@@ -250,9 +249,9 @@ class _BinaryFloatBase(object):
     @classmethod
     def _from_value(cls, value=0):
         """
-        QuadFloat([value])
+        Float<nnn>([value])
 
-        Create a new QuadFloat instance from the given input.
+        Create a new Float<nnn> instance from the given input.
 
         """
         if isinstance(value, float):
@@ -269,7 +268,7 @@ class _BinaryFloatBase(object):
 
         else:
             raise TypeError(
-                "Cannot construct a QuadFloat instance from a "
+                "Cannot construct a Float<nnn> instance from a "
                 "value of type {}".format(type(value))
             )
 
@@ -340,7 +339,7 @@ class _BinaryFloatBase(object):
             raise ValueError("invalid _type attribute: {}".format(self._type))
 
     def __repr__(self):
-        return "QuadFloat('{}')".format(self._to_str())
+        return "{}('{}')".format(type(self).__name__, self._to_str())
 
     def __str__(self):
         return self._to_str()
@@ -427,7 +426,7 @@ class _BinaryFloatBase(object):
     @classmethod
     def _from_float(cls, value):
         """
-        Convert an integer to a QuadFloat instance.
+        Convert an integer to a Float<nnn> instance.
 
         """
         sign = _math.copysign(1.0, value) < 0
@@ -476,7 +475,7 @@ class _BinaryFloatBase(object):
     @classmethod
     def _from_int(cls, n):
         """
-        Convert an integer to a QuadFloat instance.
+        Convert an integer to a Float<nnn> instance.
 
         """
         if n == 0:
@@ -529,7 +528,7 @@ class _BinaryFloatBase(object):
     @classmethod
     def _from_str(cls, s):
         """
-        Convert an input string to a QuadFloat instance.
+        Convert an input string to a Float<nnn> instance.
 
         """
         m = _number_parser(s)
@@ -615,7 +614,7 @@ class _BinaryFloatBase(object):
     @classmethod
     def decode(cls, encoded_value, *, byteorder='little'):
         """
-        Decode a string of bytes to the corresponding QuadFloat instance.
+        Decode a string of bytes to the corresponding Float<nnn> instance.
 
         """
         exponent_field_width = cls._format._exponent_field_width
@@ -672,7 +671,7 @@ class _BinaryFloatBase(object):
 
     def encode(self, *, byteorder='little'):
         """
-        Encode a QuadFloat instance as a 16-character bytestring.
+        Encode a Float<nnn> instance as a 16-character bytestring.
 
         """
         if self._type == _FINITE:
