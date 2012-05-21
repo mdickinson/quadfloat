@@ -106,22 +106,13 @@ class BinaryInterchangeFormat(object):
     @property
     def class_(self):
         if self not in BinaryInterchangeFormat._class__cache:
-            class BinaryFormat(BinaryBase):
-                format = self
+            class BinaryFormat(BinaryFloatBase):
+                _format = self
             # XXX Set suitable name here.  Perhaps don't allow the user to override, since
             # this won't make sense for cached classes.
             BinaryInterchangeFormat._class__cache[self] = BinaryFormat
 
         return BinaryInterchangeFormat._class__cache[self]
-        
-
-# XXX Better name?
-class BinaryBase(object):
-    pass
-
-
-
-binary128 = BinaryInterchangeFormat(width=128)
 
 
 def _handle_overflow(sign):
@@ -156,22 +147,12 @@ def _handle_invalid(snan=None):
     )
 
 
-def QuadFloat(value=0):
-    """
-    Factory function generating instances of QuadFloatBase.
-
-    """
-    return QuadFloatBase._from_value(value)
-
-
 FINITE = 'finite_type'
 INFINITE = 'infinite_type'
 NAN = 'nan_type'
 
 
-class QuadFloatBase(object):
-    _format = binary128
-
+class BinaryFloatBase(object):
     def __new__(cls, **kwargs):
         type = kwargs.pop('type')
         sign = kwargs.pop('sign')
@@ -1044,3 +1025,11 @@ class QuadFloatBase(object):
 
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
+
+
+binary128 = BinaryInterchangeFormat(width=128)
+
+QuadFloatBase = binary128.class_
+
+# Factory function generating instances of QuadFloatBase.
+QuadFloat = QuadFloatBase._from_value

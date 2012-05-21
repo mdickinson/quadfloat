@@ -5,7 +5,7 @@ import math
 import unittest
 
 from quad_float import QuadFloat, BinaryInterchangeFormat, QuadFloatBase
-from quad_float import BinaryBase
+from quad_float import BinaryFloatBase
 
 
 class TestBinaryIntegerchangeFormat(unittest.TestCase):
@@ -60,16 +60,16 @@ class TestBinaryIntegerchangeFormat(unittest.TestCase):
         binary256 = BinaryInterchangeFormat(width=256)
 
         Binary128 = binary128.class_
-        self.assertTrue(issubclass(Binary128, BinaryBase))
-        self.assertIs(Binary128.format, binary128)
+        self.assertTrue(issubclass(Binary128, BinaryFloatBase))
+        self.assertEqual(Binary128._format, binary128)
 
         # Result should be a singleton.
         AnotherBinary128 = binary128.class_
         self.assertIs(Binary128, AnotherBinary128)
 
         Binary256 = binary256.class_
-        self.assertTrue(issubclass(Binary256, BinaryBase))
-        self.assertIs(Binary256.format, binary256)
+        self.assertTrue(issubclass(Binary256, BinaryFloatBase))
+        self.assertEqual(Binary256._format, binary256)
 
 
 class TestQuadFloat(unittest.TestCase):
