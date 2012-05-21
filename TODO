@@ -2,4 +2,4 @@
 # XXX Fix name of classes.
 # XXX Implement short float repr.
 # XXX Remove dependence on decimal.
-
+# XXX Factor out repeated rounding code.
