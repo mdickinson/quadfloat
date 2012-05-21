@@ -369,6 +369,12 @@ class BinaryFloatBase(object):
     def is_signaling(self):
         return self._type == _NAN and self._signaling
 
+    def is_zero(self):
+        return (
+            self._type == _FINITE and
+            self._significand == 0
+        )
+
     def is_subnormal(self):
         """
         Return True if self is subnormal, False otherwise.
@@ -376,12 +382,18 @@ class BinaryFloatBase(object):
         """
         return (
             self._type == _FINITE and
-            self._exponent == self._format.qmin and
             0 < self._significand < 2 ** (self._format.precision - 1)
         )
 
-    def is_zero(self):
-        return self._type == _FINITE and self._significand == 0
+    def is_normal(self):
+        """
+        Return True if self is subnormal, False otherwise.
+
+        """
+        return (
+            self._type == _FINITE and
+            2 ** (self._format.precision - 1) <= self._significand
+        )
 
     @classmethod
     def _from_float(cls, value):

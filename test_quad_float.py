@@ -164,6 +164,22 @@ class TestQuadFloat(unittest.TestCase):
         self.assertFalse(QuadFloat('sNaN').is_subnormal())
         self.assertFalse(QuadFloat('-sNaN').is_subnormal())
 
+    def test_is_normal(self):
+        self.assertFalse(QuadFloat('0.0').is_normal())
+        self.assertFalse(QuadFloat('-0.0').is_normal())
+        self.assertFalse(QuadFloat('3.3e-4932').is_normal())
+        self.assertFalse(QuadFloat('-3.3e-4932').is_normal())
+        self.assertTrue(QuadFloat('3.4e-4932').is_normal())
+        self.assertTrue(QuadFloat('-3.4e-4932').is_normal())
+        self.assertTrue(QuadFloat('2.3').is_normal())
+        self.assertTrue(QuadFloat('-2.3').is_normal())
+        self.assertFalse(QuadFloat('Infinity').is_normal())
+        self.assertFalse(QuadFloat('-Infinity').is_normal())
+        self.assertFalse(QuadFloat('NaN').is_normal())
+        self.assertFalse(QuadFloat('-NaN').is_normal())
+        self.assertFalse(QuadFloat('sNaN').is_normal())
+        self.assertFalse(QuadFloat('-sNaN').is_normal())
+
     def test_is_sign_minus(self):
         self.assertFalse(QuadFloat('0.0').is_sign_minus())
         self.assertTrue(QuadFloat('-0.0').is_sign_minus())
