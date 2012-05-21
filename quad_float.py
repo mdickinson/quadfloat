@@ -1,3 +1,5 @@
+# XXX Fix all occurrences of 'QuadFloat' in comments, docstrings, ...
+
 import decimal
 import math
 import re
@@ -402,6 +404,9 @@ class BinaryFloatBase(object):
 
         # Normalize.  Note that all floats (including subnormals) will be
         # normal QuadFloats.
+        # XXX.  But we're using this for conversion from other formats too,
+        # where overflow is possible.  Need to deal with this.
+
         shift = cls._format.precision - m.bit_length()
         m, e = m << shift, e - shift
 
@@ -822,7 +827,8 @@ class BinaryFloatBase(object):
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
 
-    def addition(self, other):
+    @classmethod
+    def addition(cls, self, other):
         if self._type == _FINITE:
             if other.is_infinite():
                 return other
@@ -834,9 +840,9 @@ class BinaryFloatBase(object):
 
             # Finite case.
             #
-            # XXX To do: optimize for the case that the exponents are significantly
-            # different.
-            # XXX. Sign is incorrect for some rounding modes.
+            # XXX To do: optimize for the case that the exponents are
+            # significantly different.  XXX. Sign is incorrect for some
+            # rounding modes.
 
             exponent = min(self._exponent, other._exponent)
             significand = (
@@ -848,7 +854,7 @@ class BinaryFloatBase(object):
             sign = (significand < 0 or
                     significand == 0 and self._sign and other._sign)
 
-            return QuadFloatBase._round_from_triple(
+            return cls._round_from_triple(
                 sign=sign,
                 exponent=exponent,
                 significand=abs(significand),
@@ -858,7 +864,7 @@ class BinaryFloatBase(object):
             if other.is_nan():
                 # infinity + nan -> nan
                 if other.is_signaling():
-                    return _handle_invalid(type(self), snan=other)
+                    return _handle_invalid(cls, snan=other)
                 else:
                     return other
 
@@ -867,32 +873,32 @@ class BinaryFloatBase(object):
                 if self._sign == other._sign:
                     return self
                 else:
-                    return _handle_invalid(type(self))
+                    return _handle_invalid(cls)
 
             else:
                 return self
 
         elif self._type == _NAN:
             if self.is_signaling():
-                return _handle_invalid(type(self), snan=self)
+                return _handle_invalid(cls, snan=self)
             elif other.is_signaling():
-                return _handle_invalid(type(self), snan=other)
+                return _handle_invalid(cls, snan=other)
             else:
                 return self
 
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
 
-
-    def multiplication(self, other):
+    @classmethod
+    def multiplication(cls, self, other):
         if self._type == _FINITE:
 
             if other.is_nan():
                 if other.is_signaling():
-                    return _handle_invalid(type(self), snan=other)
+                    return _handle_invalid(cls, snan=other)
                 else:
                     # finite * nan -> nan
-                    return QuadFloatBase(
+                    return cls(
                         type=_NAN,
                         sign=self._sign ^ other._sign,
                         payload=other._payload,
@@ -901,17 +907,17 @@ class BinaryFloatBase(object):
             elif other.is_infinite():
                 if self.is_zero():
                     # zero * infinity -> nan
-                    return _handle_invalid(type(self))
+                    return _handle_invalid(cls)
 
                 # non-zero finite * infinity -> infinity
-                return QuadFloatBase(type=_INFINITE, sign=self._sign ^ other._sign)
+                return cls(type=_INFINITE, sign=self._sign ^ other._sign)
 
             # finite * finite case.
             sign = self._sign ^ other._sign
             significand = self._significand * other._significand
             exponent = self._exponent + other._exponent
 
-            return QuadFloatBase._round_from_triple(
+            return cls._round_from_triple(
                 sign=sign,
                 exponent=exponent,
                 significand=significand,
@@ -921,9 +927,9 @@ class BinaryFloatBase(object):
             if other.is_nan():
                 # infinity * nan -> nan
                 if other.is_signaling():
-                    return _handle_invalid(type(self), snan=other)
+                    return _handle_invalid(cls, snan=other)
                 else:
-                    return QuadFloatBase(
+                    return cls(
                         type=_NAN,
                         sign=self._sign ^ other._sign,
                         payload=other._payload,
@@ -932,18 +938,18 @@ class BinaryFloatBase(object):
             elif other.is_infinite() or not other.is_zero():
                 # infinity * infinity -> infinity;
                 # infinity * nonzero finite -> infinity
-                return QuadFloatBase(type=_INFINITE, sign=self._sign ^ other._sign)
+                return cls(type=_INFINITE, sign=self._sign ^ other._sign)
 
             elif other.is_zero():
-                return _handle_invalid(type(self))
+                return _handle_invalid(cls)
 
         elif self._type == _NAN:
             if self.is_signaling():
-                return _handle_invalid(type(self), snan=self)
+                return _handle_invalid(cls, snan=self)
             elif other.is_signaling():
-                return _handle_invalid(type(self), snan=other)
+                return _handle_invalid(cls, snan=other)
             else:
-                return QuadFloatBase(
+                return cls(
                     type=_NAN,
                     sign=self._sign ^ other._sign,
                     payload=self._payload,
@@ -952,7 +958,8 @@ class BinaryFloatBase(object):
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
 
-    def division(self, other):
+    @classmethod
+    def division(cls, self, other):
         if self._type == _FINITE:
 
             if not other.is_finite():
@@ -963,9 +970,9 @@ class BinaryFloatBase(object):
 
             if self.is_zero():
                 if other.is_zero():
-                    return _handle_invalid(type(self))
+                    return _handle_invalid(cls)
 
-                return QuadFloatBase(
+                return cls(
                     type=_FINITE,
                     sign=sign,
                     exponent=self._format.qmin,
@@ -973,7 +980,7 @@ class BinaryFloatBase(object):
                 )
 
             if other.is_zero():
-                return QuadFloatBase(type=_INFINITE, sign=sign)
+                return cls(type=_INFINITE, sign=sign)
 
             # First find d such that 2**(d-1) <= abs(self) / abs(other) < 2**d.
             a = self._significand
@@ -1010,9 +1017,9 @@ class BinaryFloatBase(object):
 
             # Overflow.
             if e > self._format.qmax:
-                return _handle_overflow(type(self), sign)
+                return _handle_overflow(cls, sign)
 
-            return QuadFloatBase(
+            return cls(
                 type=_FINITE,
                 sign=sign,
                 exponent=e,
