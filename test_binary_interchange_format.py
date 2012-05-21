@@ -1,7 +1,7 @@
 import math
 import unittest
 
-from quad_float import BinaryInterchangeFormat
+from binary_interchange_format import BinaryInterchangeFormat
 
 
 class TestBinaryIntegerchangeFormat(unittest.TestCase):

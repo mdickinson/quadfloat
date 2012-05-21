@@ -1,6 +1,6 @@
 import unittest
 
-from quad_float import BinaryInterchangeFormat
+from binary_interchange_format import BinaryInterchangeFormat
 
 QuadFloat = BinaryInterchangeFormat(width=128)
 
