@@ -192,12 +192,12 @@ class QuadFloatBase(object):
             if not normalized:
                 raise ValueError("Unnormalized significand or exponent.")
 
-            # XXX Eventually replace FiniteQuadFloat with cls.
+            # XXX Eventually replace with cls.
             self = object.__new__(FiniteQuadFloat)
             self._exponent = int(exponent)
             self._significand = int(significand)
         elif type == INFINITE:
-            # XXX Eventually replace InfiniteQuadFloat with cls.
+            # XXX Eventually replace with cls.
             self = object.__new__(InfiniteQuadFloat)
         elif type == NAN:
             # XXX Not sure why we're giving defaults here;  maybe we should
@@ -211,7 +211,7 @@ class QuadFloatBase(object):
             if not bool(signaling) <= payload < 2 ** (cls._format.precision - 2):
                 raise ValueError("NaN payload out of range.")
 
-            # XXX Eventually replace NanQuadFlaot with cls.
+            # XXX Eventually replace with cls.
             self = object.__new__(NanQuadFloat)
             self._payload = int(payload)
             self._signaling = bool(signaling)
@@ -636,9 +636,79 @@ class QuadFloatBase(object):
         Encode a QuadFloat instance as a 16-character bytestring.
 
         """
-        raise NotImplementedError(
-            "QuadFloat.encode is implemented by concrete subclasses."
-        )
+        if self._type == FINITE:
+
+            # Exponent and significand fields.
+            if self.is_subnormal() or self.is_zero():
+                exponent_field = 0
+                significand_field = self._significand
+            else:
+                exponent_field = self._exponent + self._format.qbias
+                significand_field = (
+                    self._significand - 2 ** (self._format.precision - 1)
+                )
+
+            exponent_field_width = self._format._exponent_field_width
+            significand_field_width = self._format.precision - 1
+
+            equivalent_int = (
+                (self._sign << (exponent_field_width + significand_field_width)) +
+                (exponent_field << (significand_field_width)) +
+                significand_field
+            )
+
+            return equivalent_int.to_bytes(
+                self._format.width // 8,
+                byteorder=byteorder,
+            )
+
+        elif self._type == INFINITE:
+
+            exponent_field_width = self._format._exponent_field_width
+            significand_field_width = self._format.precision - 1
+
+            exponent_field = 2 ** exponent_field_width - 1
+            significand_field = 0
+
+            equivalent_int = (
+                (self._sign << (exponent_field_width + significand_field_width)) +
+                (exponent_field << (significand_field_width)) +
+                significand_field
+            )
+
+            return equivalent_int.to_bytes(
+                self._format.width // 8,
+                byteorder=byteorder,
+            )
+
+        elif self._type == NAN:
+
+            exponent_field_width = self._format._exponent_field_width
+            significand_field_width = self._format.precision - 1
+            payload_width = significand_field_width - 1
+
+            exponent_field = 2 ** exponent_field_width - 1
+            significand_field = self._payload
+            assert 0 <= self._payload < 2 ** payload_width
+
+            significand_field = (
+                ((not self._signaling) << payload_width) +
+                self._payload
+            )
+
+            equivalent_int = (
+                (self._sign << (exponent_field_width + significand_field_width)) +
+                (exponent_field << (significand_field_width)) +
+                significand_field
+            )
+
+            return equivalent_int.to_bytes(
+                self._format.width // 8,
+                byteorder=byteorder,
+            )
+
+        else:
+            raise ValueError("invalid _type attribute: {}".format(self._type))
 
     # Binary operations.
 
@@ -665,53 +735,96 @@ class QuadFloatBase(object):
     def __truediv__(self, other):
         return self.division(other)
 
+    @classmethod
+    def _round_from_triple(self, sign, exponent, significand):
 
-class FiniteQuadFloat(QuadFloatBase):
-    def _is_subnormal_or_zero(self):
-        """
-        Return True if this instance is subnormal or zero, else False.
-
-        """
-        return self._significand < 2 ** (self._format.precision - 1)
-
-    def encode(self, *, byteorder='little'):
-        """
-        Encode a FiniteQuadFloat instance as a 16-character bytestring.
-
-        """
-        # Exponent and significand fields.
-        if self._is_subnormal_or_zero():
-            exponent_field = 0
-            significand_field = self._significand
-        else:
-            exponent_field = self._exponent + self._format.qbias
-            significand_field = (
-                self._significand - 2 ** (self._format.precision - 1)
+        # Round the value significand * 2**exponent to the format.
+        if significand == 0:
+            return QuadFloatBase(
+                type=FINITE,
+                sign=sign,
+                exponent=self._format.qmin,
+                significand=0,
             )
 
-        exponent_field_width = self._format._exponent_field_width
-        significand_field_width = self._format.precision - 1
+        # ... first find exponent of result.
 
-        equivalent_int = (
-            (self._sign << (exponent_field_width + significand_field_width)) +
-            (exponent_field << (significand_field_width)) +
-            significand_field
-        )
+        # d satisfies 2**(d-1) <= significand * 2 ** exponent < 2**d.
+        d = exponent + significand.bit_length()
 
-        return equivalent_int.to_bytes(
-            self._format.width // 8,
-            byteorder=byteorder,
-        )
+        # Exponent of result.
+        e = max(d - self._format.precision, self._format.qmin)
 
-    # Arithmetic operations.
+        # significand * 2**exponent ~ q * 2**e.
+        # significand * 2**(exponent - e) ~ q
+        shift = exponent - e
+        if shift >= 0:
+            q = significand << shift
+            rtype = 0
+        else:
+            q = significand >> -shift
+            r = significand & ((1 << -shift) - 1)
 
-    def negate(self):
+            # Classify r: 0 if exact, 2 if exact halfway, 1 / 3 for low / high
+            if r > (1 << (-shift - 1)):
+                rtype = 3
+            elif r == (1 << (-shift - 1)):
+                rtype = 2
+            elif r > 0:
+                rtype = 1
+            else:
+                rtype = 0
+
+        assert q.bit_length() <= self._format.precision
+
+        # Round.
+        if rtype == 3 or rtype == 2 and q & 1:
+            q += 1
+            if q.bit_length() == self._format.precision + 1:
+                q //= 2
+                e += 1
+
+        # Overflow.
+        if e > self._format.qmax:
+            return _handle_overflow(sign)
+
         return QuadFloatBase(
             type=FINITE,
-            sign=not self._sign,
-            exponent=self._exponent,
-            significand=self._significand,
+            sign=sign,
+            exponent=e,
+            significand=q,
         )
+
+    def negate(self):
+        if self._type == FINITE:
+            return QuadFloatBase(
+                type=FINITE,
+                sign=not self._sign,
+                exponent=self._exponent,
+                significand=self._significand,
+            )
+
+        elif self._type == INFINITE:
+            return QuadFloatBase(
+                type=INFINITE,
+                sign=not self._sign,
+            )
+
+        elif self._type == NAN:
+            return QuadFloatBase(
+                type=NAN,
+                sign=not self._sign,
+                payload=self._payload,
+                signaling=self._signaling,
+            )
+
+        else:
+            raise ValueError("invalid _type attribute: {}".format(self._type))
+
+
+
+class FiniteQuadFloat(QuadFloatBase):
+    # Arithmetic operations.
 
     def abs(self):
         return QuadFloatBase(
@@ -746,7 +859,7 @@ class FiniteQuadFloat(QuadFloatBase):
         sign = (significand < 0 or
                 significand == 0 and self._sign and other._sign)
 
-        return FiniteQuadFloat._round_from_triple(
+        return QuadFloatBase._round_from_triple(
             sign=sign,
             exponent=exponent,
             significand=abs(significand),
@@ -777,7 +890,7 @@ class FiniteQuadFloat(QuadFloatBase):
         significand = self._significand * other._significand
         exponent = self._exponent + other._exponent
 
-        return FiniteQuadFloat._round_from_triple(
+        return QuadFloatBase._round_from_triple(
             sign=sign,
             exponent=exponent,
             significand=significand,
@@ -848,72 +961,10 @@ class FiniteQuadFloat(QuadFloatBase):
             significand=q,
         )
 
-    @classmethod
-    def _round_from_triple(self, sign, exponent, significand):
-
-        # Round the value significand * 2**exponent to the format.
-        if significand == 0:
-            return QuadFloatBase(
-                type=FINITE,
-                sign=sign,
-                exponent=self._format.qmin,
-                significand=0,
-            )
-
-        # ... first find exponent of result.
-
-        # d satisfies 2**(d-1) <= significand * 2 ** exponent < 2**d.
-        d = exponent + significand.bit_length()
-
-        # Exponent of result.
-        e = max(d - self._format.precision, self._format.qmin)
-
-        # significand * 2**exponent ~ q * 2**e.
-        # significand * 2**(exponent - e) ~ q
-        shift = exponent - e
-        if shift >= 0:
-            q = significand << shift
-            rtype = 0
-        else:
-            q = significand >> -shift
-            r = significand & ((1 << -shift) - 1)
-
-            # Classify r: 0 if exact, 2 if exact halfway, 1 / 3 for low / high
-            if r > (1 << (-shift - 1)):
-                rtype = 3
-            elif r == (1 << (-shift - 1)):
-                rtype = 2
-            elif r > 0:
-                rtype = 1
-            else:
-                rtype = 0
-
-        assert q.bit_length() <= self._format.precision
-
-        # Round.
-        if rtype == 3 or rtype == 2 and q & 1:
-            q += 1
-            if q.bit_length() == self._format.precision + 1:
-                q //= 2
-                e += 1
-
-        # Overflow.
-        if e > self._format.qmax:
-            return _handle_overflow(sign)
-
-        return QuadFloatBase(
-            type=FINITE,
-            sign=sign,
-            exponent=e,
-            significand=q,
-        )
 
 
 class InfiniteQuadFloat(QuadFloatBase):
     # Arithmetic operations.
-
-    def negate(self):
-        return QuadFloatBase(type=INFINITE, sign=not self._sign)
 
     def abs(self):
         return QuadFloatBase(type=INFINITE, sign=False)
@@ -959,40 +1010,10 @@ class InfiniteQuadFloat(QuadFloatBase):
     def division(self, other):
         raise NotImplementedError("Division not yet implemented for non-finite numbers.")
 
-    def encode(self, *, byteorder='little'):
-        """
-        Encode an InfiniteQuadFloat instance as a 16-character bytestring.
-
-        """
-        exponent_field_width = self._format._exponent_field_width
-        significand_field_width = self._format.precision - 1
-
-        exponent_field = 2 ** exponent_field_width - 1
-        significand_field = 0
-
-        equivalent_int = (
-            (self._sign << (exponent_field_width + significand_field_width)) +
-            (exponent_field << (significand_field_width)) +
-            significand_field
-        )
-
-        return equivalent_int.to_bytes(
-            self._format.width // 8,
-            byteorder=byteorder,
-        )
 
 
 class NanQuadFloat(QuadFloatBase):
     # Arithmetic operations.
-
-    def negate(self):
-        return QuadFloatBase(
-            type=NAN,
-            sign=not self._sign,
-            payload=self._payload,
-            signaling=self._signaling,
-        )
-
     def abs(self):
         return QuadFloatBase(
             type=NAN,
@@ -1024,31 +1045,3 @@ class NanQuadFloat(QuadFloatBase):
     def division(self, other):
         raise NotImplementedError("Division not yet implemented for non-finite numbers.")
 
-    def encode(self, *, byteorder='little'):
-        """
-        Encode a NanQuadFloat instance as a 16-character bytestring.
-
-        """
-        exponent_field_width = self._format._exponent_field_width
-        significand_field_width = self._format.precision - 1
-        payload_width = significand_field_width - 1
-
-        exponent_field = 2 ** exponent_field_width - 1
-        significand_field = self._payload
-        assert 0 <= self._payload < 2 ** payload_width
-
-        significand_field = (
-            ((not self._signaling) << payload_width) +
-            self._payload
-        )
-
-        equivalent_int = (
-            (self._sign << (exponent_field_width + significand_field_width)) +
-            (exponent_field << (significand_field_width)) +
-            significand_field
-        )
-
-        return equivalent_int.to_bytes(
-            self._format.width // 8,
-            byteorder=byteorder,
-        )
