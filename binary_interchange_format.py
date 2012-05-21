@@ -450,26 +450,35 @@ class _BinaryFloatBase(object):
                 significand=0,
             )
 
-        # Now value is finite;  abs(value) = m * 2**e.
-        m, e = _math.frexp(_math.fabs(value))
-        m *= 2 ** _sys.float_info.mant_dig
-        e -= _sys.float_info.mant_dig
-        assert m == int(m)
-        m = int(m)
+        a, b = abs(value).as_integer_ratio()
 
-        # Normalize.  Note that all floats (including subnormals) will be
-        # normal QuadFloats.
-        # XXX.  But we're using this for conversion from other formats too,
-        # where overflow is possible.  Need to deal with this.
+        # compute exponent e for result; may be one too small in the case
+        # that the rounded value of a/b lies in a different binade from a/b
+        d = a.bit_length() - b.bit_length()
+        d += (a >> d if d >= 0 else a << -d) >= b
+        # Invariant: 2 ** (d - 1) <= a / b < 2 ** d.
+        e = max(d - cls._format.precision, cls._format.qmin)
 
-        shift = cls._format.precision - m.bit_length()
-        m, e = m << shift, e - shift
+        # approximate a/b by number of the form q * 2**e; adjust e if
+        # necessary
+        a, b = a << max(-e, 0), b << max(e, 0)
+        q, r = divmod(a, b)
+
+        assert q.bit_length() <= cls._format.precision
+        if 2 * r > b or 2 * r == b and q & 1:
+            q += 1
+            if q.bit_length() == cls._format.precision + 1:
+                q //= 2
+                e += 1
+
+        if e > cls._format.qmax:
+            return _handle_overflow(cls, sign)
 
         return cls(
             type=_FINITE,
             sign=sign,
             exponent=e,
-            significand=m,
+            significand=q,
         )
 
     @classmethod
