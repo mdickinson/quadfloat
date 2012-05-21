@@ -59,6 +59,9 @@ class BinaryInterchangeFormat(object):
     def __hash__(self):
         return hash((BinaryInterchangeFormat, self.width))
 
+    def __call__(self, *args, **kwargs):
+        return self.class_._from_value(*args, **kwargs)
+
     @property
     def precision(self):
         if self.width in _BINARY_INTERCHANGE_FORMAT_PRECISIONS:
@@ -120,6 +123,18 @@ class BinaryInterchangeFormat(object):
             BinaryInterchangeFormat._class__cache[self] = BinaryFormat
 
         return BinaryInterchangeFormat._class__cache[self]
+
+    def addition(self, source1, source2):
+        return self.class_.addition(source1, source2)
+
+    def multiplication(self, source1, source2):
+        return self.class_.multiplication(source1, source2)
+
+    def division(self, source1, source2):
+        return self.class_.division(source1, source2)
+
+    def decode(self, encoded_value):
+        return self.class_.decode(encoded_value)
 
 
 def _handle_overflow(cls, sign):
@@ -1037,9 +1052,4 @@ class BinaryFloatBase(object):
             raise ValueError("invalid _type attribute: {}".format(self._type))
 
 
-binary128 = BinaryInterchangeFormat(width=128)
-
-QuadFloatBase = binary128.class_
-
-# Factory function generating instances of QuadFloatBase.
-QuadFloat = QuadFloatBase._from_value
+QuadFloat = BinaryInterchangeFormat(width=128)

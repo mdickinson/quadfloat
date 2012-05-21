@@ -4,7 +4,7 @@
 import math
 import unittest
 
-from quad_float import QuadFloat, BinaryInterchangeFormat, QuadFloatBase
+from quad_float import QuadFloat, BinaryInterchangeFormat
 from quad_float import BinaryFloatBase
 
 
@@ -86,17 +86,13 @@ class TestQuadFloat(unittest.TestCase):
 
     def test_construction_no_args(self):
         q = QuadFloat()
-        self.assertIsInstance(q, QuadFloatBase)
         encoded_q = q.encode()
         self.assertIsInstance(encoded_q, bytes)
         self.assertEqual(encoded_q, b'\0'*16)
 
     def test_construction_from_int(self):
         q = QuadFloat(3)
-        self.assertIsInstance(q, QuadFloatBase)
-        
         q = QuadFloat(-3)
-        self.assertIsInstance(q, QuadFloatBase)
 
         # Testing round-half-to-even.
         q = QuadFloat(5**49)
@@ -323,14 +319,14 @@ class TestQuadFloat(unittest.TestCase):
             QuadFloat(0),
             QuadFloat(1),
             QuadFloat(-1),
-            QuadFloatBase.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x7f'),  # inf
-            QuadFloatBase.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff'),  # -inf
-            QuadFloatBase.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\x7f'),  # qnan
-            QuadFloatBase.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\xff'),  # qnan
-            QuadFloatBase.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\x7f'),  # qnan
-            QuadFloatBase.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\xff'),  # qnan
-            QuadFloatBase.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x7f'),  # snan
-            QuadFloatBase.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff'),  # snan
+            QuadFloat.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x7f'),  # inf
+            QuadFloat.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff'),  # -inf
+            QuadFloat.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\x7f'),  # qnan
+            QuadFloat.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\xff'),  # qnan
+            QuadFloat.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\x7f'),  # qnan
+            QuadFloat.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\xff'),  # qnan
+            QuadFloat.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x7f'),  # snan
+            QuadFloat.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff'),  # snan
             QuadFloat('inf'),
             QuadFloat('-inf'),
             QuadFloat('nan'),
@@ -339,10 +335,9 @@ class TestQuadFloat(unittest.TestCase):
             QuadFloat('-snan'),
         ]
         for value in test_values:
-            self.assertIsInstance(value, QuadFloatBase)
             encoded_value = value.encode()
             self.assertIsInstance(encoded_value, bytes)
-            decoded_value = QuadFloatBase.decode(encoded_value)
+            decoded_value = QuadFloat.decode(encoded_value)
             self.assertInterchangeable(value, decoded_value)
 
     def test_decode_encode_roundtrip(self):
@@ -365,8 +360,7 @@ class TestQuadFloat(unittest.TestCase):
         ]
         for value in test_values:
             self.assertIsInstance(value, bytes)
-            decoded_value = QuadFloatBase.decode(value)
-            self.assertIsInstance(decoded_value, QuadFloatBase)
+            decoded_value = QuadFloat.decode(value)
             encoded_value = decoded_value.encode()
 
             self.assertIsInstance(encoded_value, bytes)
@@ -429,183 +423,183 @@ class TestQuadFloat(unittest.TestCase):
         # First steps
         a = QuadFloat(2)
         b = QuadFloat('inf')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('inf'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('inf'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('inf'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('inf'))
 
         a = QuadFloat(-2)
         b = QuadFloat('inf')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('-inf'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('-inf'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('-inf'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('-inf'))
 
         a = QuadFloat(2)
         b = QuadFloat('-inf')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('-inf'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('-inf'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('-inf'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('-inf'))
 
         a = QuadFloat(-2)
         b = QuadFloat('-inf')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('inf'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('inf'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('inf'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('inf'))
 
         a = QuadFloat('0.0')
         b = QuadFloat('inf')
-        self.assertTrue((QuadFloatBase.multiplication(a, b)).is_nan())
-        self.assertTrue((QuadFloatBase.multiplication(b, a)).is_nan())
+        self.assertTrue((QuadFloat.multiplication(a, b)).is_nan())
+        self.assertTrue((QuadFloat.multiplication(b, a)).is_nan())
 
         a = QuadFloat('0.0')
         b = QuadFloat('0.0')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('0.0'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('0.0'))
 
         a = QuadFloat('-0.0')
         b = QuadFloat('0.0')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('-0.0'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('-0.0'))
 
         a = QuadFloat('0.0')
         b = QuadFloat('-0.0')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('-0.0'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('-0.0'))
 
         a = QuadFloat('-0.0')
         b = QuadFloat('-0.0')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('0.0'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('0.0'))
 
         a = QuadFloat('2.0')
         b = QuadFloat('0.0')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('0.0'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('0.0'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('0.0'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('0.0'))
 
         a = QuadFloat('-2.0')
         b = QuadFloat('0.0')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('-0.0'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('-0.0'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('-0.0'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('-0.0'))
 
         a = QuadFloat('2.0')
         b = QuadFloat('-0.0')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('-0.0'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('-0.0'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('-0.0'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('-0.0'))
 
         a = QuadFloat('-2.0')
         b = QuadFloat('-0.0')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('0.0'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('0.0'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('0.0'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('0.0'))
 
         a = QuadFloat('2.0')
         b = QuadFloat('3.0')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('6.0'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('6.0'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('6.0'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('6.0'))
 
         # signaling nans?
         a = QuadFloat('-snan(123)')
         b = QuadFloat('2.3')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('-nan(123)'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('-nan(123)'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('-nan(123)'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('-nan(123)'))
 
         a = QuadFloat('-snan(123)')
         b = QuadFloat('nan(456)')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('-nan(123)'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('-nan(123)'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('-nan(123)'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('-nan(123)'))
 
         a = QuadFloat('-snan(123)')
         b = QuadFloat('-inf')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('-nan(123)'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('-nan(123)'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('-nan(123)'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('-nan(123)'))
 
         a = QuadFloat('-snan(123)')
         b = QuadFloat('-2.3')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('-nan(123)'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('-nan(123)'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('-nan(123)'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('-nan(123)'))
 
         # first snan wins
         a = QuadFloat('snan(123)')
         b = QuadFloat('-snan(456)')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('nan(123)'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('-nan(456)'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('nan(123)'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('-nan(456)'))
 
         # quiet nans with payload
         a = QuadFloat('2.0')
         b = QuadFloat('nan(789)')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('nan(789)'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('nan(789)'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('nan(789)'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('nan(789)'))
 
         a = QuadFloat('-2.0')
         b = QuadFloat('nan(789)')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('-nan(789)'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('-nan(789)'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('-nan(789)'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('-nan(789)'))
 
         a = QuadFloat('inf')
         b = QuadFloat('nan(789)')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('nan(789)'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('nan(789)'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('nan(789)'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('nan(789)'))
 
         a = QuadFloat('-inf')
         b = QuadFloat('nan(789)')
-        self.assertInterchangeable(QuadFloatBase.multiplication(a, b), QuadFloat('-nan(789)'))
-        self.assertInterchangeable(QuadFloatBase.multiplication(b, a), QuadFloat('-nan(789)'))
+        self.assertInterchangeable(QuadFloat.multiplication(a, b), QuadFloat('-nan(789)'))
+        self.assertInterchangeable(QuadFloat.multiplication(b, a), QuadFloat('-nan(789)'))
 
     def test_addition(self):
         # Cases where zeros are involved.
         a = QuadFloat('0.0')
         b = QuadFloat('0.0')
-        self.assertInterchangeable(QuadFloatBase.addition(a, b), QuadFloat('0.0'))
+        self.assertInterchangeable(QuadFloat.addition(a, b), QuadFloat('0.0'))
 
         a = QuadFloat('0.0')
         b = QuadFloat('-0.0')
-        self.assertInterchangeable(QuadFloatBase.addition(a, b), QuadFloat('0.0'))
-        self.assertInterchangeable(QuadFloatBase.addition(b, a), QuadFloat('0.0'))
+        self.assertInterchangeable(QuadFloat.addition(a, b), QuadFloat('0.0'))
+        self.assertInterchangeable(QuadFloat.addition(b, a), QuadFloat('0.0'))
 
         a = QuadFloat('-0.0')
         b = QuadFloat('-0.0')
-        self.assertInterchangeable(QuadFloatBase.addition(a, b), QuadFloat('-0.0'))
+        self.assertInterchangeable(QuadFloat.addition(a, b), QuadFloat('-0.0'))
 
         a = QuadFloat('2.0')
         b = QuadFloat('0.0')
-        self.assertInterchangeable(QuadFloatBase.addition(a, b), QuadFloat('2.0'))
-        self.assertInterchangeable(QuadFloatBase.addition(b, a), QuadFloat('2.0'))
+        self.assertInterchangeable(QuadFloat.addition(a, b), QuadFloat('2.0'))
+        self.assertInterchangeable(QuadFloat.addition(b, a), QuadFloat('2.0'))
 
         a = QuadFloat('2.0')
         b = QuadFloat('-2.0')
-        self.assertInterchangeable(QuadFloatBase.addition(a, b), QuadFloat('0.0'))
-        self.assertInterchangeable(QuadFloatBase.addition(b, a), QuadFloat('0.0'))
+        self.assertInterchangeable(QuadFloat.addition(a, b), QuadFloat('0.0'))
+        self.assertInterchangeable(QuadFloat.addition(b, a), QuadFloat('0.0'))
 
         a = QuadFloat('2.0')
         b = QuadFloat('3.0')
-        self.assertInterchangeable(QuadFloatBase.addition(a, b), QuadFloat('5.0'))
-        self.assertInterchangeable(QuadFloatBase.addition(b, a), QuadFloat('5.0'))
+        self.assertInterchangeable(QuadFloat.addition(a, b), QuadFloat('5.0'))
+        self.assertInterchangeable(QuadFloat.addition(b, a), QuadFloat('5.0'))
 
         # Infinities.
         a = QuadFloat('inf')
         b = QuadFloat('2.0')
-        self.assertInterchangeable(QuadFloatBase.addition(a, b), QuadFloat('inf'))
-        self.assertInterchangeable(QuadFloatBase.addition(b, a), QuadFloat('inf'))
+        self.assertInterchangeable(QuadFloat.addition(a, b), QuadFloat('inf'))
+        self.assertInterchangeable(QuadFloat.addition(b, a), QuadFloat('inf'))
 
         a = QuadFloat('inf')
         b = QuadFloat('-2.0')
-        self.assertInterchangeable(QuadFloatBase.addition(a, b), QuadFloat('inf'))
-        self.assertInterchangeable(QuadFloatBase.addition(b, a), QuadFloat('inf'))
+        self.assertInterchangeable(QuadFloat.addition(a, b), QuadFloat('inf'))
+        self.assertInterchangeable(QuadFloat.addition(b, a), QuadFloat('inf'))
 
         a = QuadFloat('-inf')
         b = QuadFloat('2.0')
-        self.assertInterchangeable(QuadFloatBase.addition(a, b), QuadFloat('-inf'))
-        self.assertInterchangeable(QuadFloatBase.addition(b, a), QuadFloat('-inf'))
+        self.assertInterchangeable(QuadFloat.addition(a, b), QuadFloat('-inf'))
+        self.assertInterchangeable(QuadFloat.addition(b, a), QuadFloat('-inf'))
 
         a = QuadFloat('-inf')
         b = QuadFloat('-2.0')
-        self.assertInterchangeable(QuadFloatBase.addition(a, b), QuadFloat('-inf'))
-        self.assertInterchangeable(QuadFloatBase.addition(b, a), QuadFloat('-inf'))
+        self.assertInterchangeable(QuadFloat.addition(a, b), QuadFloat('-inf'))
+        self.assertInterchangeable(QuadFloat.addition(b, a), QuadFloat('-inf'))
 
         a = QuadFloat('-inf')
         b = QuadFloat('inf')
-        self.assertInterchangeable(QuadFloatBase.addition(a, b), QuadFloat('nan'))
-        self.assertInterchangeable(QuadFloatBase.addition(b, a), QuadFloat('nan'))
+        self.assertInterchangeable(QuadFloat.addition(a, b), QuadFloat('nan'))
+        self.assertInterchangeable(QuadFloat.addition(b, a), QuadFloat('nan'))
 
         a = QuadFloat('inf')
         b = QuadFloat('inf')
-        self.assertInterchangeable(QuadFloatBase.addition(a, b), QuadFloat('inf'))
-        self.assertInterchangeable(QuadFloatBase.addition(b, a), QuadFloat('inf'))
+        self.assertInterchangeable(QuadFloat.addition(a, b), QuadFloat('inf'))
+        self.assertInterchangeable(QuadFloat.addition(b, a), QuadFloat('inf'))
 
         a = QuadFloat('-inf')
         b = QuadFloat('-inf')
-        self.assertInterchangeable(QuadFloatBase.addition(a, b), QuadFloat('-inf'))
-        self.assertInterchangeable(QuadFloatBase.addition(b, a), QuadFloat('-inf'))
+        self.assertInterchangeable(QuadFloat.addition(a, b), QuadFloat('-inf'))
+        self.assertInterchangeable(QuadFloat.addition(b, a), QuadFloat('-inf'))
 
     def test_subtraction(self):
         # XXX Needs some tests!
@@ -617,49 +611,49 @@ class TestQuadFloat(unittest.TestCase):
         # Finite: check all combinations of signs.
         a = QuadFloat('1.0')
         b = QuadFloat('2.0')
-        self.assertInterchangeable(QuadFloatBase.division(a, b), QuadFloat('0.5'))
-        self.assertInterchangeable(QuadFloatBase.division(b, a), QuadFloat('2.0'))
+        self.assertInterchangeable(QuadFloat.division(a, b), QuadFloat('0.5'))
+        self.assertInterchangeable(QuadFloat.division(b, a), QuadFloat('2.0'))
 
         a = QuadFloat('-1.0')
         b = QuadFloat('2.0')
-        self.assertInterchangeable(QuadFloatBase.division(a, b), QuadFloat('-0.5'))
-        self.assertInterchangeable(QuadFloatBase.division(b, a), QuadFloat('-2.0'))
+        self.assertInterchangeable(QuadFloat.division(a, b), QuadFloat('-0.5'))
+        self.assertInterchangeable(QuadFloat.division(b, a), QuadFloat('-2.0'))
 
         a = QuadFloat('1.0')
         b = QuadFloat('-2.0')
-        self.assertInterchangeable(QuadFloatBase.division(a, b), QuadFloat('-0.5'))
-        self.assertInterchangeable(QuadFloatBase.division(b, a), QuadFloat('-2.0'))
+        self.assertInterchangeable(QuadFloat.division(a, b), QuadFloat('-0.5'))
+        self.assertInterchangeable(QuadFloat.division(b, a), QuadFloat('-2.0'))
 
         a = QuadFloat('-1.0')
         b = QuadFloat('-2.0')
-        self.assertInterchangeable(QuadFloatBase.division(a, b), QuadFloat('0.5'))
-        self.assertInterchangeable(QuadFloatBase.division(b, a), QuadFloat('2.0'))
+        self.assertInterchangeable(QuadFloat.division(a, b), QuadFloat('0.5'))
+        self.assertInterchangeable(QuadFloat.division(b, a), QuadFloat('2.0'))
 
         # One or other argument zero (but not both).
         a = QuadFloat('0.0')
         b = QuadFloat('2.0')
-        self.assertInterchangeable(QuadFloatBase.division(a, b), QuadFloat('0.0'))
-        self.assertInterchangeable(QuadFloatBase.division(b, a), QuadFloat('inf'))
+        self.assertInterchangeable(QuadFloat.division(a, b), QuadFloat('0.0'))
+        self.assertInterchangeable(QuadFloat.division(b, a), QuadFloat('inf'))
 
         a = QuadFloat('0.0')
         b = QuadFloat('-2.0')
-        self.assertInterchangeable(QuadFloatBase.division(a, b), QuadFloat('-0.0'))
-        self.assertInterchangeable(QuadFloatBase.division(b, a), QuadFloat('-inf'))
+        self.assertInterchangeable(QuadFloat.division(a, b), QuadFloat('-0.0'))
+        self.assertInterchangeable(QuadFloat.division(b, a), QuadFloat('-inf'))
 
         a = QuadFloat('-0.0')
         b = QuadFloat('2.0')
-        self.assertInterchangeable(QuadFloatBase.division(a, b), QuadFloat('-0.0'))
-        self.assertInterchangeable(QuadFloatBase.division(b, a), QuadFloat('-inf'))
+        self.assertInterchangeable(QuadFloat.division(a, b), QuadFloat('-0.0'))
+        self.assertInterchangeable(QuadFloat.division(b, a), QuadFloat('-inf'))
 
         a = QuadFloat('-0.0')
         b = QuadFloat('-2.0')
-        self.assertInterchangeable(QuadFloatBase.division(a, b), QuadFloat('0.0'))
-        self.assertInterchangeable(QuadFloatBase.division(b, a), QuadFloat('inf'))
+        self.assertInterchangeable(QuadFloat.division(a, b), QuadFloat('0.0'))
+        self.assertInterchangeable(QuadFloat.division(b, a), QuadFloat('inf'))
 
         # Zero divided by zero.
         a = QuadFloat('0.0')
         b = QuadFloat('0.0')
-        self.assertTrue(QuadFloatBase.division(a, b).is_nan())
+        self.assertTrue(QuadFloat.division(a, b).is_nan())
 
         # XXX Tests for infinities and nans as inputs.
         # XXX Tests for correct rounding.
