@@ -349,27 +349,39 @@ class BinaryFloatBase(object):
 
     # IEEE 5.7.2: General operations.
 
-    def is_finite(self):
-        return self._type == _FINITE
-
-    def is_infinite(self):
-        return self._type == _INFINITE
-
-    def is_nan(self):
-        return self._type == _NAN
-
     def is_sign_minus(self):
         """
-        Return True if self has a negative sign.  This applies to zeros and
-        NaNs as well as infinities and finite numbers.
+        Return True if self has a negative sign, else False.
+
+        This applies to zeros and NaNs as well as infinities and nonzero finite
+        numbers.
 
         """
         return self._sign
 
-    def is_signaling(self):
-        return self._type == _NAN and self._signaling
+    def is_normal(self):
+        """
+        Return True if self is subnormal, False otherwise.
+
+        """
+        return (
+            self._type == _FINITE and
+            2 ** (self._format.precision - 1) <= self._significand
+        )
+
+    def is_finite(self):
+        """
+        Return True if self is finite; that is, zero, subnormal or normal (not
+        infinite or NaN).
+
+        """
+        return self._type == _FINITE
 
     def is_zero(self):
+        """
+        Return True if self is plus or minus 0.
+
+        """
         return (
             self._type == _FINITE and
             self._significand == 0
@@ -385,15 +397,34 @@ class BinaryFloatBase(object):
             0 < self._significand < 2 ** (self._format.precision - 1)
         )
 
-    def is_normal(self):
+    def is_infinite(self):
         """
-        Return True if self is subnormal, False otherwise.
+        Return True if self is infinite, and False otherwise.
 
         """
-        return (
-            self._type == _FINITE and
-            2 ** (self._format.precision - 1) <= self._significand
-        )
+        return self._type == _INFINITE
+
+    def is_nan(self):
+        """
+        Return True if self is a NaN, and False otherwise.
+
+        """
+        return self._type == _NAN
+
+    def is_signaling(self):
+        """
+        Return True if self is a signaling NaN, and False otherwise.
+
+        """
+        return self._type == _NAN and self._signaling
+
+    def is_canonical(self):
+        """
+        Return True if self is canonical.
+
+        """
+        # Currently no non-canonical values are supported.
+        return True
 
     @classmethod
     def _from_float(cls, value):

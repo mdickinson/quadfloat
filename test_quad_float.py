@@ -134,6 +134,20 @@ class TestQuadFloat(unittest.TestCase):
         with self.assertRaises(ValueError):
             QuadFloat('+snan(1')
 
+    def test_is_canonical(self):
+        self.assertTrue(QuadFloat('0.0').is_canonical())
+        self.assertTrue(QuadFloat('-0.0').is_canonical())
+        self.assertTrue(QuadFloat('8e-4933').is_canonical())
+        self.assertTrue(QuadFloat('-8e-4933').is_canonical())
+        self.assertTrue(QuadFloat('2.3').is_canonical())
+        self.assertTrue(QuadFloat('-2.3').is_canonical())
+        self.assertTrue(QuadFloat('Infinity').is_canonical())
+        self.assertTrue(QuadFloat('-Infinity').is_canonical())
+        self.assertTrue(QuadFloat('NaN').is_canonical())
+        self.assertTrue(QuadFloat('-NaN').is_canonical())
+        self.assertTrue(QuadFloat('sNaN').is_canonical())
+        self.assertTrue(QuadFloat('-sNaN').is_canonical())
+
     def test_is_finite(self):
         self.assertTrue(QuadFloat('0.0').is_finite())
         self.assertTrue(QuadFloat('-0.0').is_finite())
