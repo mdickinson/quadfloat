@@ -1034,7 +1034,7 @@ class QuadFloatBase(object):
                 exponent=e,
                 significand=q,
             )
-        elif self._type == INFINTE:
+        elif self._type == INFINITE:
 
             raise NotImplementedError("Division not yet implemented for non-finite numbers.")
 
