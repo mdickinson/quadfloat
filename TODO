@@ -1,5 +1,9 @@
-# XXX Fix all occurrences of 'QuadFloat' in comments, docstrings, ...
-# XXX Fix name of classes.
-# XXX Implement short float repr.
-# XXX Remove dependence on decimal.
-# XXX Factor out repeated rounding code.
+# Fix all occurrences of 'QuadFloat' in comments, docstrings, ...
+# Fix name of classes.
+# Implement short float repr.
+# Remove dependence on decimal.
+# Factor out repeated rounding code.
+# Complete div implementation.
+# Add operator overloads, with suitable semantics.
+# Fix add, mul for nans.
+# Tests for subtraction.
