@@ -179,7 +179,7 @@ class QuadFloatBase(object):
             self = NanQuadFloat(**kwargs)
         else:
             raise ValueError("Unrecognized type: {}".format(type))
-        self.type = type
+        self._type = type
         return self
 
     @classmethod
@@ -215,13 +215,13 @@ class QuadFloatBase(object):
         return self._to_str()
 
     def is_finite(self):
-        return self.type == FINITE
+        return self._type == FINITE
 
     def is_infinite(self):
-        return self.type == INFINITE
+        return self._type == INFINITE
 
     def is_nan(self):
-        return self.type == NAN
+        return self._type == NAN
 
     def is_sign_minus(self):
         """
@@ -232,10 +232,10 @@ class QuadFloatBase(object):
         return self._sign
 
     def is_signaling(self):
-        return self.type == NAN and self._signaling
+        return self._type == NAN and self._signaling
 
     def is_zero(self):
-        return self.type == FINITE and self._significand == 0
+        return self._type == FINITE and self._significand == 0
 
     @classmethod
     def _from_float(cls, value):
