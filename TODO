@@ -1,0 +1,5 @@
+# XXX Fix all occurrences of 'QuadFloat' in comments, docstrings, ...
+# XXX Fix name of classes.
+# XXX Implement short float repr.
+# XXX Remove dependence on decimal.
+
