@@ -4,7 +4,7 @@
 import math
 import unittest
 
-from quad_float import QuadFloat, BinaryInterchangeFormat
+from quad_float import QuadFloat, BinaryInterchangeFormat, QuadFloatBase
 from quad_float import BinaryBase
 
 
@@ -86,17 +86,17 @@ class TestQuadFloat(unittest.TestCase):
 
     def test_construction_no_args(self):
         q = QuadFloat()
-        self.assertIsInstance(q, QuadFloat)
+        self.assertIsInstance(q, QuadFloatBase)
         encoded_q = q.encode()
         self.assertIsInstance(encoded_q, bytes)
         self.assertEqual(encoded_q, b'\0'*16)
 
     def test_construction_from_int(self):
         q = QuadFloat(3)
-        self.assertIsInstance(q, QuadFloat)
+        self.assertIsInstance(q, QuadFloatBase)
         
         q = QuadFloat(-3)
-        self.assertIsInstance(q, QuadFloat)
+        self.assertIsInstance(q, QuadFloatBase)
 
         # Testing round-half-to-even.
         q = QuadFloat(5**49)
@@ -297,14 +297,14 @@ class TestQuadFloat(unittest.TestCase):
             QuadFloat(0),
             QuadFloat(1),
             QuadFloat(-1),
-            QuadFloat.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x7f'),  # inf
-            QuadFloat.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff'),  # -inf
-            QuadFloat.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\x7f'),  # qnan
-            QuadFloat.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\xff'),  # qnan
-            QuadFloat.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\x7f'),  # qnan
-            QuadFloat.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\xff'),  # qnan
-            QuadFloat.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x7f'),  # snan
-            QuadFloat.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff'),  # snan
+            QuadFloatBase.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x7f'),  # inf
+            QuadFloatBase.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff'),  # -inf
+            QuadFloatBase.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\x7f'),  # qnan
+            QuadFloatBase.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\xff'),  # qnan
+            QuadFloatBase.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\x7f'),  # qnan
+            QuadFloatBase.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\xff'),  # qnan
+            QuadFloatBase.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x7f'),  # snan
+            QuadFloatBase.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff'),  # snan
             QuadFloat('inf'),
             QuadFloat('-inf'),
             QuadFloat('nan'),
@@ -313,10 +313,10 @@ class TestQuadFloat(unittest.TestCase):
             QuadFloat('-snan'),
         ]
         for value in test_values:
-            self.assertIsInstance(value, QuadFloat)
+            self.assertIsInstance(value, QuadFloatBase)
             encoded_value = value.encode()
             self.assertIsInstance(encoded_value, bytes)
-            decoded_value = QuadFloat.decode(encoded_value)
+            decoded_value = QuadFloatBase.decode(encoded_value)
             self.assertInterchangeable(value, decoded_value)
 
     def test_decode_encode_roundtrip(self):
@@ -339,8 +339,8 @@ class TestQuadFloat(unittest.TestCase):
         ]
         for value in test_values:
             self.assertIsInstance(value, bytes)
-            decoded_value = QuadFloat.decode(value)
-            self.assertIsInstance(decoded_value, QuadFloat)
+            decoded_value = QuadFloatBase.decode(value)
+            self.assertIsInstance(decoded_value, QuadFloatBase)
             encoded_value = decoded_value.encode()
 
             self.assertIsInstance(encoded_value, bytes)

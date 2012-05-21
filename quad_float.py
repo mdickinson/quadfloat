@@ -131,7 +131,7 @@ def _handle_overflow(sign):
     """
     # For now, just returns the appropriate infinity.  Someday this should
     # handle rounding modes, flags, etc.
-    return InfiniteQuadFloat(sign=sign)
+    return QuadFloatBase(type=INFINITE, sign=sign)
 
 
 def _handle_invalid(snan=None):
@@ -141,7 +141,8 @@ def _handle_invalid(snan=None):
     """
     if snan is not None:
         # Invalid operation from an snan: quiet the sNaN.
-        return NanQuadFloat(
+        return QuadFloatBase(
+            type=NAN,
             sign=snan._sign,
             payload=snan._payload,
             signaling=False,
@@ -149,13 +150,40 @@ def _handle_invalid(snan=None):
 
     # For now, just return a quiet NaN.  Someday this should be more
     # sophisticated.
-    return NanQuadFloat()
+    return QuadFloatBase(type=NAN)
 
 
-class QuadFloat(object):
+def QuadFloat(value=0):
+    """
+    Factory function generating instances of QuadFloatBase.
+
+    """
+    return QuadFloatBase._from_value(value)
+
+
+FINITE = 'finite_type'
+INFINITE = 'infinite_type'
+NAN = 'nan_type'
+
+
+class QuadFloatBase(object):
     _format = binary128
 
-    def __new__(cls, value=0):
+    def __new__(cls, **kwargs):
+        type = kwargs.pop('type')
+        if type == FINITE:
+            self = FiniteQuadFloat(**kwargs)
+        elif type == INFINITE:
+            self = InfiniteQuadFloat(**kwargs)
+        elif type == NAN:
+            self = NanQuadFloat(**kwargs)
+        else:
+            raise ValueError("Unrecognized type: {}".format(type))
+        self.type = type
+        return self
+
+    @classmethod
+    def _from_value(cls, value=0):
         """
         QuadFloat([value])
 
@@ -204,14 +232,15 @@ class QuadFloat(object):
 
         if math.isnan(value):
             # XXX Think about transfering signaling bit and payload.
-            return NanQuadFloat(sign=sign)
+            return QuadFloatBase(type=NAN, sign=sign)
 
         if math.isinf(value):
-            return InfiniteQuadFloat(sign=sign)
+            return QuadFloatBase(type=INFINITE, sign=sign)
 
         # Zeros
         if value == 0.0:
-            return FiniteQuadFloat(
+            return QuadFloatBase(
+                type=FINITE,
                 sign=sign,
                 exponent=cls._format.qmin,
                 significand=0,
@@ -229,7 +258,8 @@ class QuadFloat(object):
         shift = cls._format.precision - m.bit_length()
         m, e = m << shift, e - shift
 
-        return FiniteQuadFloat(
+        return QuadFloatBase(
+            type=FINITE,
             sign=sign,
             exponent=e,
             significand=m,
@@ -242,7 +272,8 @@ class QuadFloat(object):
 
         """
         if n == 0:
-            return FiniteQuadFloat(
+            return QuadFloatBase(
+                type=FINITE,
                 sign=False,
                 exponent=cls._format.qmin,
                 significand=0,
@@ -280,7 +311,8 @@ class QuadFloat(object):
         if e > cls._format.qmax:
             return _handle_overflow(sign)
 
-        return FiniteQuadFloat(
+        return QuadFloatBase(
+            type=FINITE,
             sign=sign,
             exponent=e,
             significand=q,
@@ -307,7 +339,8 @@ class QuadFloat(object):
 
             # quick return for zeros
             if not a:
-                return FiniteQuadFloat(
+                return QuadFloatBase(
+                    type=FINITE,
                     sign=sign,
                     exponent=cls._format.qmin,
                     significand=0,
@@ -335,7 +368,8 @@ class QuadFloat(object):
             if e > cls._format.qmax:
                 return _handle_overflow(sign)
 
-            return FiniteQuadFloat(
+            return QuadFloatBase(
+                type=FINITE,
                 sign=sign,
                 exponent=e,
                 significand=q,
@@ -343,7 +377,8 @@ class QuadFloat(object):
 
         elif m.group('infinite'):
             # Infinity.
-            return InfiniteQuadFloat(
+            return QuadFloatBase(
+                type=INFINITE,
                 sign=sign,
             )
 
@@ -360,7 +395,8 @@ class QuadFloat(object):
             elif payload > max_payload:
                 payload = max_payload
 
-            return NanQuadFloat(
+            return QuadFloatBase(
+                type=NAN,
                 sign=sign,
                 signaling=signaling,
                 payload=payload,
@@ -393,7 +429,7 @@ class QuadFloat(object):
             # Infinities, Nans.
             if significand_field == 0:
                 # Infinities.
-                return InfiniteQuadFloat(sign=sign)
+                return QuadFloatBase(type=INFINITE, sign=sign)
             else:
                 # Nan.
                 payload_width = significand_field_width - 1
@@ -403,21 +439,24 @@ class QuadFloat(object):
                 # quiet (1) or signaling (0).
                 assert 0 <= significand_field <= 1
                 signaling = not significand_field
-                return NanQuadFloat(
+                return QuadFloatBase(
+                    type=NAN,
                     sign=sign,
                     payload=payload,
                     signaling=signaling,
                 )
         elif exponent_field == 0:
             # Subnormals, Zeros.
-            return FiniteQuadFloat(
+            return QuadFloatBase(
+                type=FINITE,
                 sign=sign,
                 exponent=cls._format.qmin,
                 significand=significand_field,
             )
         else:
             significand = significand_field + 2 ** (cls._format.precision - 1)
-            return FiniteQuadFloat(
+            return QuadFloatBase(
+                type=FINITE,
                 sign=sign,
                 exponent=exponent_field - cls._format.qbias,
                 significand=significand,
@@ -458,7 +497,7 @@ class QuadFloat(object):
         return self.division(other)
 
 
-class FiniteQuadFloat(QuadFloat):
+class FiniteQuadFloat(QuadFloatBase):
     def __new__(cls, sign, exponent, significand):
         """
         Create a finite QuadFloat from an integer triple.
@@ -600,14 +639,16 @@ class FiniteQuadFloat(QuadFloat):
     # Arithmetic operations.
 
     def negate(self):
-        return FiniteQuadFloat(
+        return QuadFloatBase(
+            type=FINITE,
             sign=not self._sign,
             exponent=self._exponent,
             significand=self._significand,
         )
 
     def abs(self):
-        return FiniteQuadFloat(
+        return QuadFloatBase(
+            type=FINITE,
             sign=False,
             exponent=self._exponent,
             significand=self._significand,
@@ -650,7 +691,8 @@ class FiniteQuadFloat(QuadFloat):
                 return _handle_invalid(snan=other)
             else:
                 # finite * nan -> nan
-                return NanQuadFloat(
+                return QuadFloatBase(
+                    type=NAN,
                     sign=self._sign ^ other._sign,
                     payload=other._payload,
                 )
@@ -661,7 +703,7 @@ class FiniteQuadFloat(QuadFloat):
                 return _handle_invalid()
 
             # non-zero finite * infinity -> infinity
-            return InfiniteQuadFloat(sign=self._sign ^ other._sign)
+            return QuadFloatBase(type=INFINITE, sign=self._sign ^ other._sign)
 
         # finite * finite case.
         sign = self._sign ^ other._sign
@@ -685,14 +727,15 @@ class FiniteQuadFloat(QuadFloat):
             if other.is_zero():
                 return _handle_invalid()
 
-            return FiniteQuadFloat(
+            return QuadFloatBase(
+                type=FINITE,
                 sign=sign,
                 exponent=self._format.qmin,
                 significand=0,
             )
 
         if other.is_zero():
-            return InfiniteQuadFloat(sign=sign)
+            return QuadFloatBase(type=INFINITE, sign=sign)
 
         # First find d such that 2**(d-1) <= abs(self) / abs(other) < 2**d.
         a = self._significand
@@ -731,7 +774,8 @@ class FiniteQuadFloat(QuadFloat):
         if e > self._format.qmax:
             return _handle_overflow(sign)
 
-        return FiniteQuadFloat(
+        return QuadFloatBase(
+            type=FINITE,
             sign=sign,
             exponent=e,
             significand=q,
@@ -742,7 +786,8 @@ class FiniteQuadFloat(QuadFloat):
 
         # Round the value significand * 2**exponent to the format.
         if significand == 0:
-            return FiniteQuadFloat(
+            return QuadFloatBase(
+                type=FINITE,
                 sign=sign,
                 exponent=self._format.qmin,
                 significand=0,
@@ -789,14 +834,15 @@ class FiniteQuadFloat(QuadFloat):
         if e > self._format.qmax:
             return _handle_overflow(sign)
 
-        return FiniteQuadFloat(
+        return QuadFloatBase(
+            type=FINITE,
             sign=sign,
             exponent=e,
             significand=q,
         )
 
 
-class InfiniteQuadFloat(QuadFloat):
+class InfiniteQuadFloat(QuadFloatBase):
     def __new__(cls, sign):
         self = object.__new__(cls)
         self._sign = bool(sign)
@@ -829,10 +875,10 @@ class InfiniteQuadFloat(QuadFloat):
     # Arithmetic operations.
 
     def negate(self):
-        return InfiniteQuadFloat(sign=not self._sign)
+        return QuadFloatBase(type=INFINITE, sign=not self._sign)
 
     def abs(self):
-        return InfiniteQuadFloat(sign=False)
+        return QuadFloatBase(type=INFINITE, sign=False)
 
     def addition(self, other):
         if other.is_nan():
@@ -858,7 +904,8 @@ class InfiniteQuadFloat(QuadFloat):
             if other.is_signaling():
                 return _handle_invalid(snan=other)
             else:
-                return NanQuadFloat(
+                return QuadFloatBase(
+                    type=NAN,
                     sign=self._sign ^ other._sign,
                     payload=other._payload,
                 )
@@ -866,7 +913,7 @@ class InfiniteQuadFloat(QuadFloat):
         elif other.is_infinite() or not other.is_zero():
             # infinity * infinity -> infinity;
             # infinity * nonzero finite -> infinity
-            return InfiniteQuadFloat(sign=self._sign ^ other._sign)
+            return QuadFloatBase(type=INFINITE, sign=self._sign ^ other._sign)
 
         elif other.is_zero():
             return _handle_invalid()
@@ -897,7 +944,7 @@ class InfiniteQuadFloat(QuadFloat):
         )
 
 
-class NanQuadFloat(QuadFloat):
+class NanQuadFloat(QuadFloatBase):
     def __new__(cls, sign=False, payload=0, signaling=False):
         # Payload must be at least 1 for a signaling nan, to avoid confusion
         # with the bit pattern for an infinity.
@@ -913,14 +960,16 @@ class NanQuadFloat(QuadFloat):
     # Arithmetic operations.
 
     def negate(self):
-        return NanQuadFloat(
+        return QuadFloatBase(
+            type=NAN,
             sign=not self._sign,
             payload=self._payload,
             signaling=self._signaling,
         )
 
     def abs(self):
-        return NanQuadFloat(
+        return QuadFloatBase(
+            type=NAN,
             sign=False,
             payload=self._payload,
             signaling=self._signaling,
@@ -940,7 +989,8 @@ class NanQuadFloat(QuadFloat):
         elif other.is_signaling():
             return _handle_invalid(snan=other)
         else:
-            return NanQuadFloat(
+            return QuadFloatBase(
+                type=NAN,
                 sign=self._sign ^ other._sign,
                 payload=self._payload,
             )
