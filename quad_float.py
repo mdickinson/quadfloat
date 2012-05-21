@@ -120,24 +120,24 @@ class BinaryInterchangeFormat(object):
         return BinaryInterchangeFormat._class__cache[self]
 
 
-def _handle_overflow(sign):
+def _handle_overflow(cls, sign):
     """
     Handle an overflow.
 
     """
     # For now, just returns the appropriate infinity.  Someday this should
     # handle rounding modes, flags, etc.
-    return QuadFloatBase(type=_INFINITE, sign=sign)
+    return cls(type=_INFINITE, sign=sign)
 
 
-def _handle_invalid(snan=None):
+def _handle_invalid(cls, snan=None):
     """
     Handle an invalid operation.
 
     """
     if snan is not None:
         # Invalid operation from an snan: quiet the sNaN.
-        return QuadFloatBase(
+        return cls(
             type=_NAN,
             sign=snan._sign,
             payload=snan._payload,
@@ -146,7 +146,7 @@ def _handle_invalid(snan=None):
 
     # For now, just return a quiet NaN.  Someday this should be more
     # sophisticated.
-    return QuadFloatBase(
+    return cls(
         type=_NAN,
         sign=False,
     )
@@ -456,7 +456,7 @@ class BinaryFloatBase(object):
 
         # Overflow.
         if e > cls._format.qmax:
-            return _handle_overflow(sign)
+            return _handle_overflow(cls, sign)
 
         return cls(
             type=_FINITE,
@@ -513,7 +513,7 @@ class BinaryFloatBase(object):
                     e += 1
 
             if e > cls._format.qmax:
-                return _handle_overflow(sign)
+                return _handle_overflow(cls, sign)
 
             return cls(
                 type=_FINITE,
@@ -764,7 +764,7 @@ class BinaryFloatBase(object):
 
         # Overflow.
         if e > cls._format.qmax:
-            return _handle_overflow(sign)
+            return _handle_overflow(cls, sign)
 
         return cls(
             type=_FINITE,
@@ -858,7 +858,7 @@ class BinaryFloatBase(object):
             if other.is_nan():
                 # infinity + nan -> nan
                 if other.is_signaling():
-                    return _handle_invalid(snan=other)
+                    return _handle_invalid(type(self), snan=other)
                 else:
                     return other
 
@@ -867,16 +867,16 @@ class BinaryFloatBase(object):
                 if self._sign == other._sign:
                     return self
                 else:
-                    return _handle_invalid()
+                    return _handle_invalid(type(self))
 
             else:
                 return self
 
         elif self._type == _NAN:
             if self.is_signaling():
-                return _handle_invalid(snan=self)
+                return _handle_invalid(type(self), snan=self)
             elif other.is_signaling():
-                return _handle_invalid(snan=other)
+                return _handle_invalid(type(self), snan=other)
             else:
                 return self
 
@@ -889,7 +889,7 @@ class BinaryFloatBase(object):
 
             if other.is_nan():
                 if other.is_signaling():
-                    return _handle_invalid(snan=other)
+                    return _handle_invalid(type(self), snan=other)
                 else:
                     # finite * nan -> nan
                     return QuadFloatBase(
@@ -901,7 +901,7 @@ class BinaryFloatBase(object):
             elif other.is_infinite():
                 if self.is_zero():
                     # zero * infinity -> nan
-                    return _handle_invalid()
+                    return _handle_invalid(type(self))
 
                 # non-zero finite * infinity -> infinity
                 return QuadFloatBase(type=_INFINITE, sign=self._sign ^ other._sign)
@@ -921,7 +921,7 @@ class BinaryFloatBase(object):
             if other.is_nan():
                 # infinity * nan -> nan
                 if other.is_signaling():
-                    return _handle_invalid(snan=other)
+                    return _handle_invalid(type(self), snan=other)
                 else:
                     return QuadFloatBase(
                         type=_NAN,
@@ -935,13 +935,13 @@ class BinaryFloatBase(object):
                 return QuadFloatBase(type=_INFINITE, sign=self._sign ^ other._sign)
 
             elif other.is_zero():
-                return _handle_invalid()
+                return _handle_invalid(type(self))
 
         elif self._type == _NAN:
             if self.is_signaling():
-                return _handle_invalid(snan=self)
+                return _handle_invalid(type(self), snan=self)
             elif other.is_signaling():
-                return _handle_invalid(snan=other)
+                return _handle_invalid(type(self), snan=other)
             else:
                 return QuadFloatBase(
                     type=_NAN,
@@ -963,7 +963,7 @@ class BinaryFloatBase(object):
 
             if self.is_zero():
                 if other.is_zero():
-                    return _handle_invalid()
+                    return _handle_invalid(type(self))
 
                 return QuadFloatBase(
                     type=_FINITE,
@@ -1010,7 +1010,7 @@ class BinaryFloatBase(object):
 
             # Overflow.
             if e > self._format.qmax:
-                return _handle_overflow(sign)
+                return _handle_overflow(type(self), sign)
 
             return QuadFloatBase(
                 type=_FINITE,
