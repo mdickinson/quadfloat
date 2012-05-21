@@ -1050,6 +1050,3 @@ class BinaryFloatBase(object):
 
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
-
-
-QuadFloat = BinaryInterchangeFormat(width=128)
