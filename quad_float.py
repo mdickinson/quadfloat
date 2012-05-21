@@ -775,7 +775,7 @@ class BinaryFloatBase(object):
 
     def negate(self):
         if self._type == FINITE:
-            return QuadFloatBase(
+            return type(self)(
                 type=FINITE,
                 sign=not self._sign,
                 exponent=self._exponent,
@@ -783,13 +783,13 @@ class BinaryFloatBase(object):
             )
 
         elif self._type == INFINITE:
-            return QuadFloatBase(
+            return type(self)(
                 type=INFINITE,
                 sign=not self._sign,
             )
 
         elif self._type == NAN:
-            return QuadFloatBase(
+            return type(self)(
                 type=NAN,
                 sign=not self._sign,
                 payload=self._payload,
@@ -801,16 +801,19 @@ class BinaryFloatBase(object):
 
     def abs(self):
         if self._type == FINITE:
-            return QuadFloatBase(
+            return type(self)(
                 type=FINITE,
                 sign=False,
                 exponent=self._exponent,
                 significand=self._significand,
             )
         elif self._type == INFINITE:
-            return QuadFloatBase(type=INFINITE, sign=False)
+            return type(self)(
+                type=INFINITE,
+                sign=False,
+            )
         elif self._type == NAN:
-            return QuadFloatBase(
+            return type(self)(
                 type=NAN,
                 sign=False,
                 payload=self._payload,
