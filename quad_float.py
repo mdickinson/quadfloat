@@ -35,6 +35,8 @@ _number_parser = re.compile(r"""        # A numeric string consists of:
 
 
 class BinaryInterchangeFormat(object):
+    _class__cache = {}
+
     def __init__(self, width):
         valid_width = width in {16, 32, 64} or width >= 128 and width % 32 == 0
         if not valid_width:
@@ -43,6 +45,12 @@ class BinaryInterchangeFormat(object):
                 "or a multiple of 32 >= 128."
             )
         self.width = width
+
+    def __eq__(self, other):
+        return self.width == other.width
+
+    def __hash__(self):
+        return hash((BinaryInterchangeFormat, self.width))
 
     @property
     def precision(self):
@@ -94,10 +102,25 @@ class BinaryInterchangeFormat(object):
         #  is irrational).
         return len(str(2 ** self.precision)) + 1
 
+    # XXX better name?
+    @property
+    def class_(self):
+        if self not in BinaryInterchangeFormat._class__cache:
+            class BinaryFormat(BinaryBase):
+                format = self
+            # XXX Set suitable name here.  Perhaps don't allow the user to override, since
+            # this won't make sense for cached classes.
+            BinaryInterchangeFormat._class__cache[self] = BinaryFormat
 
-binary16 = BinaryInterchangeFormat(width=16)
-binary32 = BinaryInterchangeFormat(width=32)
-binary64 = BinaryInterchangeFormat(width=64)
+        return BinaryInterchangeFormat._class__cache[self]
+        
+
+# XXX Better name?
+class BinaryBase(object):
+    pass
+
+
+
 binary128 = BinaryInterchangeFormat(width=128)
 
 
