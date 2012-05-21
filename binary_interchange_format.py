@@ -432,7 +432,7 @@ class _BinaryFloatBase(object):
         sign = _math.copysign(1.0, value) < 0
 
         if _math.isnan(value):
-            # XXX Think about transfering signaling bit and payload.
+            # XXX Think about transferring signaling bit and payload.
             return cls(
                 type=_NAN,
                 sign=sign,
