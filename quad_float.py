@@ -1,5 +1,3 @@
-# XXX Fix all occurrences of 'QuadFloat' in comments, docstrings, ...
-
 import decimal
 import math
 import re
