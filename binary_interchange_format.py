@@ -130,6 +130,29 @@ class BinaryInterchangeFormat(object):
     def division(self, source1, source2):
         return self.class_.division(source1, source2)
 
+    def subtraction(self, source1, source2):
+        """
+        Return the difference source1 - source2.
+
+        """
+        if source1._type == _NAN or source2._type == _NAN:
+            # Look for signaling NaNs.
+            if source1._type == _NAN and source1._signaling:
+                return _handle_invalid(self.class_, snan=source1)
+            elif source2._type == _NAN and source2._signaling:
+                return _handle_invalid(self.class_, snan=source2)
+            # If neither input is a signaling NaN, propagate the
+            # non-signaling NaN.
+            elif source1._type == _NAN:
+                # XXX: Should return something in the correct format.
+                return source1
+            else: # source2._type == _NAN
+                return source2
+
+        # For non-NaNs, subtraction(a, b) is equivalent to
+        # addition(a, b.negate())
+        return self.addition(source1, source2.negate())
+
     def decode(self, encoded_value):
         return self.class_.decode(encoded_value)
 

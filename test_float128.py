@@ -615,10 +615,121 @@ class TestFloat128(unittest.TestCase):
         self.assertInterchangeable(Float128.addition(b, a), Float128('nan(789)'))
 
     def test_subtraction(self):
-        # XXX Needs some tests!
-        # Pay particular attention to handling of NaNs:  subtraction is *not* the
-        # same as addition with the second argument negated if nans are present.
-        pass
+        # Cases where zeros are involved.
+        a = Float128('0.0')
+        b = Float128('0.0')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('0.0'))
+
+        a = Float128('0.0')
+        b = Float128('-0.0')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('0.0'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-0.0'))
+
+        a = Float128('-0.0')
+        b = Float128('-0.0')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('0.0'))
+
+        a = Float128('2.0')
+        b = Float128('0.0')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('2.0'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-2.0'))
+
+        a = Float128('2.0')
+        b = Float128('-2.0')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('4.0'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-4.0'))
+
+        a = Float128('2.0')
+        b = Float128('2.0')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('0.0'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('0.0'))
+
+        a = Float128('2.0')
+        b = Float128('3.0')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-1.0'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('1.0'))
+
+        # Infinities.
+        a = Float128('inf')
+        b = Float128('2.0')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('inf'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-inf'))
+
+        a = Float128('inf')
+        b = Float128('-2.0')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('inf'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-inf'))
+
+        a = Float128('-inf')
+        b = Float128('2.0')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-inf'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('inf'))
+
+        a = Float128('-inf')
+        b = Float128('-2.0')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-inf'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('inf'))
+
+        a = Float128('inf')
+        b = Float128('inf')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('nan'))
+
+        a = Float128('-inf')
+        b = Float128('-inf')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('nan'))
+
+        a = Float128('-inf')
+        b = Float128('inf')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-inf'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('inf'))
+
+        # signaling nans?
+        a = Float128('-snan(123)')
+        b = Float128('2.3')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-nan(123)'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-nan(123)'))
+
+        a = Float128('-snan(123)')
+        b = Float128('nan(456)')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-nan(123)'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-nan(123)'))
+
+        a = Float128('-snan(123)')
+        b = Float128('-inf')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-nan(123)'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-nan(123)'))
+
+        a = Float128('-snan(123)')
+        b = Float128('-2.3')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-nan(123)'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-nan(123)'))
+
+        # first snan wins
+        a = Float128('snan(123)')
+        b = Float128('-snan(456)')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('nan(123)'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-nan(456)'))
+
+        # quiet nans with payload
+        a = Float128('2.0')
+        b = Float128('nan(789)')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('nan(789)'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('nan(789)'))
+
+        a = Float128('-2.0')
+        b = Float128('nan(789)')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('nan(789)'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('nan(789)'))
+
+        a = Float128('inf')
+        b = Float128('nan(789)')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('nan(789)'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('nan(789)'))
+
+        a = Float128('-inf')
+        b = Float128('nan(789)')
+        self.assertInterchangeable(Float128.subtraction(a, b), Float128('nan(789)'))
+        self.assertInterchangeable(Float128.subtraction(b, a), Float128('nan(789)'))
 
     def test_division(self):
         # Finite: check all combinations of signs.
