@@ -51,6 +51,9 @@ class BinaryInterchangeFormat(object):
             )
         self.width = width
 
+    def __repr__(self):
+        return "BinaryInterchangeFormat(width={})".format(self.width)
+
     def __eq__(self, other):
         return self.width == other.width
 
