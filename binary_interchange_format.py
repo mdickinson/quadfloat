@@ -1,7 +1,6 @@
 import decimal as _decimal
 import math as _math
 import re as _re
-import sys as _sys
 
 
 _BINARY_INTERCHANGE_FORMAT_PRECISIONS = {
