@@ -644,7 +644,7 @@ class _BinaryFloatBase(object):
             assert False, "Shouldn't get here."
 
     @classmethod
-    def decode(cls, encoded_value, *, byteorder='little'):
+    def decode(cls, encoded_value, byteorder='little'):
         """
         Decode a string of bytes to the corresponding Float<nnn> instance.
 
@@ -701,7 +701,7 @@ class _BinaryFloatBase(object):
                 significand=significand,
             )
 
-    def encode(self, *, byteorder='little'):
+    def encode(self, byteorder='little'):
         """
         Encode a Float<nnn> instance as a 16-character bytestring.
 
