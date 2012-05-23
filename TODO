@@ -1,8 +1,32 @@
-# Implement short float repr.
-# Remove dependence on decimal.
-# Factor out repeated rounding code.
-# Add operator overloads, with suitable semantics.
-# Tests for subtraction.
-# Be consistent about internal uses of is_finite, is_infinite versus ._type tests.
-# Float64 tests: random tests comparing with float.
-# Cache zeros, make use of them (format method for zeros?)
+Bugs
+----
+
+* Fix nan handling: should shorten payloads when necessary.
+
+Features
+--------
+
+* Implement short float repr.
+
+* Add operator overloads, with suitable semantics for guessing output type.
+
+* Make code Python 2 / Python 3 agnostic.  (Means dropping the keyword-only
+  arguments for encode and decode.  Oh well.)
+
+Internal refactoring
+--------------------
+
+* Remove dependence on decimal.
+
+* Factor out repeated rounding code.
+
+* Be consistent about internal uses of is_finite, is_infinite versus ._type
+  tests.
+
+* Cache zeros, make use of them (format method for zeros?)
+
+
+Tests
+-----
+
+* Float64 tests: random tests comparing with float.
