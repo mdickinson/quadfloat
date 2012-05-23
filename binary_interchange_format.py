@@ -138,9 +138,9 @@ class BinaryInterchangeFormat(object):
         if source1._type == _NAN or source2._type == _NAN:
             # Look for signaling NaNs.
             if source1._type == _NAN and source1._signaling:
-                return _handle_invalid(self.class_, snan=source1)
+                return self.class_._handle_invalid(snan=source1)
             elif source2._type == _NAN and source2._signaling:
-                return _handle_invalid(self.class_, snan=source2)
+                return self.class_._handle_invalid(snan=source2)
             # If neither input is a signaling NaN, propagate the
             # non-signaling NaN.
             elif source1._type == _NAN:
@@ -155,38 +155,6 @@ class BinaryInterchangeFormat(object):
 
     def decode(self, encoded_value):
         return self.class_.decode(encoded_value)
-
-
-def _handle_overflow(cls, sign):
-    """
-    Handle an overflow.
-
-    """
-    # For now, just returns the appropriate infinity.  Someday this should
-    # handle rounding modes, flags, etc.
-    return cls(type=_INFINITE, sign=sign)
-
-
-def _handle_invalid(cls, snan=None):
-    """
-    Handle an invalid operation.
-
-    """
-    if snan is not None:
-        # Invalid operation from an snan: quiet the sNaN.
-        return cls(
-            type=_NAN,
-            sign=snan._sign,
-            payload=snan._payload,
-            signaling=False,
-        )
-
-    # For now, just return a quiet NaN.  Someday this should be more
-    # sophisticated.
-    return cls(
-        type=_NAN,
-        sign=False,
-    )
 
 
 class _BinaryFloatBase(object):
@@ -495,7 +463,7 @@ class _BinaryFloatBase(object):
                 e += 1
 
         if e > cls._format.qmax:
-            return _handle_overflow(cls, sign)
+            return cls._handle_overflow(sign)
 
         return cls(
             type=_FINITE,
@@ -548,7 +516,7 @@ class _BinaryFloatBase(object):
 
         # Overflow.
         if e > cls._format.qmax:
-            return _handle_overflow(cls, sign)
+            return cls._handle_overflow(sign)
 
         return cls(
             type=_FINITE,
@@ -605,7 +573,7 @@ class _BinaryFloatBase(object):
                     e += 1
 
             if e > cls._format.qmax:
-                return _handle_overflow(cls, sign)
+                return cls._handle_overflow(sign)
 
             return cls(
                 type=_FINITE,
@@ -836,7 +804,7 @@ class _BinaryFloatBase(object):
 
         # Overflow.
         if e > cls._format.qmax:
-            return _handle_overflow(cls, sign)
+            return cls._handle_overflow(sign)
 
         return cls(
             type=_FINITE,
@@ -902,7 +870,7 @@ class _BinaryFloatBase(object):
 
             elif other._type == _NAN:
                 if other.is_signaling():
-                    return _handle_invalid(cls, snan=other)
+                    return cls._handle_invalid(snan=other)
                 else:
                     # finite * nan -> nan
                     return other
@@ -933,7 +901,7 @@ class _BinaryFloatBase(object):
             if other.is_nan():
                 # infinity + nan -> nan
                 if other.is_signaling():
-                    return _handle_invalid(cls, snan=other)
+                    return cls._handle_invalid(snan=other)
                 else:
                     return other
 
@@ -942,16 +910,16 @@ class _BinaryFloatBase(object):
                 if self._sign == other._sign:
                     return self
                 else:
-                    return _handle_invalid(cls)
+                    return cls._handle_invalid()
 
             else:
                 return self
 
         elif self._type == _NAN:
             if self._signaling:
-                return _handle_invalid(cls, snan=self)
+                return cls._handle_invalid(snan=self)
             elif other._type == _NAN and other._signaling:
-                return _handle_invalid(cls, snan=other)
+                return cls._handle_invalid(snan=other)
             else:
                 return self
 
@@ -964,7 +932,7 @@ class _BinaryFloatBase(object):
 
             if other._type == _NAN:
                 if other.is_signaling():
-                    return _handle_invalid(cls, snan=other)
+                    return cls._handle_invalid(snan=other)
                 else:
                     # finite * nan -> nan
                     return other
@@ -972,7 +940,7 @@ class _BinaryFloatBase(object):
             elif other.is_infinite():
                 if self.is_zero():
                     # zero * infinity -> nan
-                    return _handle_invalid(cls)
+                    return cls._handle_invalid()
 
                 # non-zero finite * infinity -> infinity
                 return cls(type=_INFINITE, sign=self._sign ^ other._sign)
@@ -992,7 +960,7 @@ class _BinaryFloatBase(object):
             if other.is_nan():
                 # infinity * nan -> nan
                 if other.is_signaling():
-                    return _handle_invalid(cls, snan=other)
+                    return cls._handle_invalid(snan=other)
                 else:
                     return other
 
@@ -1002,13 +970,13 @@ class _BinaryFloatBase(object):
                 return cls(type=_INFINITE, sign=self._sign ^ other._sign)
 
             elif other.is_zero():
-                return _handle_invalid(cls)
+                return cls._handle_invalid()
 
         elif self._type == _NAN:
             if self._signaling:
-                return _handle_invalid(cls, snan=self)
+                return cls._handle_invalid(snan=self)
             elif other._type == _NAN and other._signaling:
-                return _handle_invalid(cls, snan=other)
+                return cls._handle_invalid(snan=other)
             else:
                 return self
 
@@ -1020,7 +988,7 @@ class _BinaryFloatBase(object):
         if self._type == _FINITE:
             if other._type == _NAN:
                 if other._signaling:
-                    return _handle_invalid(cls, snan=other)
+                    return cls._handle_invalid(snan=other)
                 else:
                     return other
 
@@ -1038,7 +1006,7 @@ class _BinaryFloatBase(object):
 
             if self.is_zero():
                 if other.is_zero():
-                    return _handle_invalid(cls)
+                    return cls._handle_invalid()
 
                 return cls(
                     type=_FINITE,
@@ -1085,7 +1053,7 @@ class _BinaryFloatBase(object):
 
             # Overflow.
             if e > self._format.qmax:
-                return _handle_overflow(cls, sign)
+                return cls._handle_overflow(sign)
 
             return cls(
                 type=_FINITE,
@@ -1096,12 +1064,12 @@ class _BinaryFloatBase(object):
         elif self._type == _INFINITE:
             if other._type == _NAN:
                 if other._signaling:
-                    return _handle_invalid(cls, snan=other)
+                    return cls._handle_invalid(snan=other)
                 else:
                     return other
 
             elif other._type == _INFINITE:
-                return _handle_invalid(cls)
+                return cls._handle_invalid()
 
             # infinite / finite -> infinite
             elif other._type == _FINITE:
@@ -1115,9 +1083,9 @@ class _BinaryFloatBase(object):
 
         elif self._type == _NAN:
             if self._signaling:
-                return _handle_invalid(cls, snan=self)
+                return cls._handle_invalid(snan=self)
             elif other._type == _NAN and other._signaling:
-                return _handle_invalid(cls, snan=other)
+                return cls._handle_invalid(snan=other)
             else:
                 return self
 
@@ -1129,3 +1097,37 @@ class _BinaryFloatBase(object):
 
     def __abs__(self):
         return self.abs()
+
+    @classmethod
+    def _handle_overflow(cls, sign):
+        """
+        Handle an overflow.
+
+        """
+        # For now, just returns the appropriate infinity.  Someday this should
+        # handle rounding modes, flags, etc.
+        return cls(type=_INFINITE, sign=sign)
+
+    @classmethod
+    def _handle_invalid(cls, snan=None):
+        """
+        Handle an invalid operation.
+
+        """
+        if snan is not None:
+            # Invalid operation from an snan: quiet the sNaN.
+            return cls(
+                type=_NAN,
+                sign=snan._sign,
+                payload=snan._payload,
+                signaling=False,
+            )
+
+        # For now, just return a quiet NaN.  Someday this should be more
+        # sophisticated.
+        return cls(
+            type=_NAN,
+            sign=False,
+        )
+
+
