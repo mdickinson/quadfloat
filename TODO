@@ -10,9 +10,6 @@ Features
 
 * Add operator overloads, with suitable semantics for guessing output type.
 
-* Make code Python 2 / Python 3 agnostic.  (Means dropping the keyword-only
-  arguments for encode and decode.  Oh well.)
-
 Internal refactoring
 --------------------
 

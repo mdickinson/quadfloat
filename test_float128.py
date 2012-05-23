@@ -67,22 +67,22 @@ class TestFloat128(unittest.TestCase):
         q = Float128('3.2e-4966')
         self.assertEqual(
             q.encode(),
-            (0).to_bytes(length=16, byteorder='little'),
+            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
         )
         q = Float128('3.3e-4966')
         self.assertEqual(
             q.encode(),
-            (1).to_bytes(length=16, byteorder='little'),
+            b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
         )
         q = Float128('-3.2e-4966')
         self.assertEqual(
             q.encode(),
-            (2 ** 127).to_bytes(length=16, byteorder='little'),
+            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80',
         )
         q = Float128('-3.3e-4966')
         self.assertEqual(
             q.encode(),
-            (1 + 2 ** 127).to_bytes(length=16, byteorder='little'),
+            b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80',
         )
 
         # Huge values.

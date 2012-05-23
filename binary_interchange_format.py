@@ -1,6 +1,26 @@
 import decimal as _decimal
 import math as _math
 import re as _re
+import sys as _sys
+
+
+# Python 2 / 3 compatibility code.
+
+if _sys.version_info.major == 2:
+    _STRING_TYPES = basestring,
+    _INTEGER_TYPES = (int, long)
+
+    import binascii as _binascii
+    def _int_to_bytes(n, length):
+        return _binascii.unhexlify(format(n, '0{}x'.format(2*length)))[::-1]
+    def _int_from_bytes(bs):
+        return int(_binascii.hexlify(bs[::-1]), 16)
+
+else:
+    _STRING_TYPES = str,
+    _INTEGER_TYPES = int,
+    _int_to_bytes = lambda n, length: n.to_bytes(length, byteorder='little')
+    _int_from_bytes= lambda bs: int.from_bytes(bs, byteorder='little')
 
 
 _BINARY_INTERCHANGE_FORMAT_PRECISIONS = {
@@ -55,6 +75,10 @@ class BinaryInterchangeFormat(object):
 
     def __eq__(self, other):
         return self.width == other.width
+
+    if _sys.version_info.major == 2:
+        def __ne__(self, other):
+            return not (self == other)
 
     def __hash__(self):
         return hash((BinaryInterchangeFormat, self.width))
@@ -281,11 +305,11 @@ class _BinaryFloatBase(object):
             # Initialize from a float.
             return cls._from_float(value)
 
-        elif isinstance(value, int):
+        elif isinstance(value, _INTEGER_TYPES):
             # Initialize from an integer.
             return cls._from_int(value)
 
-        elif isinstance(value, str):
+        elif isinstance(value, _STRING_TYPES):
             # Initialize from a string.
             return cls._from_str(value)
 
@@ -644,7 +668,7 @@ class _BinaryFloatBase(object):
             assert False, "Shouldn't get here."
 
     @classmethod
-    def decode(cls, encoded_value, byteorder='little'):
+    def decode(cls, encoded_value):
         """
         Decode a string of bytes to the corresponding Float<nnn> instance.
 
@@ -653,7 +677,7 @@ class _BinaryFloatBase(object):
         significand_field_width = cls._format.precision - 1
 
         # Extract fields.
-        equivalent_int = int.from_bytes(encoded_value, byteorder=byteorder)
+        equivalent_int = _int_from_bytes(encoded_value)
         significand_field = equivalent_int & (2 ** significand_field_width - 1)
         equivalent_int >>= significand_field_width
         exponent_field = equivalent_int & (2 ** exponent_field_width - 1)
@@ -701,7 +725,7 @@ class _BinaryFloatBase(object):
                 significand=significand,
             )
 
-    def encode(self, byteorder='little'):
+    def encode(self):
         """
         Encode a Float<nnn> instance as a 16-character bytestring.
 
@@ -727,11 +751,6 @@ class _BinaryFloatBase(object):
                 significand_field
             )
 
-            return equivalent_int.to_bytes(
-                self._format.width // 8,
-                byteorder=byteorder,
-            )
-
         elif self._type == _INFINITE:
 
             exponent_field_width = self._format._exponent_field_width
@@ -744,11 +763,6 @@ class _BinaryFloatBase(object):
                 (self._sign << (exponent_field_width + significand_field_width)) +
                 (exponent_field << (significand_field_width)) +
                 significand_field
-            )
-
-            return equivalent_int.to_bytes(
-                self._format.width // 8,
-                byteorder=byteorder,
             )
 
         elif self._type == _NAN:
@@ -772,13 +786,10 @@ class _BinaryFloatBase(object):
                 significand_field
             )
 
-            return equivalent_int.to_bytes(
-                self._format.width // 8,
-                byteorder=byteorder,
-            )
-
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
+
+        return _int_to_bytes(equivalent_int, self._format.width // 8)
 
     # Binary operations.
 
