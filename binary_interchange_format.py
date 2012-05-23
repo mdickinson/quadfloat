@@ -121,13 +121,54 @@ class BinaryInterchangeFormat(object):
 
         return BinaryInterchangeFormat._class__cache[self]
 
+    def _from_nan(self, source):
+        """
+        Convert a NaN (possibly in a different format) to this format.
+
+        Silently truncates the payload to fit when necessary.  Also converts a signaling
+        NaN to a quiet NaN.
+
+        """
+        max_payload = 2 ** (self.precision - 2) - 1
+
+        return self.class_(
+            type=_NAN,
+            sign = source._sign,
+            signaling=False,
+            payload = min(source._payload, max_payload),
+        )
+            
+    def _handle_nans(self, source1, source2):
+        assert source1._type == _NAN or source2._type == _NAN
+
+        if source1._type == _NAN and source1._signaling:
+            return self._from_nan(source1)
+        elif source2._type == _NAN and source2._signaling:
+            return self._from_nan(source2)
+        # If neither input is a signaling NaN, propagate the
+        # non-signaling NaN.
+        elif source1._type == _NAN:
+            # XXX: Should return something in the correct format.
+            return self._from_nan(source1)
+        else: # source2._type == _NAN
+            return self._from_nan(source2)
+
     def addition(self, source1, source2):
+        if source1._type == _NAN or source2._type == _NAN:
+            return self._handle_nans(source1, source2)
+
         return self.class_.addition(source1, source2)
 
     def multiplication(self, source1, source2):
+        if source1._type == _NAN or source2._type == _NAN:
+            return self._handle_nans(source1, source2)
+
         return self.class_.multiplication(source1, source2)
 
     def division(self, source1, source2):
+        if source1._type == _NAN or source2._type == _NAN:
+            return self._handle_nans(source1, source2)
+
         return self.class_.division(source1, source2)
 
     def subtraction(self, source1, source2):
@@ -136,18 +177,7 @@ class BinaryInterchangeFormat(object):
 
         """
         if source1._type == _NAN or source2._type == _NAN:
-            # Look for signaling NaNs.
-            if source1._type == _NAN and source1._signaling:
-                return self.class_._handle_invalid(snan=source1)
-            elif source2._type == _NAN and source2._signaling:
-                return self.class_._handle_invalid(snan=source2)
-            # If neither input is a signaling NaN, propagate the
-            # non-signaling NaN.
-            elif source1._type == _NAN:
-                # XXX: Should return something in the correct format.
-                return source1
-            else: # source2._type == _NAN
-                return source2
+            return self._handle_nans(source1, source2)
 
         # For non-NaNs, subtraction(a, b) is equivalent to
         # addition(a, b.negate())
@@ -864,17 +894,12 @@ class _BinaryFloatBase(object):
 
     @classmethod
     def addition(cls, self, other):
+        assert not self._type == _NAN and not other._type == _NAN
+
         if self._type == _FINITE:
             if other._type == _INFINITE:
                 return other
 
-            elif other._type == _NAN:
-                if other.is_signaling():
-                    return cls._handle_invalid(snan=other)
-                else:
-                    # finite * nan -> nan
-                    return other
-                 
             # Finite case.
             #
             # XXX To do: optimize for the case that the exponents are
@@ -898,14 +923,7 @@ class _BinaryFloatBase(object):
             )
 
         elif self._type == _INFINITE:
-            if other.is_nan():
-                # infinity + nan -> nan
-                if other.is_signaling():
-                    return cls._handle_invalid(snan=other)
-                else:
-                    return other
-
-            elif other.is_infinite():
+            if other._type == _INFINITE:
                 # same sign -> infinity; opposite signs -> nan
                 if self._sign == other._sign:
                     return self
@@ -915,29 +933,16 @@ class _BinaryFloatBase(object):
             else:
                 return self
 
-        elif self._type == _NAN:
-            if self._signaling:
-                return cls._handle_invalid(snan=self)
-            elif other._type == _NAN and other._signaling:
-                return cls._handle_invalid(snan=other)
-            else:
-                return self
-
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
 
     @classmethod
     def multiplication(cls, self, other):
+        assert not self._type == _NAN and not other._type == _NAN
+
         if self._type == _FINITE:
 
-            if other._type == _NAN:
-                if other.is_signaling():
-                    return cls._handle_invalid(snan=other)
-                else:
-                    # finite * nan -> nan
-                    return other
-
-            elif other.is_infinite():
+            if other.is_infinite():
                 if self.is_zero():
                     # zero * infinity -> nan
                     return cls._handle_invalid()
@@ -957,14 +962,7 @@ class _BinaryFloatBase(object):
             )
 
         elif self._type == _INFINITE:
-            if other.is_nan():
-                # infinity * nan -> nan
-                if other.is_signaling():
-                    return cls._handle_invalid(snan=other)
-                else:
-                    return other
-
-            elif other.is_infinite() or not other.is_zero():
+            if other.is_infinite() or not other.is_zero():
                 # infinity * infinity -> infinity;
                 # infinity * nonzero finite -> infinity
                 return cls(type=_INFINITE, sign=self._sign ^ other._sign)
@@ -972,27 +970,15 @@ class _BinaryFloatBase(object):
             elif other.is_zero():
                 return cls._handle_invalid()
 
-        elif self._type == _NAN:
-            if self._signaling:
-                return cls._handle_invalid(snan=self)
-            elif other._type == _NAN and other._signaling:
-                return cls._handle_invalid(snan=other)
-            else:
-                return self
-
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
 
     @classmethod
     def division(cls, self, other):
-        if self._type == _FINITE:
-            if other._type == _NAN:
-                if other._signaling:
-                    return cls._handle_invalid(snan=other)
-                else:
-                    return other
+        assert not self._type == _NAN and not other._type == _NAN
 
-            elif other._type == _INFINITE:
+        if self._type == _FINITE:
+            if other._type == _INFINITE:
                 # finite / infinite -> zero
                 return cls(
                     type=_FINITE,
@@ -1062,13 +1048,7 @@ class _BinaryFloatBase(object):
                 significand=q,
             )
         elif self._type == _INFINITE:
-            if other._type == _NAN:
-                if other._signaling:
-                    return cls._handle_invalid(snan=other)
-                else:
-                    return other
-
-            elif other._type == _INFINITE:
+            if other._type == _INFINITE:
                 return cls._handle_invalid()
 
             # infinite / finite -> infinite
@@ -1080,14 +1060,6 @@ class _BinaryFloatBase(object):
 
             else:
                 raise ValueError("invalid _type attribute: {}".format(other._type))
-
-        elif self._type == _NAN:
-            if self._signaling:
-                return cls._handle_invalid(snan=self)
-            elif other._type == _NAN and other._signaling:
-                return cls._handle_invalid(snan=other)
-            else:
-                return self
 
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
