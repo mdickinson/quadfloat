@@ -1016,7 +1016,7 @@ class _BinaryFloatBase(object):
                 return cls(
                     type=_FINITE,
                     sign=self._sign ^ other._sign,
-                    exponent=self._format.qmin,
+                    exponent=cls._format.qmin,
                     significand=0,
                 )
 
@@ -1030,7 +1030,7 @@ class _BinaryFloatBase(object):
                 return cls(
                     type=_FINITE,
                     sign=sign,
-                    exponent=self._format.qmin,
+                    exponent=cls._format.qmin,
                     significand=0,
                 )
 
@@ -1045,7 +1045,7 @@ class _BinaryFloatBase(object):
             d += self._exponent - other._exponent
 
             # Exponent of result.
-            e = max(d - self._format.precision, self._format.qmin)
+            e = max(d - cls._format.precision, cls._format.qmin)
 
             # Round (self / other) * 2**-e to nearest integer.
             # self / other * 2**-e == self._significand / other._significand * 2**shift, where...
@@ -1058,20 +1058,20 @@ class _BinaryFloatBase(object):
             # Now result approximated by (-1)**sign * q * 2**e.
             # Double check parameters.
             assert sign in (0, 1)
-            assert e >= self._format.qmin
-            assert q.bit_length() <= self._format.precision
-            assert e == self._format.qmin or q.bit_length() == self._format.precision
+            assert e >= cls._format.qmin
+            assert q.bit_length() <= cls._format.precision
+            assert e == cls._format.qmin or q.bit_length() == cls._format.precision
             assert 0 <= rtype <= 3
 
             # Round.
             if rtype == 3 or rtype == 2 and q & 1:
                 q += 1
-                if q.bit_length() == self._format.precision + 1:
+                if q.bit_length() == cls._format.precision + 1:
                     q //= 2
                     e += 1
 
             # Overflow.
-            if e > self._format.qmax:
+            if e > cls._format.qmax:
                 return cls._handle_overflow(sign)
 
             return cls(
