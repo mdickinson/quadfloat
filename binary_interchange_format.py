@@ -183,22 +183,198 @@ class BinaryInterchangeFormat(object):
             return self._from_nan(source2)
 
     def addition(self, source1, source2):
+        """
+        Return 'source1 + source2', rounded to the format given by 'self'.
+
+        """
+        cls = self.class_
         if source1._type == _NAN or source2._type == _NAN:
             return self._handle_nans(source1, source2)
 
-        return self.class_.addition(source1, source2)
+        if source1._type == _FINITE:
+            if source2._type == _INFINITE:
+                return source2
+
+            exponent = min(source1._exponent, source2._exponent)
+            significand = (
+                (source1._significand * (-1) ** source1._sign <<
+                 source1._exponent - exponent) +
+                (source2._significand * (-1) ** source2._sign <<
+                 source2._exponent - exponent)
+            )
+            sign = (significand < 0 or
+                    significand == 0 and source1._sign and source2._sign)
+
+            return cls._round_from_triple(
+                sign=sign,
+                exponent=exponent,
+                significand=abs(significand),
+            )
+
+        elif source1._type == _INFINITE:
+            if source2._type == _INFINITE:
+                # same sign -> infinity; opposite signs -> nan
+                if source1._sign == source2._sign:
+                    return source1
+                else:
+                    return cls._handle_invalid()
+
+            else:
+                return source1
+
+        else:
+            raise ValueError(
+                "invalid _type attribute: {}".format(source1._type)
+            )
 
     def multiplication(self, source1, source2):
+        """
+        Return 'source1 * source2', rounded to the format given by 'self'.
+
+        """
         if source1._type == _NAN or source2._type == _NAN:
             return self._handle_nans(source1, source2)
 
-        return self.class_.multiplication(source1, source2)
+        cls = self.class_
+        if source1._type == _FINITE:
+
+            if source2.is_infinite():
+                if source1.is_zero():
+                    # zero * infinity -> nan
+                    return cls._handle_invalid()
+
+                # non-zero finite * infinity -> infinity
+                return cls(type=_INFINITE, sign=source1._sign ^ source2._sign)
+
+            # finite * finite case.
+            sign = source1._sign ^ source2._sign
+            significand = source1._significand * source2._significand
+            exponent = source1._exponent + source2._exponent
+
+            return cls._round_from_triple(
+                sign=sign,
+                exponent=exponent,
+                significand=significand,
+            )
+
+        elif source1._type == _INFINITE:
+            if source2.is_infinite() or not source2.is_zero():
+                # infinity * infinity -> infinity;
+                # infinity * nonzero finite -> infinity
+                return cls(type=_INFINITE, sign=source1._sign ^ source2._sign)
+
+            elif source2.is_zero():
+                return cls._handle_invalid()
+
+        else:
+            raise ValueError(
+                "invalid _type attribute: {}".format(source1._type)
+            )
 
     def division(self, source1, source2):
+        """
+        Return 'source1 / source2', rounded to the format given by 'self'.
+
+        """
         if source1._type == _NAN or source2._type == _NAN:
             return self._handle_nans(source1, source2)
 
-        return self.class_.division(source1, source2)
+        cls = self.class_
+        if source1._type == _FINITE:
+            if source2._type == _INFINITE:
+                # finite / infinite -> zero
+                return cls(
+                    type=_FINITE,
+                    sign=source1._sign ^ source2._sign,
+                    exponent=cls._format.qmin,
+                    significand=0,
+                )
+
+            # Finite / finite case.
+            sign = source1._sign ^ source2._sign
+
+            if source1.is_zero():
+                if source2.is_zero():
+                    return cls._handle_invalid()
+
+                return cls(
+                    type=_FINITE,
+                    sign=sign,
+                    exponent=cls._format.qmin,
+                    significand=0,
+                )
+
+            if source2.is_zero():
+                return cls(type=_INFINITE, sign=sign)
+
+            # First find d such that 2**(d-1) <= abs(source1) / abs(source2) <
+            # 2**d.
+            a = source1._significand
+            b = source2._significand
+            d = a.bit_length() - b.bit_length()
+            d += (a >> d if d >= 0 else a << -d) >= b
+            d += source1._exponent - source2._exponent
+
+            # Exponent of result.
+            e = max(d - cls._format.precision, cls._format.qmin)
+
+            # Round (source1 / source2) * 2**-e to nearest integer.  source1 /
+            # source2 * 2**-e == source1._significand / source2._significand *
+            # 2**shift, where...
+            shift = source1._exponent - source2._exponent - e
+
+            a, b = a << max(shift, 0), b << max(0, -shift)
+            q, r = divmod(a, b)
+            rtype = 2 * (2 * r > b) + (r != 0)
+
+            # Now result approximated by (-1)**sign * q * 2**e.
+            # Double check parameters.
+            assert sign in (0, 1)
+            assert e >= cls._format.qmin
+            assert q.bit_length() <= cls._format.precision
+            assert (
+                e == cls._format.qmin or
+                q.bit_length() == cls._format.precision
+            )
+            assert 0 <= rtype <= 3
+
+            # Round.
+            if rtype == 3 or rtype == 2 and q & 1:
+                q += 1
+                if q.bit_length() == cls._format.precision + 1:
+                    q //= 2
+                    e += 1
+
+            # Overflow.
+            if e > cls._format.qmax:
+                return cls._handle_overflow(sign)
+
+            return cls(
+                type=_FINITE,
+                sign=sign,
+                exponent=e,
+                significand=q,
+            )
+        elif source1._type == _INFINITE:
+            if source2._type == _INFINITE:
+                return cls._handle_invalid()
+
+            # infinite / finite -> infinite
+            elif source2._type == _FINITE:
+                return cls(
+                    type=_INFINITE,
+                    sign=source1._sign ^ source2._sign,
+                )
+
+            else:
+                raise ValueError(
+                    "invalid _type attribute: {}".format(source2._type)
+                )
+
+        else:
+            raise ValueError(
+                "invalid _type attribute: {}".format(source1._type)
+            )
 
     def subtraction(self, source1, source2):
         """
@@ -899,184 +1075,6 @@ class _BinaryFloatBase(object):
                 payload=self._payload,
                 signaling=self._signaling,
             )
-        else:
-            raise ValueError("invalid _type attribute: {}".format(self._type))
-
-    @classmethod
-    def addition(cls, self, other):
-        assert not self._type == _NAN and not other._type == _NAN
-
-        if self._type == _FINITE:
-            if other._type == _INFINITE:
-                return other
-
-            # Finite case.
-            #
-            # XXX To do: optimize for the case that the exponents are
-            # significantly different.  XXX. Sign is incorrect for some
-            # rounding modes.
-
-            exponent = min(self._exponent, other._exponent)
-            significand = (
-                (self._significand * (-1) ** self._sign <<
-                 self._exponent - exponent) +
-                (other._significand * (-1) ** other._sign <<
-                 other._exponent - exponent)
-            )
-            sign = (significand < 0 or
-                    significand == 0 and self._sign and other._sign)
-
-            return cls._round_from_triple(
-                sign=sign,
-                exponent=exponent,
-                significand=abs(significand),
-            )
-
-        elif self._type == _INFINITE:
-            if other._type == _INFINITE:
-                # same sign -> infinity; opposite signs -> nan
-                if self._sign == other._sign:
-                    return self
-                else:
-                    return cls._handle_invalid()
-
-            else:
-                return self
-
-        else:
-            raise ValueError("invalid _type attribute: {}".format(self._type))
-
-    @classmethod
-    def multiplication(cls, self, other):
-        assert not self._type == _NAN and not other._type == _NAN
-
-        if self._type == _FINITE:
-
-            if other.is_infinite():
-                if self.is_zero():
-                    # zero * infinity -> nan
-                    return cls._handle_invalid()
-
-                # non-zero finite * infinity -> infinity
-                return cls(type=_INFINITE, sign=self._sign ^ other._sign)
-
-            # finite * finite case.
-            sign = self._sign ^ other._sign
-            significand = self._significand * other._significand
-            exponent = self._exponent + other._exponent
-
-            return cls._round_from_triple(
-                sign=sign,
-                exponent=exponent,
-                significand=significand,
-            )
-
-        elif self._type == _INFINITE:
-            if other.is_infinite() or not other.is_zero():
-                # infinity * infinity -> infinity;
-                # infinity * nonzero finite -> infinity
-                return cls(type=_INFINITE, sign=self._sign ^ other._sign)
-
-            elif other.is_zero():
-                return cls._handle_invalid()
-
-        else:
-            raise ValueError("invalid _type attribute: {}".format(self._type))
-
-    @classmethod
-    def division(cls, self, other):
-        assert not self._type == _NAN and not other._type == _NAN
-
-        if self._type == _FINITE:
-            if other._type == _INFINITE:
-                # finite / infinite -> zero
-                return cls(
-                    type=_FINITE,
-                    sign=self._sign ^ other._sign,
-                    exponent=cls._format.qmin,
-                    significand=0,
-                )
-
-            # Finite / finite case.
-            sign = self._sign ^ other._sign
-
-            if self.is_zero():
-                if other.is_zero():
-                    return cls._handle_invalid()
-
-                return cls(
-                    type=_FINITE,
-                    sign=sign,
-                    exponent=cls._format.qmin,
-                    significand=0,
-                )
-
-            if other.is_zero():
-                return cls(type=_INFINITE, sign=sign)
-
-            # First find d such that 2**(d-1) <= abs(self) / abs(other) < 2**d.
-            a = self._significand
-            b = other._significand
-            d = a.bit_length() - b.bit_length()
-            d += (a >> d if d >= 0 else a << -d) >= b
-            d += self._exponent - other._exponent
-
-            # Exponent of result.
-            e = max(d - cls._format.precision, cls._format.qmin)
-
-            # Round (self / other) * 2**-e to nearest integer.  self / other *
-            # 2**-e == self._significand / other._significand * 2**shift,
-            # where...
-            shift = self._exponent - other._exponent - e
-
-            a, b = a << max(shift, 0), b << max(0, -shift)
-            q, r = divmod(a, b)
-            rtype = 2 * (2 * r > b) + (r != 0)
-
-            # Now result approximated by (-1)**sign * q * 2**e.
-            # Double check parameters.
-            assert sign in (0, 1)
-            assert e >= cls._format.qmin
-            assert q.bit_length() <= cls._format.precision
-            assert (
-                e == cls._format.qmin or
-                q.bit_length() == cls._format.precision
-            )
-            assert 0 <= rtype <= 3
-
-            # Round.
-            if rtype == 3 or rtype == 2 and q & 1:
-                q += 1
-                if q.bit_length() == cls._format.precision + 1:
-                    q //= 2
-                    e += 1
-
-            # Overflow.
-            if e > cls._format.qmax:
-                return cls._handle_overflow(sign)
-
-            return cls(
-                type=_FINITE,
-                sign=sign,
-                exponent=e,
-                significand=q,
-            )
-        elif self._type == _INFINITE:
-            if other._type == _INFINITE:
-                return cls._handle_invalid()
-
-            # infinite / finite -> infinite
-            elif other._type == _FINITE:
-                return cls(
-                    type=_INFINITE,
-                    sign=self._sign ^ other._sign,
-                )
-
-            else:
-                raise ValueError(
-                    "invalid _type attribute: {}".format(other._type)
-                )
-
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
 
