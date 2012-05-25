@@ -1171,10 +1171,11 @@ class _BinaryFloatBase(object):
         return common_format.division(other, self)
 
     if _sys.version_info.major == 2:
+        # Make sure that Python 2 divisions involving these types behave the
+        # same way regardless of whether the division __future__ import is in
+        # effect or not.
         __div__ = __truediv__
         __rdiv__ = __rtruediv__
-
-
 
     @classmethod
     def _handle_overflow(cls, sign):
