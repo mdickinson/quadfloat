@@ -166,6 +166,67 @@ class BinaryInterchangeFormat(object):
             payload=min(source._payload, max_payload),
         )
 
+    def _round_from_triple(self, sign, exponent, significand):
+
+        cls = self.class_
+
+        # Round the value significand * 2**exponent to the format.
+        if significand == 0:
+            return cls(
+                type=_FINITE,
+                sign=sign,
+                exponent=cls._format.qmin,
+                significand=0,
+            )
+
+        # ... first find exponent of result.
+
+        # d satisfies 2**(d-1) <= significand * 2 ** exponent < 2**d.
+        d = exponent + significand.bit_length()
+
+        # Exponent of result.
+        e = max(d - cls._format.precision, cls._format.qmin)
+
+        # significand * 2**exponent ~ q * 2**e.
+        # significand * 2**(exponent - e) ~ q
+        shift = exponent - e
+        if shift >= 0:
+            q = significand << shift
+            rtype = 0
+        else:
+            q = significand >> -shift
+            r = significand & ((1 << -shift) - 1)
+
+            # Classify r: 0 if exact, 2 if exact halfway, 1 / 3 for low / high
+            if r > (1 << (-shift - 1)):
+                rtype = 3
+            elif r == (1 << (-shift - 1)):
+                rtype = 2
+            elif r > 0:
+                rtype = 1
+            else:
+                rtype = 0
+
+        assert q.bit_length() <= cls._format.precision
+
+        # Round.
+        if rtype == 3 or rtype == 2 and q & 1:
+            q += 1
+            if q.bit_length() == cls._format.precision + 1:
+                q //= 2
+                e += 1
+
+        # Overflow.
+        if e > self.qmax:
+            return self._handle_overflow(sign)
+
+        return cls(
+            type=_FINITE,
+            sign=sign,
+            exponent=e,
+            significand=q,
+        )
+
     def _handle_nans(self, source1, source2):
         assert source1._type == _NAN or source2._type == _NAN
 
@@ -205,7 +266,7 @@ class BinaryInterchangeFormat(object):
             sign = (significand < 0 or
                     significand == 0 and source1._sign and source2._sign)
 
-            return cls._round_from_triple(
+            return self._round_from_triple(
                 sign=sign,
                 exponent=exponent,
                 significand=abs(significand),
@@ -217,7 +278,7 @@ class BinaryInterchangeFormat(object):
                 if source1._sign == source2._sign:
                     return source1
                 else:
-                    return cls._handle_invalid()
+                    return self._handle_invalid()
 
             else:
                 return source1
@@ -241,7 +302,7 @@ class BinaryInterchangeFormat(object):
             if source2.is_infinite():
                 if source1.is_zero():
                     # zero * infinity -> nan
-                    return cls._handle_invalid()
+                    return self._handle_invalid()
 
                 # non-zero finite * infinity -> infinity
                 return cls(type=_INFINITE, sign=source1._sign ^ source2._sign)
@@ -251,7 +312,7 @@ class BinaryInterchangeFormat(object):
             significand = source1._significand * source2._significand
             exponent = source1._exponent + source2._exponent
 
-            return cls._round_from_triple(
+            return self._round_from_triple(
                 sign=sign,
                 exponent=exponent,
                 significand=significand,
@@ -264,7 +325,7 @@ class BinaryInterchangeFormat(object):
                 return cls(type=_INFINITE, sign=source1._sign ^ source2._sign)
 
             elif source2.is_zero():
-                return cls._handle_invalid()
+                return self._handle_invalid()
 
         else:
             raise ValueError(
@@ -295,7 +356,7 @@ class BinaryInterchangeFormat(object):
 
             if source1.is_zero():
                 if source2.is_zero():
-                    return cls._handle_invalid()
+                    return self._handle_invalid()
 
                 return cls(
                     type=_FINITE,
@@ -347,7 +408,7 @@ class BinaryInterchangeFormat(object):
 
             # Overflow.
             if e > cls._format.qmax:
-                return cls._handle_overflow(sign)
+                return self._handle_overflow(sign)
 
             return cls(
                 type=_FINITE,
@@ -357,7 +418,7 @@ class BinaryInterchangeFormat(object):
             )
         elif source1._type == _INFINITE:
             if source2._type == _INFINITE:
-                return cls._handle_invalid()
+                return self._handle_invalid()
 
             # infinite / finite -> infinite
             elif source2._type == _FINITE:
@@ -400,6 +461,38 @@ class BinaryInterchangeFormat(object):
 
         """
         return fmt1 if fmt1.width >= fmt2.width else fmt2
+
+    def _handle_overflow(self, sign):
+        """
+        Handle an overflow.
+
+        """
+        # For now, just returns the appropriate infinity.  Someday this should
+        # handle rounding modes, flags, etc.
+        cls = self.class_
+        return cls(type=_INFINITE, sign=sign)
+
+    def _handle_invalid(self, snan=None):
+        """
+        Handle an invalid operation.
+
+        """
+        cls = self.class_
+        if snan is not None:
+            # Invalid operation from an snan: quiet the sNaN.
+            return cls(
+                type=_NAN,
+                sign=snan._sign,
+                payload=snan._payload,
+                signaling=False,
+            )
+
+        # For now, just return a quiet NaN.  Someday this should be more
+        # sophisticated.
+        return cls(
+            type=_NAN,
+            sign=False,
+        )
 
 
 _Float64 = BinaryInterchangeFormat(64)
@@ -721,7 +814,7 @@ class _BinaryFloatBase(object):
                 e += 1
 
         if e > cls._format.qmax:
-            return cls._handle_overflow(sign)
+            return cls._format._handle_overflow(sign)
 
         return cls(
             type=_FINITE,
@@ -774,7 +867,7 @@ class _BinaryFloatBase(object):
 
         # Overflow.
         if e > cls._format.qmax:
-            return cls._handle_overflow(sign)
+            return cls._format._handle_overflow(sign)
 
         return cls(
             type=_FINITE,
@@ -831,7 +924,7 @@ class _BinaryFloatBase(object):
                     e += 1
 
             if e > cls._format.qmax:
-                return cls._handle_overflow(sign)
+                return cls._format._handle_overflow(sign)
 
             return cls(
                 type=_FINITE,
@@ -964,66 +1057,6 @@ class _BinaryFloatBase(object):
 
         return _int_to_bytes(equivalent_int, self._format.width // 8)
 
-    @classmethod
-    def _round_from_triple(cls, sign, exponent, significand):
-
-        # Round the value significand * 2**exponent to the format.
-        if significand == 0:
-            return cls(
-                type=_FINITE,
-                sign=sign,
-                exponent=cls._format.qmin,
-                significand=0,
-            )
-
-        # ... first find exponent of result.
-
-        # d satisfies 2**(d-1) <= significand * 2 ** exponent < 2**d.
-        d = exponent + significand.bit_length()
-
-        # Exponent of result.
-        e = max(d - cls._format.precision, cls._format.qmin)
-
-        # significand * 2**exponent ~ q * 2**e.
-        # significand * 2**(exponent - e) ~ q
-        shift = exponent - e
-        if shift >= 0:
-            q = significand << shift
-            rtype = 0
-        else:
-            q = significand >> -shift
-            r = significand & ((1 << -shift) - 1)
-
-            # Classify r: 0 if exact, 2 if exact halfway, 1 / 3 for low / high
-            if r > (1 << (-shift - 1)):
-                rtype = 3
-            elif r == (1 << (-shift - 1)):
-                rtype = 2
-            elif r > 0:
-                rtype = 1
-            else:
-                rtype = 0
-
-        assert q.bit_length() <= cls._format.precision
-
-        # Round.
-        if rtype == 3 or rtype == 2 and q & 1:
-            q += 1
-            if q.bit_length() == cls._format.precision + 1:
-                q //= 2
-                e += 1
-
-        # Overflow.
-        if e > cls._format.qmax:
-            return cls._handle_overflow(sign)
-
-        return cls(
-            type=_FINITE,
-            sign=sign,
-            exponent=e,
-            significand=q,
-        )
-
     def negate(self):
         if self._type == _FINITE:
             return type(self)(
@@ -1152,35 +1185,3 @@ class _BinaryFloatBase(object):
         # effect or not.
         __div__ = __truediv__
         __rdiv__ = __rtruediv__
-
-    @classmethod
-    def _handle_overflow(cls, sign):
-        """
-        Handle an overflow.
-
-        """
-        # For now, just returns the appropriate infinity.  Someday this should
-        # handle rounding modes, flags, etc.
-        return cls(type=_INFINITE, sign=sign)
-
-    @classmethod
-    def _handle_invalid(cls, snan=None):
-        """
-        Handle an invalid operation.
-
-        """
-        if snan is not None:
-            # Invalid operation from an snan: quiet the sNaN.
-            return cls(
-                type=_NAN,
-                sign=snan._sign,
-                payload=snan._payload,
-                signaling=False,
-            )
-
-        # For now, just return a quiet NaN.  Someday this should be more
-        # sophisticated.
-        return cls(
-            type=_NAN,
-            sign=False,
-        )
