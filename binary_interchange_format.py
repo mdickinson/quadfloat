@@ -11,8 +11,10 @@ if _sys.version_info.major == 2:
     _INTEGER_TYPES = (int, long)
 
     import binascii as _binascii
+
     def _int_to_bytes(n, length):
-        return _binascii.unhexlify(format(n, '0{}x'.format(2*length)))[::-1]
+        return _binascii.unhexlify(format(n, '0{}x'.format(2 * length)))[::-1]
+
     def _int_from_bytes(bs):
         return int(_binascii.hexlify(bs[::-1]), 16)
 
@@ -20,7 +22,7 @@ else:
     _STRING_TYPES = str,
     _INTEGER_TYPES = int,
     _int_to_bytes = lambda n, length: n.to_bytes(length, byteorder='little')
-    _int_from_bytes= lambda bs: int.from_bytes(bs, byteorder='little')
+    _int_from_bytes = lambda bs: int.from_bytes(bs, byteorder='little')
 
 
 _BINARY_INTERCHANGE_FORMAT_PRECISIONS = {
@@ -151,19 +153,19 @@ class BinaryInterchangeFormat(object):
         """
         Convert a NaN (possibly in a different format) to this format.
 
-        Silently truncates the payload to fit when necessary.  Also converts a signaling
-        NaN to a quiet NaN.
+        Silently truncates the payload to fit when necessary.  Also converts a
+        signaling NaN to a quiet NaN.
 
         """
         max_payload = 2 ** (self.precision - 2) - 1
 
         return self.class_(
             type=_NAN,
-            sign = source._sign,
+            sign=source._sign,
             signaling=False,
-            payload = min(source._payload, max_payload),
+            payload=min(source._payload, max_payload),
         )
-            
+
     def _handle_nans(self, source1, source2):
         assert source1._type == _NAN or source2._type == _NAN
 
@@ -176,7 +178,8 @@ class BinaryInterchangeFormat(object):
         elif source1._type == _NAN:
             # XXX: Should return something in the correct format.
             return self._from_nan(source1)
-        else: # source2._type == _NAN
+        else:
+            # source2._type == _NAN
             return self._from_nan(source2)
 
     def addition(self, source1, source2):
@@ -268,7 +271,8 @@ class _BinaryFloatBase(object):
 
             # Payload must be at least 1 for a signaling nan, to avoid
             # confusion with the bit pattern for an infinity.
-            if not bool(signaling) <= payload < 2 ** (cls._format.precision - 2):
+            min_payload = 1 if signaling else 0
+            if not min_payload <= payload < 2 ** (cls._format.precision - 2):
                 raise ValueError("NaN payload out of range.")
 
             self = object.__new__(cls)
@@ -291,7 +295,9 @@ class _BinaryFloatBase(object):
         payload are considered equivalent).
 
         Used only in testing.
-        XXX: could replace this with a comparison of corresponding byte strings.
+
+        XXX: could replace this with a comparison of corresponding byte
+        strings.
 
         """
         if self._type == other._type == _FINITE:
@@ -750,9 +756,10 @@ class _BinaryFloatBase(object):
         Encode a Float<nnn> instance as a 16-character bytestring.
 
         """
-        if self._type == _FINITE:
+        exponent_field_width = self._format._exponent_field_width
+        significand_field_width = self._format.precision - 1
 
-            # Exponent and significand fields.
+        if self._type == _FINITE:
             if self.is_subnormal() or self.is_zero():
                 exponent_field = 0
                 significand_field = self._significand
@@ -761,53 +768,23 @@ class _BinaryFloatBase(object):
                 significand_field = (
                     self._significand - 2 ** (self._format.precision - 1)
                 )
-
-            exponent_field_width = self._format._exponent_field_width
-            significand_field_width = self._format.precision - 1
-
-            equivalent_int = (
-                (self._sign << (exponent_field_width + significand_field_width)) +
-                (exponent_field << (significand_field_width)) +
-                significand_field
-            )
-
         elif self._type == _INFINITE:
-
-            exponent_field_width = self._format._exponent_field_width
-            significand_field_width = self._format.precision - 1
-
             exponent_field = 2 ** exponent_field_width - 1
             significand_field = 0
-
-            equivalent_int = (
-                (self._sign << (exponent_field_width + significand_field_width)) +
-                (exponent_field << (significand_field_width)) +
-                significand_field
-            )
-
         elif self._type == _NAN:
-
-            exponent_field_width = self._format._exponent_field_width
-            significand_field_width = self._format.precision - 1
-            payload_width = significand_field_width - 1
-
             exponent_field = 2 ** exponent_field_width - 1
-            significand_field = self._payload
-            assert 0 <= self._payload < 2 ** payload_width
-
             significand_field = (
-                ((not self._signaling) << payload_width) +
+                ((not self._signaling) << significand_field_width - 1) +
                 self._payload
             )
-
-            equivalent_int = (
-                (self._sign << (exponent_field_width + significand_field_width)) +
-                (exponent_field << (significand_field_width)) +
-                significand_field
-            )
-
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
+
+        equivalent_int = (
+            (self._sign << (exponent_field_width + significand_field_width)) +
+            (exponent_field << significand_field_width) +
+            significand_field
+        )
 
         return _int_to_bytes(equivalent_int, self._format.width // 8)
 
@@ -1047,8 +1024,9 @@ class _BinaryFloatBase(object):
             # Exponent of result.
             e = max(d - cls._format.precision, cls._format.qmin)
 
-            # Round (self / other) * 2**-e to nearest integer.
-            # self / other * 2**-e == self._significand / other._significand * 2**shift, where...
+            # Round (self / other) * 2**-e to nearest integer.  self / other *
+            # 2**-e == self._significand / other._significand * 2**shift,
+            # where...
             shift = self._exponent - other._exponent - e
 
             a, b = a << max(shift, 0), b << max(0, -shift)
@@ -1060,7 +1038,10 @@ class _BinaryFloatBase(object):
             assert sign in (0, 1)
             assert e >= cls._format.qmin
             assert q.bit_length() <= cls._format.precision
-            assert e == cls._format.qmin or q.bit_length() == cls._format.precision
+            assert (
+                e == cls._format.qmin or
+                q.bit_length() == cls._format.precision
+            )
             assert 0 <= rtype <= 3
 
             # Round.
@@ -1092,7 +1073,9 @@ class _BinaryFloatBase(object):
                 )
 
             else:
-                raise ValueError("invalid _type attribute: {}".format(other._type))
+                raise ValueError(
+                    "invalid _type attribute: {}".format(other._type)
+                )
 
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
@@ -1208,4 +1191,3 @@ class _BinaryFloatBase(object):
             type=_NAN,
             sign=False,
         )
-
