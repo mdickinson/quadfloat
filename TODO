@@ -1,10 +1,29 @@
 Bugs
 ----
 
+* Lots of public methods are missing docstrings.
+
+
+Documentation
+-------------
+
+* Create some!
+
+
 Features
 --------
 
 * Implement short float repr.
+
+* Fill out the rest of the IEEE 754 *required* functionality, excluding rounding modes,
+  exceptions, signals.
+
+* Implement rounding modes.
+
+* Implement exceptions, flags, etc.
+
+* Look at the rest of the recommended functionality (e.g., correctly-rounded
+  math operations; could take some time!)
 
 
 Internal refactoring
@@ -18,6 +37,14 @@ Internal refactoring
   tests.
 
 * Cache zeros, make use of them (format method for zeros?)
+
+* Move class methods from _BinaryBase to BinaryInterchangeFormat.
+
+
+Performance
+-----------
+
+* Optimize addition / subtraction for cases where exponents differ wildly.
 
 
 Tests
