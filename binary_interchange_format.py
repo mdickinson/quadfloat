@@ -964,11 +964,6 @@ class _BinaryFloatBase(object):
 
         return _int_to_bytes(equivalent_int, self._format.width // 8)
 
-    # Binary operations.
-
-    def subtraction(self, other):
-        return self.addition(other.negate())
-
     @classmethod
     def _round_from_triple(cls, sign, exponent, significand):
 
