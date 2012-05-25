@@ -245,7 +245,14 @@ class _BinaryFloatBase(object):
                 exponent == cls._format.qmin
             )
             if not normalized:
-                raise ValueError("Unnormalized significand or exponent.")
+                raise ValueError(
+                    "Unnormalized significand ({}) or exponent ({}) "
+                    "for {}.".format(
+                        significand,
+                        exponent,
+                        cls._format,
+                    )
+                )
 
             self = object.__new__(cls)
             self._exponent = int(exponent)
