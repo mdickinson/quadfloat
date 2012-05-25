@@ -212,6 +212,19 @@ class BinaryInterchangeFormat(object):
     def decode(self, encoded_value):
         return self.class_.decode(encoded_value)
 
+    def _common_format(fmt1, fmt2):
+        """
+        Return the common BinaryInterchangeFormat suitable for mixed binary
+        operations with operands of types 'fmt1' and 'fmt2'.
+
+        fmt1 and fmt2 should be instances of BinaryInterchangeFormat.
+
+        """
+        return fmt1 if fmt1.width >= fmt2.width else fmt2
+
+
+_Float64 = BinaryInterchangeFormat(64)
+
 
 class _BinaryFloatBase(object):
     def __new__(cls, **kwargs):
@@ -1083,6 +1096,79 @@ class _BinaryFloatBase(object):
     def __abs__(self):
         return self.abs()
 
+    def _convert_other(self, other):
+        """
+        Given numeric operands self and other, with self an instance of
+        _BinaryFloatBase, convert other to an operand of type _BinaryFloatBase
+        if necessary, and return the common format for the output.
+
+        Return a pair converted_other, common_format
+
+        """
+        # Convert other.
+        if isinstance(other, _BinaryFloatBase):
+            pass
+        elif isinstance(other, float):
+            other = _Float64(other)
+        elif isinstance(other, int):
+            other = self._format(other)
+        else:
+            raise TypeError(
+                "Can't convert operand {} of type {} to "
+                "_BinaryFloatBase.".format(
+                    other,
+                    type(other),
+                )
+            )
+        return other
+
+    # Binary arithmetic operator overloads.
+    def __add__(self, other):
+        other = self._convert_other(other)
+        common_format = self._format._common_format(other._format)
+        return common_format.addition(self, other)
+
+    def __radd__(self, other):
+        other = self._convert_other(other)
+        common_format = self._format._common_format(other._format)
+        return common_format.addition(other, self)
+
+    def __sub__(self, other):
+        other = self._convert_other(other)
+        common_format = self._format._common_format(other._format)
+        return common_format.subtraction(self, other)
+
+    def __rsub__(self, other):
+        other = self._convert_other(other)
+        common_format = self._format._common_format(other._format)
+        return common_format.subtraction(other, self)
+
+    def __mul__(self, other):
+        other = self._convert_other(other)
+        common_format = self._format._common_format(other._format)
+        return common_format.multiplication(self, other)
+
+    def __rmul__(self, other):
+        other = self._convert_other(other)
+        common_format = self._format._common_format(other._format)
+        return common_format.multiplication(other, self)
+
+    def __truediv__(self, other):
+        other = self._convert_other(other)
+        common_format = self._format._common_format(other._format)
+        return common_format.division(self, other)
+
+    def __rtruediv__(self, other):
+        other = self._convert_other(other)
+        common_format = self._format._common_format(other._format)
+        return common_format.division(other, self)
+
+    if _sys.version_info.major == 2:
+        __div__ = __truediv__
+        __rdiv__ = __rtruediv__
+
+
+
     @classmethod
     def _handle_overflow(cls, sign):
         """
@@ -1114,5 +1200,4 @@ class _BinaryFloatBase(object):
             type=_NAN,
             sign=False,
         )
-
 

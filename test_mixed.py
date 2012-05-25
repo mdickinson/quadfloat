@@ -10,6 +10,8 @@ from binary_interchange_format import BinaryInterchangeFormat
 
 Float16 = BinaryInterchangeFormat(width=16)
 Float32 = BinaryInterchangeFormat(width=32)
+Float64 = BinaryInterchangeFormat(width=64)
+Float128 = BinaryInterchangeFormat(width=128)
 
 
 class TestMixed(unittest.TestCase):
@@ -74,6 +76,131 @@ class TestMixed(unittest.TestCase):
             self.assertEqual(result._format, Float16)
             self.assertEqual(result._payload, 2**9 - 1)
             self.assertEqual(result._sign, True)
+
+    def test_addition(self):
+        # Different _BinaryInterchangeFormat subtypes.
+        a = Float16('3.5')
+        b = Float32('1.5')
+        c = a + b
+        self.assertEqual(c._format, Float32)
+        self.assertInterchangeable(c, Float32('5.0'))
+
+        c = b + a
+        self.assertEqual(c._format, Float32)
+        self.assertInterchangeable(c, Float32('5.0'))
+
+        # Python's float treated as interchangeable with float64.
+        a = 3.5
+        b = Float32('1.5')
+
+        c = a + b
+        self.assertEqual(c._format, Float64)
+        self.assertInterchangeable(c, Float64('5.0'))
+
+        c = b + a
+        self.assertEqual(c._format, Float64)
+        self.assertInterchangeable(c, Float64('5.0'))
+
+        a = 3.5
+        b = Float128('1.5')
+
+        c = a + b
+        self.assertEqual(c._format, Float128)
+        self.assertInterchangeable(c, Float128('5.0'))
+
+        c = b + a
+        self.assertEqual(c._format, Float128)
+        self.assertInterchangeable(c, Float128('5.0'))
+
+        # Integers are converted to the float type before the operation.
+        a = Float16('21')
+        b = 29
+        c = a + b
+        self.assertEqual(c._format, Float16)
+        self.assertInterchangeable(c, Float16('50'))
+
+        a = Float16('21')
+        b = 29
+        c = b + a
+        self.assertEqual(c._format, Float16)
+        self.assertInterchangeable(c, Float16('50'))
+
+        a = Float16('21')
+        b = 2409
+        c = a + b
+        self.assertEqual(c._format, Float16)
+        # Note: inexact result due to rounding both of b and of the sum.
+        self.assertInterchangeable(c, Float16('2428'))
+        c = b + a
+        self.assertEqual(c._format, Float16)
+        # Note: inexact result due to rounding both of b and of the sum.
+        self.assertInterchangeable(c, Float16('2428'))
+
+        # Ensure orders.  Addition is *not* commutative in the face of NaNs
+        # with payloads!
+        a = Float64('NaN(123)')
+        b = float('nan')
+        self.assertInterchangeable(a + b, Float64('NaN(123)'))
+        self.assertInterchangeable(b + a, Float64('NaN'))
+
+    def test_subtraction(self):
+        # Different _BinaryInterchangeFormat subtypes.
+        a = Float16('3.5')
+        b = Float32('1.5')
+        c = a - b
+        self.assertEqual(c._format, Float32)
+        self.assertInterchangeable(c, Float32('2.0'))
+
+        c = b - a
+        self.assertEqual(c._format, Float32)
+        self.assertInterchangeable(c, Float32('-2.0'))
+
+        # Python's float treated as interchangeable with float64.
+        a = 3.5
+        b = Float32('1.5')
+
+        c = a - b
+        self.assertEqual(c._format, Float64)
+        self.assertInterchangeable(c, Float64('2.0'))
+
+        c = b - a
+        self.assertEqual(c._format, Float64)
+        self.assertInterchangeable(c, Float64('-2.0'))
+
+    def test_multiplication(self):
+        # Different _BinaryInterchangeFormat subtypes.
+        a = Float16('3.5')
+        b = Float32('1.5')
+        c = a * b
+        self.assertEqual(c._format, Float32)
+        self.assertInterchangeable(c, Float32('5.25'))
+
+        c = b * a
+        self.assertEqual(c._format, Float32)
+        self.assertInterchangeable(c, Float32('5.25'))
+
+        # Python's float treated as interchangeable with float64.
+        a = 3.5
+        b = Float32('1.5')
+
+        c = a * b
+        self.assertEqual(c._format, Float64)
+        self.assertInterchangeable(c, Float64('5.25'))
+
+        c = b * a
+        self.assertEqual(c._format, Float64)
+        self.assertInterchangeable(c, Float64('5.25'))
+
+    def test_division(self):
+        a = Float16('35.0')
+        b = Float32('5.0')
+        c = a / b
+        self.assertEqual(c._format, Float32)
+        self.assertInterchangeable(c, Float32('7.0'))
+
+        c = b / a
+        self.assertEqual(c._format, Float32)
+        self.assertInterchangeable(c, Float32('0.142857142857142857142857'))
 
 
 if __name__ == '__main__':
