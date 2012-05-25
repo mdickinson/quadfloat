@@ -63,14 +63,16 @@ _number_parser = _re.compile(r"""        # A numeric string consists of:
 class BinaryInterchangeFormat(object):
     _class__cache = {}
 
-    def __init__(self, width):
+    def __new__(cls, width):
         valid_width = width in {16, 32, 64} or width >= 128 and width % 32 == 0
         if not valid_width:
             raise ValueError(
                 "For an interchange format, width should be 16, 32, 64, "
-                "or a multiple of 32 >= 128."
+                "or a multiple of 32 that's greater than 128."
             )
+        self = object.__new__(cls)
         self.width = width
+        return self
 
     def __repr__(self):
         return "BinaryInterchangeFormat(width={})".format(self.width)
@@ -79,6 +81,7 @@ class BinaryInterchangeFormat(object):
         return self.width == other.width
 
     if _sys.version_info.major == 2:
+        # != is automatically inferred from == for Python 3.
         def __ne__(self, other):
             return not (self == other)
 
@@ -138,7 +141,6 @@ class BinaryInterchangeFormat(object):
         #  is irrational).
         return len(str(2 ** self.precision)) + 1
 
-    # XXX better name?
     @property
     def class_(self):
         if self not in BinaryInterchangeFormat._class__cache:
@@ -167,50 +169,55 @@ class BinaryInterchangeFormat(object):
         )
 
     def _round_from_triple(self, sign, exponent, significand):
+        """
+        Round the value (-1)**sign * significand * 2**exponent to the format
+        'self'.
 
-        cls = self.class_
-
-        # Round the value significand * 2**exponent to the format.
+        """
         if significand == 0:
-            return cls(
+            return self.class_(
                 type=_FINITE,
                 sign=sign,
                 exponent=self.qmin,
                 significand=0,
             )
 
-        # ... first find exponent of result.
-
-        # d satisfies 2**(d-1) <= significand * 2 ** exponent < 2**d.
+        # ... first find exponent e of result.
         d = exponent + significand.bit_length()
-
-        # Exponent of result.
         e = max(d - self.precision, self.qmin)
 
-        # significand * 2**exponent ~ q * 2**e.
-        # significand * 2**(exponent - e) ~ q
+        # Find q such that q * 2**e approximates significand * 2**exponent.
         shift = exponent - e
-        if shift >= 0:
-            q = significand << shift
-            rtype = 0
-        else:
-            q = significand >> -shift
-            r = significand & ((1 << -shift) - 1)
-
-            # Classify r: 0 if exact, 2 if exact halfway, 1 / 3 for low / high
-            if r > (1 << (-shift - 1)):
-                rtype = 3
-            elif r == (1 << (-shift - 1)):
-                rtype = 2
-            elif r > 0:
-                rtype = 1
-            else:
-                rtype = 0
-
+        q = significand << shift if shift >= 0 else significand >> -shift
         assert q.bit_length() <= self.precision
 
-        # Round.
-        if rtype == 3 or rtype == 2 and q & 1:
+        # Classify remainder bits: 0 if exact, 2 if exact halfway, 1 / 3
+        # for low / high
+        rtype = 0 if shift >= 0 else (
+            2 * bool(significand & (1 << (-shift - 1))) +
+            bool(significand & ((1 << (-shift - 1)) - 1))
+        )
+
+        return self._final_round(sign, e, q, rtype)
+
+    def _final_round(self, sign, e, q, rtype):
+        """
+        Make final rounding adjustment, using the rounding mode from the
+        current context.  For now, only round-half-to-even is supported.
+
+        """
+        # Double check parameters.
+        assert sign in (0, 1)
+        assert e >= self.qmin
+        assert q.bit_length() <= self.precision
+        assert (
+            e == self.qmin or
+            q.bit_length() == self.precision
+        )
+        assert 0 <= rtype <= 3
+
+        # XXX Handle inexact, underflow flags.
+        if rtype == 3 or (rtype == 2 and q & 1):
             q += 1
             if q.bit_length() == self.precision + 1:
                 q //= 2
@@ -220,7 +227,7 @@ class BinaryInterchangeFormat(object):
         if e > self.qmax:
             return self._handle_overflow(sign)
 
-        return cls(
+        return self.class_(
             type=_FINITE,
             sign=sign,
             exponent=e,
@@ -386,36 +393,13 @@ class BinaryInterchangeFormat(object):
 
             a, b = a << max(shift, 0), b << max(0, -shift)
             q, r = divmod(a, b)
+            # XXX This looks wrong!  Shouldn't it be 2 * r >= b?  Need a test.
+            # In fact, 2nd part also looks wrong.
             rtype = 2 * (2 * r > b) + (r != 0)
 
             # Now result approximated by (-1)**sign * q * 2**e.
-            # Double check parameters.
-            assert sign in (0, 1)
-            assert e >= self.qmin
-            assert q.bit_length() <= self.precision
-            assert (
-                e == self.qmin or
-                q.bit_length() == self.precision
-            )
-            assert 0 <= rtype <= 3
+            return self._final_round(sign, e, q, rtype)
 
-            # Round.
-            if rtype == 3 or rtype == 2 and q & 1:
-                q += 1
-                if q.bit_length() == self.precision + 1:
-                    q //= 2
-                    e += 1
-
-            # Overflow.
-            if e > self.qmax:
-                return self._handle_overflow(sign)
-
-            return cls(
-                type=_FINITE,
-                sign=sign,
-                exponent=e,
-                significand=q,
-            )
         elif source1._type == _INFINITE:
             if source2._type == _INFINITE:
                 return self._handle_invalid()
@@ -856,24 +840,8 @@ class _BinaryFloatBase(object):
             q = n << -e
             rtype = 0
 
-        assert q.bit_length() <= cls._format.precision
-
-        # Round.
-        if rtype == 3 or rtype == 2 and q & 1:
-            q += 1
-            if q.bit_length() == cls._format.precision + 1:
-                q //= 2
-                e += 1
-
-        # Overflow.
-        if e > cls._format.qmax:
-            return cls._format._handle_overflow(sign)
-
-        return cls(
-            type=_FINITE,
-            sign=sign,
-            exponent=e,
-            significand=q,
+        return cls._format._final_round(
+            sign, e, q, rtype
         )
 
     @classmethod
@@ -915,6 +883,7 @@ class _BinaryFloatBase(object):
             # necessary
             a, b = a << max(-e, 0), b << max(e, 0)
             q, r = divmod(a, b)
+
 
             assert q.bit_length() <= cls._format.precision
             if 2 * r > b or 2 * r == b and q & 1:
