@@ -175,7 +175,7 @@ class BinaryInterchangeFormat(object):
             return cls(
                 type=_FINITE,
                 sign=sign,
-                exponent=cls._format.qmin,
+                exponent=self.qmin,
                 significand=0,
             )
 
@@ -185,7 +185,7 @@ class BinaryInterchangeFormat(object):
         d = exponent + significand.bit_length()
 
         # Exponent of result.
-        e = max(d - cls._format.precision, cls._format.qmin)
+        e = max(d - self.precision, self.qmin)
 
         # significand * 2**exponent ~ q * 2**e.
         # significand * 2**(exponent - e) ~ q
@@ -207,12 +207,12 @@ class BinaryInterchangeFormat(object):
             else:
                 rtype = 0
 
-        assert q.bit_length() <= cls._format.precision
+        assert q.bit_length() <= self.precision
 
         # Round.
         if rtype == 3 or rtype == 2 and q & 1:
             q += 1
-            if q.bit_length() == cls._format.precision + 1:
+            if q.bit_length() == self.precision + 1:
                 q //= 2
                 e += 1
 
@@ -347,7 +347,7 @@ class BinaryInterchangeFormat(object):
                 return cls(
                     type=_FINITE,
                     sign=source1._sign ^ source2._sign,
-                    exponent=cls._format.qmin,
+                    exponent=self.qmin,
                     significand=0,
                 )
 
@@ -361,7 +361,7 @@ class BinaryInterchangeFormat(object):
                 return cls(
                     type=_FINITE,
                     sign=sign,
-                    exponent=cls._format.qmin,
+                    exponent=self.qmin,
                     significand=0,
                 )
 
@@ -377,7 +377,7 @@ class BinaryInterchangeFormat(object):
             d += source1._exponent - source2._exponent
 
             # Exponent of result.
-            e = max(d - cls._format.precision, cls._format.qmin)
+            e = max(d - self.precision, self.qmin)
 
             # Round (source1 / source2) * 2**-e to nearest integer.  source1 /
             # source2 * 2**-e == source1._significand / source2._significand *
@@ -391,23 +391,23 @@ class BinaryInterchangeFormat(object):
             # Now result approximated by (-1)**sign * q * 2**e.
             # Double check parameters.
             assert sign in (0, 1)
-            assert e >= cls._format.qmin
-            assert q.bit_length() <= cls._format.precision
+            assert e >= self.qmin
+            assert q.bit_length() <= self.precision
             assert (
-                e == cls._format.qmin or
-                q.bit_length() == cls._format.precision
+                e == self.qmin or
+                q.bit_length() == self.precision
             )
             assert 0 <= rtype <= 3
 
             # Round.
             if rtype == 3 or rtype == 2 and q & 1:
                 q += 1
-                if q.bit_length() == cls._format.precision + 1:
+                if q.bit_length() == self.precision + 1:
                     q //= 2
                     e += 1
 
             # Overflow.
-            if e > cls._format.qmax:
+            if e > self.qmax:
                 return self._handle_overflow(sign)
 
             return cls(
