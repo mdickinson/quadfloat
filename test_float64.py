@@ -4,6 +4,7 @@ values.
 
 """
 
+import math
 import random
 import struct
 import unittest
@@ -79,6 +80,17 @@ class TestFloat64(unittest.TestCase):
             result1 = Float64(x) - Float64(y)
             # float addition.
             result2 = Float64(x - y)
+            self.assertInterchangeable(result1, result2)
+
+    def test_random_sqrt(self):
+        for i in range(10000):
+            x = self.random_float()
+            result1 = Float64.square_root(Float64(x))
+            try:
+                sqrtx = math.sqrt(x)
+            except ValueError:
+                sqrtx = float('nan')
+            result2 = Float64(sqrtx)
             self.assertInterchangeable(result1, result2)
 
 

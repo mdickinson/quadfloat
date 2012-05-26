@@ -60,6 +60,21 @@ _number_parser = _re.compile(r"""        # A numeric string consists of:
 """, _re.VERBOSE | _re.IGNORECASE).match
 
 
+def _isqrt(n):
+    """
+    Return the integer square root of n for any integer n >= 1.
+
+    That is, return the unique integer m such that m*m <= n < (m+1)*(m+1).
+
+    """
+    m = n
+    while True:
+        q = n // m
+        if m <= q:
+            return m
+        m = m + q >> 1
+
+
 class BinaryInterchangeFormat(object):
     _class__cache = {}
 
@@ -224,21 +239,21 @@ class BinaryInterchangeFormat(object):
 
         return self._final_round(sign, e, q)
 
-    def _handle_nans(self, source1, source2):
-        assert source1._type == _NAN or source2._type == _NAN
+    def _handle_nans(self, *sources):
+        # Look for signaling NaNs.
+        for source in sources:
+            if source._type == _NAN and source._signaling:
+                return self._from_nan(source)
 
-        if source1._type == _NAN and source1._signaling:
-            return self._from_nan(source1)
-        elif source2._type == _NAN and source2._signaling:
-            return self._from_nan(source2)
-        # If neither input is a signaling NaN, propagate the
-        # non-signaling NaN.
-        elif source1._type == _NAN:
-            # XXX: Should return something in the correct format.
-            return self._from_nan(source1)
-        else:
-            # source2._type == _NAN
-            return self._from_nan(source2)
+        # All operands are quiet NaNs; return a result based on the first of
+        # these.
+        for source in sources:
+            if source._type == _NAN:
+                return self._from_nan(source)
+
+        # If we get here, then _handle_nans has been called with all arguments
+        # non-NaN.  This shouldn't happen.
+        raise ValueError("_handle_nans didn't receive any NaNs.")
 
     def addition(self, source1, source2):
         """
@@ -422,6 +437,68 @@ class BinaryInterchangeFormat(object):
         # For non-NaNs, subtraction(a, b) is equivalent to
         # addition(a, b.negate())
         return self.addition(source1, source2.negate())
+
+    def _zero(self, sign):
+        """
+        Return a suitably-signed zero for this format.
+
+        """
+        return self.class_(
+            type=_FINITE,
+            sign=sign,
+            exponent=self.qmin,
+            significand=0,
+        )
+
+    def _infinity(self, sign):
+        """
+        Return a suitably-signed infinity for this format.
+
+        """
+        return self.class_(
+            type=_INFINITE,
+            sign=sign,
+        )
+
+    def square_root(self, source1):
+        """
+        Return the square root of source1 in format 'self'.
+
+        """
+        if source1._type == _NAN:
+            return self._handle_nans(source1)
+
+        # sqrt(+-0) is +-0.
+        if source1.is_zero():
+            return self._zero(sign=source1._sign)
+
+        # Any nonzero negative number is invalid.
+        if source1._sign:
+            return self._handle_invalid()
+
+        # sqrt(infinity) -> infinity.
+        if source1._type == _INFINITE and not source1._sign:
+            return self._infinity(sign=False)
+
+        sig = source1._significand
+        exponent = source1._exponent
+
+        # Exponent of result.
+        d = (sig.bit_length() + exponent + 1) // 2
+        e = max(d - self.precision, self.qmin) - 2
+
+        # Now find integer square root of sig, and add 1 if inexact.
+        shift = exponent - 2 * e
+        if shift >= 0:
+            sig <<= shift
+            rem = 0
+        else:
+            rem = sig & ~(-1 << -shift)
+            sig >>= -shift
+        q = _isqrt(sig)
+        q |= bool(q * q != sig) or bool(rem)
+
+        return self._final_round(False, e, q)
 
     def decode(self, encoded_value):
         return self.class_.decode(encoded_value)

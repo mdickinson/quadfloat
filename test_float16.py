@@ -5,6 +5,7 @@ from binary_interchange_format import BinaryInterchangeFormat
 
 Float16 = BinaryInterchangeFormat(width=16)
 Float32 = BinaryInterchangeFormat(width=32)
+Float64 = BinaryInterchangeFormat(width=64)
 
 
 class TestFloat16(unittest.TestCase):
@@ -152,6 +153,88 @@ class TestFloat16(unittest.TestCase):
         self.assertInterchangeable(
             Float16.division(Float32(2048*4 + 16), Float32(4)),
             Float16(2052)
+        )
+
+    def test_sqrt(self):
+        # Easy small integer cases.
+        for i in range(1, 46):
+            self.assertInterchangeable(
+                Float16.square_root(Float16(i * i)),
+                Float16(i),
+            )
+
+        # Zeros.
+        self.assertInterchangeable(
+            Float16.square_root(Float16('0')),
+            Float16('0'),
+        )
+        self.assertInterchangeable(
+            Float16.square_root(Float16('-0')),
+            Float16('-0'),
+        )
+
+        # Infinities
+        self.assertInterchangeable(
+            Float16.square_root(Float16('inf')),
+            Float16('inf'),
+        )
+
+        self.assertInterchangeable(
+            Float16.square_root(Float16('-inf')),
+            Float16('nan'),
+        )
+
+        # Negatives
+        self.assertInterchangeable(
+            Float16.square_root(Float16('-4.0')),
+            Float16('nan'),
+        )
+
+        # NaNs
+        self.assertInterchangeable(
+            Float16.square_root(Float16('snan(456)')),
+            Float16('nan(456)'),
+        )
+
+        self.assertInterchangeable(
+            Float16.square_root(Float16('-nan(123)')),
+            Float16('-nan(123)'),
+        )
+
+        # Subnormal results.
+        tiny = 2.0**-24  # smallest positive representable float16 subnormal
+
+        self.assertInterchangeable(
+            Float16.square_root(Float64(tiny * tiny)),
+            Float16(tiny),
+        )
+        self.assertInterchangeable(
+            Float16.square_root(Float64(tiny * tiny * 0.25)),
+            Float16('0.0'),
+        )
+        self.assertInterchangeable(
+            Float16.square_root(Float64(tiny * tiny * 0.250000001)),
+            Float16(tiny),
+        )
+        self.assertInterchangeable(
+            Float16.square_root(Float64(tiny * tiny)),
+            Float16(tiny),
+        )
+        self.assertInterchangeable(
+            Float16.square_root(Float64(tiny * tiny * 2.24999999999)),
+            Float16(tiny),
+        )
+        self.assertInterchangeable(
+            Float16.square_root(Float64(tiny * tiny * 2.25)),
+            Float16(2 * tiny),
+        )
+        self.assertInterchangeable(
+            Float16.square_root(Float64(tiny * tiny * 2.250000001)),
+            Float16(2 * tiny),
+        )
+        self.assertInterchangeable(
+            Float16.square_root(Float64(tiny * tiny * 4.0)),
+            Float16(2 * tiny),
         )
 
 
