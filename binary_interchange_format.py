@@ -1070,6 +1070,32 @@ class _BinaryFloatBase(object):
 
         return _int_to_bytes(equivalent_int, self._format.width // 8)
 
+    def copy(self):
+        if self._type == _FINITE:
+            return type(self)(
+                type=_FINITE,
+                sign=self._sign,
+                exponent=self._exponent,
+                significand=self._significand,
+            )
+
+        elif self._type == _INFINITE:
+            return type(self)(
+                type=_INFINITE,
+                sign=self._sign,
+            )
+
+        elif self._type == _NAN:
+            return type(self)(
+                type=_NAN,
+                sign=self._sign,
+                payload=self._payload,
+                signaling=self._signaling,
+            )
+
+        else:
+            raise ValueError("invalid _type attribute: {}".format(self._type))
+
     def negate(self):
         if self._type == _FINITE:
             return type(self)(
@@ -1118,6 +1144,9 @@ class _BinaryFloatBase(object):
             )
         else:
             raise ValueError("invalid _type attribute: {}".format(self._type))
+
+    def __pos__(self):
+        return self.negate()
 
     def __neg__(self):
         return self.negate()
