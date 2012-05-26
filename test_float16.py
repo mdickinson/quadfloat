@@ -24,6 +24,61 @@ class TestFloat16(unittest.TestCase):
         expected = Float16('0.89990234375')
         self.assertInterchangeable(actual, expected)
 
+    def test_construction_from_int(self):
+        # Test round-half-to-even
+
+        # 2048 -> significand bits of 0, exponent of ???
+        # 5 exponent bits;  for 1.0, would expect exponent bits to have value 15
+        # so for 2048.0, should be 15+ 11 = 26.  Shift by 2 to get 104.
+        self.assertEqual(Float16(2048).encode(), b'\x00\x68')
+        self.assertEqual(Float16(2049).encode(), b'\x00\x68')
+        self.assertEqual(Float16(2050).encode(), b'\x01\x68')
+        self.assertEqual(Float16(2051).encode(), b'\x02\x68')
+        self.assertEqual(Float16(2052).encode(), b'\x02\x68')
+        self.assertEqual(Float16(2053).encode(), b'\x02\x68')
+        self.assertEqual(Float16(2054).encode(), b'\x03\x68')
+        self.assertEqual(Float16(2055).encode(), b'\x04\x68')
+        self.assertEqual(Float16(2056).encode(), b'\x04\x68')
+
+    def test_construction_from_float(self):
+        # Test round-half-to-even
+
+        self.assertEqual(Float16(2048.0).encode(), b'\x00\x68')
+        # halfway case
+        self.assertEqual(Float16(2048.9999999999).encode(), b'\x00\x68')
+        self.assertEqual(Float16(2049.0).encode(), b'\x00\x68')
+        self.assertEqual(Float16(2049.0000000001).encode(), b'\x01\x68')
+        self.assertEqual(Float16(2050.0).encode(), b'\x01\x68')
+        self.assertEqual(Float16(2050.9999999999).encode(), b'\x01\x68')
+        self.assertEqual(Float16(2051.0).encode(), b'\x02\x68')
+        self.assertEqual(Float16(2051.0000000001).encode(), b'\x02\x68')
+        self.assertEqual(Float16(2052.0).encode(), b'\x02\x68')
+        self.assertEqual(Float16(2053.0).encode(), b'\x02\x68')
+        self.assertEqual(Float16(2054.0).encode(), b'\x03\x68')
+        self.assertEqual(Float16(2055.0).encode(), b'\x04\x68')
+        self.assertEqual(Float16(2056.0).encode(), b'\x04\x68')
+
+        # Subnormals.
+        eps = 1e-10
+        tiny = 2.0**-24  # smallest positive representable float16 subnormal
+        test_values = [
+            (0.0, b'\x00\x00'),
+            (tiny * (0.5 - eps), b'\x00\x00'),
+            (tiny * 0.5, b'\x00\x00'),  # halfway case
+            (tiny * (0.5 + eps), b'\x01\x00'),
+            (tiny, b'\x01\x00'),
+            (tiny * (1.5 - eps), b'\x01\x00'),
+            (tiny * 1.5, b'\x02\x00'),  # halfway case
+            (tiny * (1.5 + eps), b'\x02\x00'),
+            (tiny * 2.0, b'\x02\x00'),
+            (tiny * (2.5 - eps), b'\x02\x00'),
+            (tiny * 2.5, b'\x02\x00'),  # halfway case
+            (tiny * (2.5 + eps), b'\x03\x00'),
+            (tiny * 3.0, b'\x03\x00'),
+        ]
+        for x, bs in test_values:
+            self.assertEqual(Float16(x).encode(), bs)
+
     def test_division(self):
         # Test division, with particular attention to correct rounding.
         # Integers up to 2048 all representable in Float16
