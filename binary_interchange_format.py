@@ -266,7 +266,7 @@ class BinaryInterchangeFormat(object):
 
         if source1._type == _FINITE:
             if source2._type == _INFINITE:
-                return source2
+                return self._infinity(source2._sign)
 
             exponent = min(source1._exponent, source2._exponent)
             significand = (
@@ -288,12 +288,12 @@ class BinaryInterchangeFormat(object):
             if source2._type == _INFINITE:
                 # same sign -> infinity; opposite signs -> nan
                 if source1._sign == source2._sign:
-                    return source1
+                    return self._infinity(source1._sign)
                 else:
                     return self._handle_invalid()
 
             else:
-                return source1
+                return self._infinity(source1._sign)
 
         else:
             raise ValueError(

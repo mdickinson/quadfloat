@@ -143,6 +143,19 @@ class TestMixed(unittest.TestCase):
         self.assertInterchangeable(a + b, Float64('NaN(123)'))
         self.assertInterchangeable(b + a, Float64('NaN'))
 
+        # If an infinity is returned, it should have the correct format.
+        a = Float32('3.2')
+        b = Float32('inf')
+        c = Float64.addition(a, b)
+        self.assertEqual(c._format, Float64)
+        self.assertInterchangeable(c, Float64('inf'))
+        c = Float64.addition(b, a)
+        self.assertEqual(c._format, Float64)
+        self.assertInterchangeable(c, Float64('inf'))
+        c = Float64.addition(b, b)
+        self.assertEqual(c._format, Float64)
+        self.assertInterchangeable(c, Float64('inf'))
+
     def test_subtraction(self):
         # Different _BinaryInterchangeFormat subtypes.
         a = Float16('3.5')
