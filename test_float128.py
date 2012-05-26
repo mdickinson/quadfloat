@@ -934,6 +934,154 @@ class TestFloat128(unittest.TestCase):
                 expected,
             )
 
+    def test_convert_from_int(self):
+        self.assertInterchangeable(Float128.convert_from_int(5), Float128('5.0'))
+
+    def test_convert_to_integer_ties_to_even(self):
+        nan = Float128('nan')
+        with self.assertRaises(ValueError):
+            nan.convert_to_integer_ties_to_even()
+
+        inf = Float128('inf')
+        with self.assertRaises(ValueError):
+            inf.convert_to_integer_ties_to_even()
+        ninf = Float128('-inf')
+        with self.assertRaises(ValueError):
+            ninf.convert_to_integer_ties_to_even()
+
+        self.assertEqual(Float128(-1.75).convert_to_integer_ties_to_even(), -2)
+        self.assertEqual(Float128(-1.5).convert_to_integer_ties_to_even(), -2)
+        self.assertEqual(Float128(-1.25).convert_to_integer_ties_to_even(), -1)
+        self.assertEqual(Float128(-1.0).convert_to_integer_ties_to_even(), -1)
+        self.assertEqual(Float128(-0.75).convert_to_integer_ties_to_even(), -1)
+        self.assertEqual(Float128(-0.5).convert_to_integer_ties_to_even(), 0)
+        self.assertEqual(Float128(-0.25).convert_to_integer_ties_to_even(), 0)
+        self.assertEqual(Float128(-0.0).convert_to_integer_ties_to_even(), 0)
+        self.assertEqual(Float128(0.0).convert_to_integer_ties_to_even(), 0)
+        self.assertEqual(Float128(0.25).convert_to_integer_ties_to_even(), 0)
+        self.assertEqual(Float128(0.5).convert_to_integer_ties_to_even(), 0)
+        self.assertEqual(Float128(0.75).convert_to_integer_ties_to_even(), 1)
+        self.assertEqual(Float128(1.0).convert_to_integer_ties_to_even(), 1)
+        self.assertEqual(Float128(1.25).convert_to_integer_ties_to_even(), 1)
+        self.assertEqual(Float128(1.5).convert_to_integer_ties_to_even(), 2)
+        self.assertEqual(Float128(1.75).convert_to_integer_ties_to_even(), 2)
+
+    def test_convert_to_integer_toward_zero(self):
+        nan = Float128('nan')
+        with self.assertRaises(ValueError):
+            nan.convert_to_integer_toward_zero()
+
+        inf = Float128('inf')
+        with self.assertRaises(ValueError):
+            inf.convert_to_integer_toward_zero()
+        ninf = Float128('-inf')
+        with self.assertRaises(ValueError):
+            ninf.convert_to_integer_toward_zero()
+
+        self.assertEqual(Float128(-1.75).convert_to_integer_toward_zero(), -1)
+        self.assertEqual(Float128(-1.5).convert_to_integer_toward_zero(), -1)
+        self.assertEqual(Float128(-1.25).convert_to_integer_toward_zero(), -1)
+        self.assertEqual(Float128(-1.0).convert_to_integer_toward_zero(), -1)
+        self.assertEqual(Float128(-0.75).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(Float128(-0.5).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(Float128(-0.25).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(Float128(-0.0).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(Float128(0.0).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(Float128(0.25).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(Float128(0.5).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(Float128(0.75).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(Float128(1.0).convert_to_integer_toward_zero(), 1)
+        self.assertEqual(Float128(1.25).convert_to_integer_toward_zero(), 1)
+        self.assertEqual(Float128(1.5).convert_to_integer_toward_zero(), 1)
+        self.assertEqual(Float128(1.75).convert_to_integer_toward_zero(), 1)
+
+    def test_convert_to_integer_toward_positive(self):
+        nan = Float128('nan')
+        with self.assertRaises(ValueError):
+            nan.convert_to_integer_toward_positive()
+
+        inf = Float128('inf')
+        with self.assertRaises(ValueError):
+            inf.convert_to_integer_toward_positive()
+        ninf = Float128('-inf')
+        with self.assertRaises(ValueError):
+            ninf.convert_to_integer_toward_positive()
+
+        self.assertEqual(Float128(-1.75).convert_to_integer_toward_positive(), -1)
+        self.assertEqual(Float128(-1.5).convert_to_integer_toward_positive(), -1)
+        self.assertEqual(Float128(-1.25).convert_to_integer_toward_positive(), -1)
+        self.assertEqual(Float128(-1.0).convert_to_integer_toward_positive(), -1)
+        self.assertEqual(Float128(-0.75).convert_to_integer_toward_positive(), 0)
+        self.assertEqual(Float128(-0.5).convert_to_integer_toward_positive(), 0)
+        self.assertEqual(Float128(-0.25).convert_to_integer_toward_positive(), 0)
+        self.assertEqual(Float128(-0.0).convert_to_integer_toward_positive(), 0)
+        self.assertEqual(Float128(0.0).convert_to_integer_toward_positive(), 0)
+        self.assertEqual(Float128(0.25).convert_to_integer_toward_positive(), 1)
+        self.assertEqual(Float128(0.5).convert_to_integer_toward_positive(), 1)
+        self.assertEqual(Float128(0.75).convert_to_integer_toward_positive(), 1)
+        self.assertEqual(Float128(1.0).convert_to_integer_toward_positive(), 1)
+        self.assertEqual(Float128(1.25).convert_to_integer_toward_positive(), 2)
+        self.assertEqual(Float128(1.5).convert_to_integer_toward_positive(), 2)
+        self.assertEqual(Float128(1.75).convert_to_integer_toward_positive(), 2)
+
+    def test_convert_to_integer_toward_negative(self):
+        nan = Float128('nan')
+        with self.assertRaises(ValueError):
+            nan.convert_to_integer_toward_negative()
+
+        inf = Float128('inf')
+        with self.assertRaises(ValueError):
+            inf.convert_to_integer_toward_negative()
+        ninf = Float128('-inf')
+        with self.assertRaises(ValueError):
+            ninf.convert_to_integer_toward_negative()
+
+        self.assertEqual(Float128(-1.75).convert_to_integer_toward_negative(), -2)
+        self.assertEqual(Float128(-1.5).convert_to_integer_toward_negative(), -2)
+        self.assertEqual(Float128(-1.25).convert_to_integer_toward_negative(), -2)
+        self.assertEqual(Float128(-1.0).convert_to_integer_toward_negative(), -1)
+        self.assertEqual(Float128(-0.75).convert_to_integer_toward_negative(), -1)
+        self.assertEqual(Float128(-0.5).convert_to_integer_toward_negative(), -1)
+        self.assertEqual(Float128(-0.25).convert_to_integer_toward_negative(), -1)
+        self.assertEqual(Float128(-0.0).convert_to_integer_toward_negative(), 0)
+        self.assertEqual(Float128(0.0).convert_to_integer_toward_negative(), 0)
+        self.assertEqual(Float128(0.25).convert_to_integer_toward_negative(), 0)
+        self.assertEqual(Float128(0.5).convert_to_integer_toward_negative(), 0)
+        self.assertEqual(Float128(0.75).convert_to_integer_toward_negative(), 0)
+        self.assertEqual(Float128(1.0).convert_to_integer_toward_negative(), 1)
+        self.assertEqual(Float128(1.25).convert_to_integer_toward_negative(), 1)
+        self.assertEqual(Float128(1.5).convert_to_integer_toward_negative(), 1)
+        self.assertEqual(Float128(1.75).convert_to_integer_toward_negative(), 1)
+
+    def test_convert_to_integer_ties_to_away(self):
+        nan = Float128('nan')
+        with self.assertRaises(ValueError):
+            nan.convert_to_integer_ties_to_away()
+
+        inf = Float128('inf')
+        with self.assertRaises(ValueError):
+            inf.convert_to_integer_ties_to_away()
+        ninf = Float128('-inf')
+        with self.assertRaises(ValueError):
+            ninf.convert_to_integer_ties_to_away()
+
+        self.assertEqual(Float128(-1.75).convert_to_integer_ties_to_away(), -2)
+        self.assertEqual(Float128(-1.5).convert_to_integer_ties_to_away(), -2)
+        self.assertEqual(Float128(-1.25).convert_to_integer_ties_to_away(), -1)
+        self.assertEqual(Float128(-1.0).convert_to_integer_ties_to_away(), -1)
+        self.assertEqual(Float128(-0.75).convert_to_integer_ties_to_away(), -1)
+        self.assertEqual(Float128(-0.5).convert_to_integer_ties_to_away(), -1)
+        self.assertEqual(Float128(-0.25).convert_to_integer_ties_to_away(), 0)
+        self.assertEqual(Float128(-0.0).convert_to_integer_ties_to_away(), 0)
+        self.assertEqual(Float128(0.0).convert_to_integer_ties_to_away(), 0)
+        self.assertEqual(Float128(0.25).convert_to_integer_ties_to_away(), 0)
+        self.assertEqual(Float128(0.5).convert_to_integer_ties_to_away(), 1)
+        self.assertEqual(Float128(0.75).convert_to_integer_ties_to_away(), 1)
+        self.assertEqual(Float128(1.0).convert_to_integer_ties_to_away(), 1)
+        self.assertEqual(Float128(1.25).convert_to_integer_ties_to_away(), 1)
+        self.assertEqual(Float128(1.5).convert_to_integer_ties_to_away(), 2)
+        self.assertEqual(Float128(1.75).convert_to_integer_ties_to_away(), 2)
+
     def test_negate(self):
         self.assertInterchangeable(-Float128('-2.0'), Float128('2.0'))
         self.assertInterchangeable(-Float128('2.0'), Float128('-2.0'))

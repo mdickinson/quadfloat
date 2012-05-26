@@ -60,6 +60,11 @@ _number_parser = _re.compile(r"""        # A numeric string consists of:
 """, _re.VERBOSE | _re.IGNORECASE).match
 
 
+_round_ties_to_even_offsets = [0, -1, -2, 1, 0, -1, 2, 1]
+_round_toward_zero_offsets = [0, -1, -2, -3, 0, -1, -2, -3]
+_round_ties_to_away_offsets = [0, -1, 2, 1, 0, -1, 2, 1]
+
+
 def _isqrt(n):
     """
     Return the integer square root of n for any integer n >= 1.
@@ -186,12 +191,11 @@ class BinaryInterchangeFormat(object):
     def _final_round(self, sign, e, q):
         """
         Make final rounding adjustment, using the rounding mode from the
-        current context.  For now, only round-half-to-even is supported.
+        current context.  For now, only round-ties-to-even is supported.
 
         """
-        # Do the round half to even, get rid of the 2 excess rounding bits.
-        _round_half_to_even_offsets = [0, -1, -2, 1, 0, -1, 2, 1]
-        q += _round_half_to_even_offsets[q & 7]
+        # Do the round ties to even, get rid of the 2 excess rounding bits.
+        q += _round_ties_to_even_offsets[q & 7]
         q, e = q >> 2, e + 2
 
         # Check whether we need to adjust the exponent.
@@ -478,6 +482,13 @@ class BinaryInterchangeFormat(object):
             exponent=exponent,
             significand=abs(significand),
         )
+
+    def convert_from_int(self, n):
+        """
+        Convert the integer n to this format.
+
+        """
+        return self.class_._from_int(n)
 
     def _zero(self, sign):
         """
@@ -1187,3 +1198,144 @@ class _BinaryFloatBase(object):
         # effect or not.
         __div__ = __truediv__
         __rdiv__ = __rtruediv__
+
+    # 5.4.1 Arithmetic operations (conversions to integer).
+    def convert_to_integer_ties_to_even(self):
+        if self._type == _NAN:
+            # XXX Signaling nans should also raise the invalid operation
+            # exception.
+            raise ValueError("Cannot convert a NaN to an integer.")
+
+        if self._type == _INFINITE:
+            # NB. Python raises OverflowError here, which doesn't really
+            # seem right.
+            raise ValueError("Cannot convert an infinity to an integer.")
+
+        # (-1)**sign * significand * 2**exponent
+
+        # Compute significand * 2**(exponent + 2), rounded to the nearest
+        # integer using round-to-odd.  Extra bits will be used for rounding.
+        sign = self._sign
+        e = self._exponent + 2
+        if e >= 0:
+            q = self._significand << e
+        else:
+            q = self._significand >> -e | bool(self._significand & ~(-1 << -e))
+
+        # Round ties to even.
+        q = (q + _round_ties_to_even_offsets[q & 7]) >> 2
+
+        # int() to convert from long if necessary
+        return int(-q if sign else q)
+
+    def convert_to_integer_toward_zero(self):
+        if self._type == _NAN:
+            # XXX Signaling nans should also raise the invalid operation
+            # exception.
+            raise ValueError("Cannot convert a NaN to an integer.")
+
+        if self._type == _INFINITE:
+            # NB. Python raises OverflowError here, which doesn't really
+            # seem right.
+            raise ValueError("Cannot convert an infinity to an integer.")
+
+        # (-1)**sign * significand * 2**exponent
+
+        # Compute significand * 2**(exponent + 2), rounded to the nearest
+        # integer using round-to-odd.  Extra bits will be used for rounding.
+        sign = self._sign
+        e = self._exponent + 2
+        if e >= 0:
+            q = self._significand << e
+        else:
+            q = self._significand >> -e | bool(self._significand & ~(-1 << -e))
+
+        # Round toward zero.
+        q = (q + _round_toward_zero_offsets[q & 7]) >> 2
+
+        # int() to convert from long if necessary
+        return int(-q if sign else q)
+
+    def convert_to_integer_toward_positive(self):
+        if self._type == _NAN:
+            # XXX Signaling nans should also raise the invalid operation
+            # exception.
+            raise ValueError("Cannot convert a NaN to an integer.")
+
+        if self._type == _INFINITE:
+            # NB. Python raises OverflowError here, which doesn't really
+            # seem right.
+            raise ValueError("Cannot convert an infinity to an integer.")
+
+        # (-1)**sign * significand * 2**exponent
+
+        # Compute significand * 2**(exponent + 2), rounded to the nearest
+        # integer using round-to-odd.  Extra bits will be used for rounding.
+        sign = self._sign
+        e = self._exponent + 2
+        if e >= 0:
+            q = self._significand << e
+        else:
+            q = self._significand >> -e | bool(self._significand & ~(-1 << -e))
+
+        # Round toward positive.
+        q = q >> 2 if sign else -(-q >> 2)
+
+        # int() to convert from long if necessary
+        return int(-q if sign else q)
+
+    def convert_to_integer_toward_negative(self):
+        if self._type == _NAN:
+            # XXX Signaling nans should also raise the invalid operation
+            # exception.
+            raise ValueError("Cannot convert a NaN to an integer.")
+
+        if self._type == _INFINITE:
+            # NB. Python raises OverflowError here, which doesn't really
+            # seem right.
+            raise ValueError("Cannot convert an infinity to an integer.")
+
+        # (-1)**sign * significand * 2**exponent
+
+        # Compute significand * 2**(exponent + 2), rounded to the nearest
+        # integer using round-to-odd.  Extra bits will be used for rounding.
+        sign = self._sign
+        e = self._exponent + 2
+        if e >= 0:
+            q = self._significand << e
+        else:
+            q = self._significand >> -e | bool(self._significand & ~(-1 << -e))
+
+        # Round toward negative.
+        q = -(-q >> 2) if sign else q >> 2
+
+        # int() to convert from long if necessary
+        return int(-q if sign else q)
+
+    def convert_to_integer_ties_to_away(self):
+        if self._type == _NAN:
+            # XXX Signaling nans should also raise the invalid operation
+            # exception.
+            raise ValueError("Cannot convert a NaN to an integer.")
+
+        if self._type == _INFINITE:
+            # NB. Python raises OverflowError here, which doesn't really
+            # seem right.
+            raise ValueError("Cannot convert an infinity to an integer.")
+
+        # (-1)**sign * significand * 2**exponent
+
+        # Compute significand * 2**(exponent + 2), rounded to the nearest
+        # integer using round-to-odd.  Extra bits will be used for rounding.
+        sign = self._sign
+        e = self._exponent + 2
+        if e >= 0:
+            q = self._significand << e
+        else:
+            q = self._significand >> -e | bool(self._significand & ~(-1 << -e))
+
+        # Round ties to away.
+        q = (q + _round_ties_to_away_offsets[q & 7]) >> 2
+
+        # int() to convert from long if necessary
+        return int(-q if sign else q)
