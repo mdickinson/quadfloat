@@ -937,6 +937,35 @@ class TestFloat128(unittest.TestCase):
     def test_convert_from_int(self):
         self.assertInterchangeable(Float128.convert_from_int(5), Float128('5.0'))
 
+    def test_int(self):
+        nan = Float128('nan')
+        with self.assertRaises(ValueError):
+            int(nan)
+
+        inf = Float128('inf')
+        with self.assertRaises(ValueError):
+            int(inf)
+        ninf = Float128('-inf')
+        with self.assertRaises(ValueError):
+            int(ninf)
+
+        self.assertEqual(int(Float128(-1.75)), -1)
+        self.assertEqual(int(Float128(-1.5)), -1)
+        self.assertEqual(int(Float128(-1.25)), -1)
+        self.assertEqual(int(Float128(-1.0)), -1)
+        self.assertEqual(int(Float128(-0.75)), 0)
+        self.assertEqual(int(Float128(-0.5)), 0)
+        self.assertEqual(int(Float128(-0.25)), 0)
+        self.assertEqual(int(Float128(-0.0)), 0)
+        self.assertEqual(int(Float128(0.0)), 0)
+        self.assertEqual(int(Float128(0.25)), 0)
+        self.assertEqual(int(Float128(0.5)), 0)
+        self.assertEqual(int(Float128(0.75)), 0)
+        self.assertEqual(int(Float128(1.0)), 1)
+        self.assertEqual(int(Float128(1.25)), 1)
+        self.assertEqual(int(Float128(1.5)), 1)
+        self.assertEqual(int(Float128(1.75)), 1)
+
     def test_convert_to_integer_ties_to_even(self):
         nan = Float128('nan')
         with self.assertRaises(ValueError):

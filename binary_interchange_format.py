@@ -1151,6 +1151,10 @@ class _BinaryFloatBase(object):
             )
         return other
 
+    # Overload for conversion to integer.
+    def __int__(self):
+        return self.convert_to_integer_toward_zero()
+
     # Binary arithmetic operator overloads.
     def __add__(self, other):
         other = self._convert_other(other)

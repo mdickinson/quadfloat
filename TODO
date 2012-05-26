@@ -3,10 +3,8 @@ Bugs
 
 * Lots of public methods are missing docstrings.
 
-* Better name for class_?  Should be private?
+* Missing documentation.
 
-* We're probably still returning source1 or source2 directly in addition and
-  multiplication with infinite results.  Check this.
 
 Documentation
 -------------
@@ -16,6 +14,9 @@ Documentation
 
 Features
 --------
+
+* Addition and subtraction results need to give the correct sign for zero
+  results, depending on the rounding mode.
 
 * Implement short float repr.
 
@@ -33,6 +34,8 @@ Features
 Internal refactoring
 --------------------
 
+* Better name for class_?  Should be private?
+
 * Remove dependence on decimal.
 
 * Factor out repeated rounding code.
@@ -48,7 +51,8 @@ Internal refactoring
 Performance
 -----------
 
-* Optimize addition / subtraction for cases where exponents differ wildly.
+* Optimize addition / subtraction / fused-multiply-add for cases where
+  exponents differ wildly.
 
 
 Tests
