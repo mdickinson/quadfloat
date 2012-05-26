@@ -260,45 +260,33 @@ class BinaryInterchangeFormat(object):
         Return 'source1 + source2', rounded to the format given by 'self'.
 
         """
-        cls = self.class_
         if source1._type == _NAN or source2._type == _NAN:
             return self._handle_nans(source1, source2)
 
-        if source1._type == _FINITE:
-            if source2._type == _INFINITE:
-                return self._infinity(source2._sign)
-
-            exponent = min(source1._exponent, source2._exponent)
-            significand = (
-                (source1._significand * (-1) ** source1._sign <<
-                 source1._exponent - exponent) +
-                (source2._significand * (-1) ** source2._sign <<
-                 source2._exponent - exponent)
-            )
-            sign = (significand < 0 or
-                    significand == 0 and source1._sign and source2._sign)
-
-            return self._round_from_triple(
-                sign=sign,
-                exponent=exponent,
-                significand=abs(significand),
-            )
-
-        elif source1._type == _INFINITE:
-            if source2._type == _INFINITE:
-                # same sign -> infinity; opposite signs -> nan
-                if source1._sign == source2._sign:
-                    return self._infinity(source1._sign)
-                else:
-                    return self._handle_invalid()
-
+        if source1._type == _INFINITE:
+            if source2._type == _INFINITE and source1._sign != source2._sign:
+                return self._handle_invalid()
             else:
                 return self._infinity(source1._sign)
 
-        else:
-            raise ValueError(
-                "invalid _type attribute: {}".format(source1._type)
-            )
+        if source2._type == _INFINITE:
+            return self._infinity(source2._sign)
+
+        exponent = min(source1._exponent, source2._exponent)
+        significand = (
+            (source1._significand * (-1) ** source1._sign <<
+             source1._exponent - exponent) +
+            (source2._significand * (-1) ** source2._sign <<
+             source2._exponent - exponent)
+        )
+        sign = (significand < 0 or
+                significand == 0 and source1._sign and source2._sign)
+
+        return self._round_from_triple(
+            sign=sign,
+            exponent=exponent,
+            significand=abs(significand),
+        )
 
     def multiplication(self, source1, source2):
         """
@@ -308,41 +296,27 @@ class BinaryInterchangeFormat(object):
         if source1._type == _NAN or source2._type == _NAN:
             return self._handle_nans(source1, source2)
 
-        cls = self.class_
-        if source1._type == _FINITE:
-
-            if source2.is_infinite():
-                if source1.is_zero():
-                    # zero * infinity -> nan
-                    return self._handle_invalid()
-
-                # non-zero finite * infinity -> infinity
-                return cls(type=_INFINITE, sign=source1._sign ^ source2._sign)
-
-            # finite * finite case.
-            sign = source1._sign ^ source2._sign
-            significand = source1._significand * source2._significand
-            exponent = source1._exponent + source2._exponent
-
-            return self._round_from_triple(
-                sign=sign,
-                exponent=exponent,
-                significand=significand,
-            )
-
-        elif source1._type == _INFINITE:
-            if source2.is_infinite() or not source2.is_zero():
-                # infinity * infinity -> infinity;
-                # infinity * nonzero finite -> infinity
-                return cls(type=_INFINITE, sign=source1._sign ^ source2._sign)
-
-            elif source2.is_zero():
+        sign = source1._sign ^ source2._sign
+        if source1._type == _INFINITE:
+            if source2.is_zero():
                 return self._handle_invalid()
+            else:
+                return self._infinity(sign=sign)
 
-        else:
-            raise ValueError(
-                "invalid _type attribute: {}".format(source1._type)
-            )
+        if source2._type == _INFINITE:
+            if source1.is_zero():
+                return self._handle_invalid()
+            else:
+                return self._infinity(sign=sign)
+
+        # finite * finite case.
+        significand = source1._significand * source2._significand
+        exponent = source1._exponent + source2._exponent
+        return self._round_from_triple(
+            sign=sign,
+            exponent=exponent,
+            significand=significand,
+        )
 
     def division(self, source1, source2):
         """
@@ -352,79 +326,52 @@ class BinaryInterchangeFormat(object):
         if source1._type == _NAN or source2._type == _NAN:
             return self._handle_nans(source1, source2)
 
-        cls = self.class_
-        if source1._type == _FINITE:
-            if source2._type == _INFINITE:
-                # finite / infinite -> zero
-                return cls(
-                    type=_FINITE,
-                    sign=source1._sign ^ source2._sign,
-                    exponent=self.qmin,
-                    significand=0,
-                )
-
-            # Finite / finite case.
-            sign = source1._sign ^ source2._sign
-
-            if source1.is_zero():
-                if source2.is_zero():
-                    return self._handle_invalid()
-
-                return cls(
-                    type=_FINITE,
-                    sign=sign,
-                    exponent=self.qmin,
-                    significand=0,
-                )
-
-            if source2.is_zero():
-                return cls(type=_INFINITE, sign=sign)
-
-            # First find d such that 2**(d-1) <= abs(source1) / abs(source2) <
-            # 2**d.
-            a = source1._significand
-            b = source2._significand
-            d = a.bit_length() - b.bit_length()
-            d += (a >> d if d >= 0 else a << -d) >= b
-            d += source1._exponent - source2._exponent
-
-            # Exponent of result.  Reduce by 2 in order to compute a couple of
-            # extra bits for rounding purposes.
-            e = max(d - self.precision, self.qmin) - 2
-
-            # Round (source1 / source2) * 2**-e to nearest integer.  source1 /
-            # source2 * 2**-e == source1._significand / source2._significand *
-            # 2**shift, where...
-            shift = source1._exponent - source2._exponent - e
-
-            a, b = a << max(shift, 0), b << max(0, -shift)
-            q, r = divmod(a, b)
-            # Round-to-odd.
-            q |= bool(r)
-
-            # Now result approximated by (-1)**sign * q * 2**e.
-            return self._final_round(sign, e, q)
-
-        elif source1._type == _INFINITE:
+        sign = source1._sign ^ source2._sign
+        if source1._type == _INFINITE:
             if source2._type == _INFINITE:
                 return self._handle_invalid()
-
-            # infinite / finite -> infinite
-            elif source2._type == _FINITE:
-                return cls(
-                    type=_INFINITE,
-                    sign=source1._sign ^ source2._sign,
-                )
-
             else:
-                raise ValueError(
-                    "invalid _type attribute: {}".format(source2._type)
-                )
+                return self._infinity(sign=sign)
 
-        else:
-            raise ValueError(
-                "invalid _type attribute: {}".format(source1._type)
-            )
+        if source2._type == _INFINITE:
+            # Already handled the case where source1 is infinite.
+            return self._zero(sign=sign)
+
+        if source1.is_zero():
+            if source2.is_zero():
+                return self._handle_invalid()
+            else:
+                return self._zero(sign=sign)
+
+        if source2.is_zero():
+            return self._infinity(sign=sign)
+
+        # Finite / finite case.
+
+        # First find d such that 2**(d-1) <= abs(source1) / abs(source2) <
+        # 2**d.
+        a = source1._significand
+        b = source2._significand
+        d = a.bit_length() - b.bit_length()
+        d += (a >> d if d >= 0 else a << -d) >= b
+        d += source1._exponent - source2._exponent
+
+        # Exponent of result.  Reduce by 2 in order to compute a couple of
+        # extra bits for rounding purposes.
+        e = max(d - self.precision, self.qmin) - 2
+
+        # Round (source1 / source2) * 2**-e to nearest integer.  source1 /
+        # source2 * 2**-e == source1._significand / source2._significand *
+        # 2**shift, where...
+        shift = source1._exponent - source2._exponent - e
+
+        a, b = a << max(shift, 0), b << max(0, -shift)
+        q, r = divmod(a, b)
+        # Round-to-odd.
+        q |= bool(r)
+
+        # Now result approximated by (-1)**sign * q * 2**e.
+        return self._final_round(sign, e, q)
 
     def subtraction(self, source1, source2):
         """

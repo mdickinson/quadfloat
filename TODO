@@ -3,6 +3,10 @@ Bugs
 
 * Lots of public methods are missing docstrings.
 
+* Better name for class_?  Should be private?
+
+* We're probably still returning source1 or source2 directly in addition and
+  multiplication with infinite results.  Check this.
 
 Documentation
 -------------
