@@ -255,6 +255,8 @@ class BinaryInterchangeFormat(object):
         # non-NaN.  This shouldn't happen.
         raise ValueError("_handle_nans didn't receive any NaNs.")
 
+    # Section 5.4.1: Arithmetic operations
+
     def addition(self, source1, source2):
         """
         Return 'source1 + source2', rounded to the format given by 'self'.
@@ -287,6 +289,18 @@ class BinaryInterchangeFormat(object):
             exponent=exponent,
             significand=abs(significand),
         )
+
+    def subtraction(self, source1, source2):
+        """
+        Return 'source1 - source2', rounded to the format given by 'self'.
+
+        """
+        if source1._type == _NAN or source2._type == _NAN:
+            return self._handle_nans(source1, source2)
+
+        # For non-NaNs, subtraction(a, b) is equivalent to
+        # addition(a, b.negate())
+        return self.addition(source1, source2.negate())
 
     def multiplication(self, source1, source2):
         """
@@ -373,40 +387,6 @@ class BinaryInterchangeFormat(object):
         # Now result approximated by (-1)**sign * q * 2**e.
         return self._final_round(sign, e, q)
 
-    def subtraction(self, source1, source2):
-        """
-        Return the difference source1 - source2.
-
-        """
-        if source1._type == _NAN or source2._type == _NAN:
-            return self._handle_nans(source1, source2)
-
-        # For non-NaNs, subtraction(a, b) is equivalent to
-        # addition(a, b.negate())
-        return self.addition(source1, source2.negate())
-
-    def _zero(self, sign):
-        """
-        Return a suitably-signed zero for this format.
-
-        """
-        return self.class_(
-            type=_FINITE,
-            sign=sign,
-            exponent=self.qmin,
-            significand=0,
-        )
-
-    def _infinity(self, sign):
-        """
-        Return a suitably-signed infinity for this format.
-
-        """
-        return self.class_(
-            type=_INFINITE,
-            sign=sign,
-        )
-
     def square_root(self, source1):
         """
         Return the square root of source1 in format 'self'.
@@ -447,8 +427,79 @@ class BinaryInterchangeFormat(object):
 
         return self._final_round(False, e, q)
 
-    def decode(self, encoded_value):
-        return self.class_.decode(encoded_value)
+    def fused_multiply_add(self, source1, source2, source3):
+        """
+        Return source1 * source2 + source3, rounding once to format 'self'.
+
+        """
+        # Deal with any NaNs.
+        if (source1._type == _NAN or source2._type == _NAN or
+            source3._type == _NAN):
+            return self._handle_nans(source1, source2, source3)
+
+        sign12 = source1._sign ^ source2._sign
+
+        # Deal with infinities in the first two arguments.
+        if source1._type == _INFINITE:
+            if source2.is_zero():
+                return self._handle_invalid()
+            else:
+                return self.addition(self._infinity(sign12), source3)
+
+        if source2._type == _INFINITE:
+            if source1.is_zero():
+                return self._handle_invalid()
+            else:
+                return self.addition(self._infinity(sign12), source3)
+
+        # Deal with zeros in the first two arguments.
+        if source1.is_zero() or source2.is_zero():
+            return self.addition(self._zero(sign12), source3)
+
+        # Infinite 3rd argument.
+        if source3._type == _INFINITE:
+            return self._infinity(source3._sign)
+
+        # Multiply the first two arguments (both now finite and nonzero).
+        significand12 = source1._significand * source2._significand
+        exponent12 = source1._exponent + source2._exponent
+
+        exponent = min(exponent12, source3._exponent)
+        significand = (
+            (significand12 * (-1) ** sign12 << exponent12 - exponent) +
+            (source3._significand * (-1) ** source3._sign <<
+             source3._exponent - exponent)
+        )
+        sign = (significand < 0 or
+                significand == 0 and sign12 and source3._sign)
+
+        return self._round_from_triple(
+            sign=sign,
+            exponent=exponent,
+            significand=abs(significand),
+        )
+
+    def _zero(self, sign):
+        """
+        Return a suitably-signed zero for this format.
+
+        """
+        return self.class_(
+            type=_FINITE,
+            sign=sign,
+            exponent=self.qmin,
+            significand=0,
+        )
+
+    def _infinity(self, sign):
+        """
+        Return a suitably-signed infinity for this format.
+
+        """
+        return self.class_(
+            type=_INFINITE,
+            sign=sign,
+        )
 
     def _common_format(fmt1, fmt2):
         """
@@ -491,6 +542,66 @@ class BinaryInterchangeFormat(object):
             type=_NAN,
             sign=False,
         )
+
+    def decode(self, encoded_value):
+        """
+        Decode a string of bytes to the corresponding Float<nnn> instance.
+
+        """
+        if len(encoded_value) != self.width // 8:
+            raise ValueError("Wrong number of bytes for format.")
+
+        exponent_field_width = self._exponent_field_width
+        significand_field_width = self.precision - 1
+
+        # Extract fields.
+        equivalent_int = _int_from_bytes(encoded_value)
+        significand_field = equivalent_int & (2 ** significand_field_width - 1)
+        equivalent_int >>= significand_field_width
+        exponent_field = equivalent_int & (2 ** exponent_field_width - 1)
+        equivalent_int >>= exponent_field_width
+        sign = equivalent_int
+
+        assert 0 <= exponent_field <= 2 ** exponent_field_width - 1
+        assert 0 <= significand_field <= 2 ** significand_field_width - 1
+
+        # Construct value.
+        if exponent_field == 2 ** exponent_field_width - 1:
+            # Infinities, Nans.
+            if significand_field == 0:
+                # Infinities.
+                return self._infinity(sign=sign)
+            else:
+                # Nan.
+                payload_width = significand_field_width - 1
+                payload = significand_field & ((1 << payload_width) - 1)
+                significand_field >>= payload_width
+                # Top bit of significand field indicates whether this Nan is
+                # quiet (1) or signaling (0).
+                assert 0 <= significand_field <= 1
+                signaling = not significand_field
+                return self.class_(
+                    type=_NAN,
+                    sign=sign,
+                    payload=payload,
+                    signaling=signaling,
+                )
+        elif exponent_field == 0:
+            # Subnormals, Zeros.
+            return self.class_(
+                type=_FINITE,
+                sign=sign,
+                exponent=self.qmin,
+                significand=significand_field,
+            )
+        else:
+            significand = significand_field + 2 ** (self.precision - 1)
+            return self.class_(
+                type=_FINITE,
+                sign=sign,
+                exponent=exponent_field - self.qbias,
+                significand=significand,
+            )
 
 
 _Float64 = BinaryInterchangeFormat(64)
@@ -910,64 +1021,6 @@ class _BinaryFloatBase(object):
             )
         else:
             assert False, "Shouldn't get here."
-
-    @classmethod
-    def decode(cls, encoded_value):
-        """
-        Decode a string of bytes to the corresponding Float<nnn> instance.
-
-        """
-        exponent_field_width = cls._format._exponent_field_width
-        significand_field_width = cls._format.precision - 1
-
-        # Extract fields.
-        equivalent_int = _int_from_bytes(encoded_value)
-        significand_field = equivalent_int & (2 ** significand_field_width - 1)
-        equivalent_int >>= significand_field_width
-        exponent_field = equivalent_int & (2 ** exponent_field_width - 1)
-        equivalent_int >>= exponent_field_width
-        sign = equivalent_int
-
-        assert 0 <= exponent_field <= 2 ** exponent_field_width - 1
-        assert 0 <= significand_field <= 2 ** significand_field_width - 1
-
-        # Construct value.
-        if exponent_field == 2 ** exponent_field_width - 1:
-            # Infinities, Nans.
-            if significand_field == 0:
-                # Infinities.
-                return cls(type=_INFINITE, sign=sign)
-            else:
-                # Nan.
-                payload_width = significand_field_width - 1
-                payload = significand_field & ((1 << payload_width) - 1)
-                significand_field >>= payload_width
-                # Top bit of significand field indicates whether this Nan is
-                # quiet (1) or signaling (0).
-                assert 0 <= significand_field <= 1
-                signaling = not significand_field
-                return cls(
-                    type=_NAN,
-                    sign=sign,
-                    payload=payload,
-                    signaling=signaling,
-                )
-        elif exponent_field == 0:
-            # Subnormals, Zeros.
-            return cls(
-                type=_FINITE,
-                sign=sign,
-                exponent=cls._format.qmin,
-                significand=significand_field,
-            )
-        else:
-            significand = significand_field + 2 ** (cls._format.precision - 1)
-            return cls(
-                type=_FINITE,
-                sign=sign,
-                exponent=exponent_field - cls._format.qbias,
-                significand=significand,
-            )
 
     def encode(self):
         """

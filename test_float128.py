@@ -305,6 +305,11 @@ class TestFloat128(unittest.TestCase):
             decoded_value = Float128.decode(encoded_value)
             self.assertInterchangeable(value, decoded_value)
 
+    def test_decode(self):
+        # Wrong number of bytes to decode.
+        with self.assertRaises(ValueError):
+            Float128.decode(b'\x00' * 8)
+
     def test_decode_encode_roundtrip(self):
         test_values = [
             b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
@@ -879,6 +884,55 @@ class TestFloat128(unittest.TestCase):
 
         # XXX Tests for correct rounding.
         # XXX Tests for subnormal results, underflow.
+
+    def test_fused_multiply_add(self):
+        test_values = [
+            # Simple cases, finite values.
+            ('5', '7', '11', '46'),
+            ('5', '7', '-11', '24'),
+            ('5', '-7', '11', '-24'),
+            ('5', '-7', '-11', '-46'),
+            ('-5', '7', '11', '-24'),
+            ('-5', '7', '-11', '-46'),
+            ('-5', '-7', '11', '46'),
+            ('-5', '-7', '-11', '24'),
+            # infinities
+            ('inf', '3', '2', 'inf'),
+            ('3', 'inf', '2', 'inf'),
+            # invalid multiplication
+            ('inf', '0', '2', 'nan'),
+            ('0', 'inf', '2', 'nan'),
+            # A 3rd nan argument wins over an invalid multiplication.
+            # Note that this differs from the decimal module;  it's
+            # "implementation defined" according to 7.2(c).
+            ('inf', '0', '-nan(456)', '-nan(456)'),
+            ('0', 'inf', 'snan(789)', 'nan(789)'),
+            # Addition of two infinities
+            ('inf', '2.3', 'inf', 'inf'),
+            ('inf', '2.3', '-inf', 'nan'),
+            ('-inf', '2.3', '-inf', '-inf'),
+            ('-inf', '2.3', 'inf', 'nan'),
+            # Zeros in the multiplication.
+            ('0', '2.3', '5.6', '5.6'),
+            ('2.3', '0', '5.6', '5.6'),
+            ('2.3', '0', '0', '0'),
+            ('2.3', '0', '-0', '0'),
+            ('-2.3', '0', '-0', '-0'),
+            ('2.3', '-0', '-0', '-0'),
+            ('-2.3', '-0', '-0', '0'),
+            # Infinite 3rd argument.
+            ('1.2', '2.3', '-inf', '-inf'),
+            ('1.2', '2.3', 'inf', 'inf'),
+            # Zero 3rd argument.
+            ('12', '2.5', '0.0', '30.0'),
+            ('12', '2.5', '-0.0', '30.0'),
+        ]
+        for strs in test_values:
+            a, b, c, expected = map(Float128, strs)
+            self.assertInterchangeable(
+                Float128.fused_multiply_add(a, b, c),
+                expected,
+            )
 
     def test_negate(self):
         self.assertInterchangeable(-Float128('-2.0'), Float128('2.0'))
