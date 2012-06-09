@@ -1,4 +1,5 @@
 import decimal as _decimal
+import itertools as _itertools
 import math as _math
 import re as _re
 import sys as _sys
@@ -24,6 +25,8 @@ else:
     _int_to_bytes = lambda n, length: n.to_bytes(length, byteorder='little')
     _int_from_bytes = lambda bs: int.from_bytes(bs, byteorder='little')
 
+
+# Constants, utility functions.
 
 _BINARY_INTERCHANGE_FORMAT_PRECISIONS = {
     16: 11,
@@ -78,6 +81,45 @@ def _isqrt(n):
         if m <= q:
             return m
         m = m + q >> 1
+
+
+def _divide_nearest(a, b):
+    """
+    Compute the nearest integer to the quotient a / b, rounding ties to the
+    nearest even integer.  a and b should be integers, with b positive.
+
+    """
+    q, r = divmod(4 * a, b)
+    q |= bool(r)
+    return (q + _round_ties_to_even_offsets[q & 7]) >> 2
+
+
+def _digits_from_rational(a, b, closed=True):
+    """
+    Generate successive decimal digits for a fraction a / b in [0, 1].
+
+    If closed is True (the default), the number x created from the generated
+    digits is always largest s.t. x <= a / b.  If False, it's the largest
+    such that x < a / b.
+
+    """
+    if closed:
+        if not 0 <= a < b:
+            raise ValueError(
+                "a and b should satisfy 0 <= a < b in _digits_from_rational"
+            )
+    else:
+        if not 0 < a <= b:
+            raise ValueError(
+                "a and b should satisfy 0 < a <= b in _digits_from_rational"
+            )
+
+    if not closed:
+        a = b - a
+
+    while True:
+        digit, a = divmod(10 * a, b)
+        yield digit if closed else 9 - digit
 
 
 class BinaryInterchangeFormat(object):
@@ -734,77 +776,111 @@ class _BinaryFloatBase(object):
                 "value of type {}".format(type(value))
             )
 
-    def _to_str(self, places=None):
+    def _to_short_str(self):
         """
-        Convert to a Decimal string with a given
-        number of significant digits.
+        Convert to a shortest Decimal string that rounds back to the given
+        value.
 
         """
-        if self._type == _FINITE:
-            if self._significand == 0:
-                if self._sign:
-                    return '-0.0'
-                else:
-                    return '0.0'
+        # Quick returns for zeros, infinities, NaNs.
+        if self._type == _FINITE and self._significand == 0:
+            return '-0.0' if self._sign else '0.0'
 
-            if places is None:
-                # Sufficient places to recover the value.
-                places = self._format._decimal_places
-
-            # Find a, b such that a / b = abs(self)
-            a = self._significand << max(self._exponent, 0)
-            b = 1 << max(0, -self._exponent)
-
-            # Compute exponent m for result.
-            n = len(str(a)) - len(str(b))
-            n += (a // 10 ** n if n >= 0 else a * 10 ** -n) >= b
-            # Invariant: 10 ** (n - 1) <= abs(self) < 10 ** n.
-            m = n - places
-
-            # Approximate a / b by a number of the form q * 10 ** m
-            a, b = a * 10 ** max(-m, 0), b * 10 ** max(0, m)
-
-            # Now divide to get quotient and remainder.
-            q, r = divmod(a, b)
-            assert 10 ** (places - 1) <= q < 10 ** places
-            if 2 * r > b or 2 * r == b and q & 1:
-                q += 1
-                if q == 10 ** places:
-                    q //= 10
-                    m += 1
-
-            # Cheat by getting the decimal module to do the string formatting
-            # (insertion of decimal point, etc.) for us.
-            return str(
-                _decimal.Decimal(
-                    '{0}{1}e{2}'.format(
-                        '-' if self._sign else '',
-                        q,
-                        m,
-                    )
-                )
-            )
-        elif self._type == _INFINITE:
+        if self._type == _INFINITE:
             return '-Infinity' if self._sign else 'Infinity'
 
-        elif self._type == _NAN:
-            pieces = []
-            if self._sign:
-                pieces.append('-')
-            if self._signaling:
-                pieces.append('s')
-            pieces.append('NaN')
-            pieces.append('({})'.format(self._payload))
-            return ''.join(pieces)
+        if self._type == _NAN:
+            return '{sign}{signaling}NaN({payload})'.format(
+                sign = '-' if self._sign else '',
+                signaling = 's' if self._signaling else '',
+                payload = self._payload,
+            )
 
+        # General nonzero finite case.
+
+        # XXX Deal with the special case where there's a power of 10 in the
+        # interval.
+
+        # Interval of values that round to self is
+        # (high / denominator, low / denominator)
+
+        # Is this a power of 2 that falls between two *normal* binades (so
+        # that the ulp function has a discontinuity at this point)?
+        is_boundary_case = (
+            self._significand == (2 ** (self._format.precision - 1)) and
+            self._exponent > self._format.qmin
+            )
+
+        if is_boundary_case:
+            shift = self._exponent - 2
+            high = (4 * self._significand + 2) << max(shift, 0)
+            target = (4 * self._significand) << max(shift, 0)
+            low = (4 * self._significand - 1) << max(shift, 0)
+            denominator = 1 << max(0, -shift)
         else:
-            raise ValueError("invalid _type attribute: {}".format(self._type))
+            shift = self._exponent - 1
+            high = (2 * self._significand + 1) << max(shift, 0)
+            target = (2 * self._significand) << max(shift, 0)
+            low = (2 * self._significand - 1) << max(shift, 0)
+            denominator = 1 << max(0, -shift)
+
+        # Find appropriate power of 10.
+        # Invariant: 10 ** (n-1) <= high / denominator < 10 ** n.
+        n = len(str(high)) - len(str(denominator))
+        n += (high // 10**n if n >= 0 else high * 10**-n) >= denominator
+
+        # So now we want to compute digits of high / denominator * 10**-n.
+        high *= 10 ** max(-n, 0)
+        target *= 10 ** max(-n, 0)
+        low *= 10 ** max(-n, 0)
+        denominator *= 10 ** max(0, n)
+
+        assert 0 < low < target < high < denominator
+
+        # The interval of values that will round back to self is closed if
+        # the significand is even, and open otherwise.
+        closed = self._significand % 2 == 0
+
+        high_digits = _digits_from_rational(high, denominator, closed=closed)
+        low_digits = _digits_from_rational(low, denominator, closed=not closed)
+        pairs = _itertools.izip_longest(low_digits, high_digits)
+
+        digits = []
+        for low_digit, high_digit in pairs:
+            if low_digit != high_digit:
+                break
+            digits.append(high_digit)
+            target = 10 * target - high_digit * denominator
+
+        # The best final digit is the digit giving the closest decimal string
+        # to the target value amongst all digits in (low_digit, high_digit].
+        # In most cases this just means the closest digit; the exception occurs
+        # when self is a power of 2, so that the interval of values rounding to
+        # self isn't centered on self; in that case, the nearest digit may lie
+        # below the interval (low_digit, high_digit].
+        best_final_digit = _divide_nearest(10 * target, denominator)
+        best_final_digit = max(best_final_digit, low_digit + 1)
+
+        assert low_digit < best_final_digit <= high_digit
+        digits.append(best_final_digit)
+
+        # Cheat by getting the decimal module to do the string formatting
+        # (insertion of decimal point, etc.) for us.
+        return str(
+            _decimal.Decimal(
+                '{0}0.{1}e{2}'.format(
+                    '-' if self._sign else '',
+                    ''.join(map(str, digits)),
+                    n,
+                    )
+            )
+        )
 
     def __repr__(self):
-        return "{}('{}')".format(type(self).__name__, self._to_str())
+        return "{}('{}')".format(type(self).__name__, self._to_short_str())
 
     def __str__(self):
-        return self._to_str()
+        return self._to_short_str()
 
     # IEEE 5.7.2: General operations.
 

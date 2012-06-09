@@ -1,3 +1,4 @@
+import decimal
 import unittest
 
 from binary_interchange_format import BinaryInterchangeFormat
@@ -236,6 +237,82 @@ class TestFloat16(unittest.TestCase):
             Float16.square_root(Float64(tiny * tiny * 4.0)),
             Float16(2 * tiny),
         )
+
+    def test_repr_construct_roundtrip(self):
+        # Roundtrip tests.
+
+        # Particularly interesting values.
+        test_values = [
+            Float16('4152'),  # sits at the middle of a *closed* interval with one endpoint at 4150;
+                              # so '415e1' is an acceptable short representation.
+            Float16('4148'),  # sits at the middle of an *open* interval with one endpoint at 4150;
+                              # so '415e1' is *not* an acceptable short representation.
+            Float16('0.0078125'),  # power of 2;  interval needs special casing.
+            Float16('0.015625')  # another power of 2 where rounding to nearest for the best
+                                # final digit produces a value out of range.
+        ]
+
+        # With Float16, it's feasible to test *all* the values.
+        for high_byte in xrange(256):
+            for low_byte in xrange(256):
+                value = Float16.decode(chr(low_byte) + chr(high_byte))
+                test_values.append(value)
+
+        for value in test_values:
+            repr_value = repr(value)
+            reconstructed_value = eval(repr_value)
+            self.assertInterchangeable(value, reconstructed_value)
+
+            str_value = str(value)
+            reconstructed_value = Float16(str_value)
+            self.assertInterchangeable(value, reconstructed_value)
+
+    def test_short_float_repr(self):
+        # Test that we're giving back the *shortest* representation.
+
+        # First, just tests for the value represented by the output string,
+        # rather than the string representation itself (exact positioning of
+        # decimal point, exponent, etc.)
+        test_pairs = [
+            (Float16('0.015625'), decimal.Decimal('0.01563')),
+            (Float16('1.23'), decimal.Decimal('1.23')),
+            (Float16('4152'), decimal.Decimal('415e1')),
+            (Float16('4148'), decimal.Decimal('4148')),
+        ]
+        for input, expected in test_pairs:
+            actual = decimal.Decimal(str(input))
+            self.assertEqual(actual, expected)
+
+        # Exhaustive testing for 3-digit decimal -> float16 -> decimal
+        # round-tripping.
+
+        # The mapping from 3-digit decimal strings to float16 objects
+        # is injective, outside of the overflow / underflow regions.
+        # (Key point in the proof is that 2**10 < 10**3).  So 3-digit
+        # strings should roundtrip.
+
+        # Subnormals: tiny value for float16 is 2**-24, or around
+        # 5.9e-08.  So increments of 1e-07 should be safe.
+        def input_strings():
+            for exp in range(-7, 2):
+                for n in range(1000):
+                    yield '{}e{}'.format(n, exp)
+                    yield '-{}e{}'.format(n, exp)
+            for exp in range(2, 3):
+                for n in range(656):
+                    yield '{}e{}'.format(n, exp)
+                    yield '-{}e{}'.format(n, exp)
+
+        for input_string in input_strings():
+            output_string = str(Float16(input_string))
+            self.assertEqual(
+                input_string.startswith('-'),
+                output_string.startswith('-'),
+            )
+            self.assertEqual(
+                decimal.Decimal(input_string),
+                decimal.Decimal(output_string),
+            )
 
 
 if __name__ == '__main__':

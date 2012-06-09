@@ -1159,6 +1159,10 @@ class TestFloat128(unittest.TestCase):
         self.assertInterchangeable(Float128('-snan(123)').abs(), Float128('snan(123)'))
         self.assertInterchangeable(Float128('snan(123)').abs(), Float128('snan(123)'))
 
+    def test_short_float_repr(self):
+        x = Float128('1.23456')
+        self.assertEqual(str(x), '1.23456')
+
 
 if __name__ == '__main__':
     unittest.main()

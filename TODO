@@ -47,12 +47,13 @@ Internal refactoring
 
 * Move class methods from _BinaryBase to BinaryInterchangeFormat.
 
-
 Performance
 -----------
 
 * Optimize addition / subtraction / fused-multiply-add for cases where
   exponents differ wildly.
+
+* Don't use 2 ** {} where not necessary;  use shifting operations instead.
 
 
 Tests
