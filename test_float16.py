@@ -22,11 +22,6 @@ class TestFloat16(unittest.TestCase):
         self.assertTrue(quad1._equivalent(quad2),
                         msg = '{!r} not equivalent to {!r}'.format(quad1, quad2))
 
-    def test_construction_from_float(self):
-        actual = Float16(0.9)
-        expected = Float16('0.89990234375')
-        self.assertInterchangeable(actual, expected)
-
     def test_construction_from_int(self):
         # Test round-half-to-even
 
@@ -44,6 +39,8 @@ class TestFloat16(unittest.TestCase):
         self.assertEqual(Float16(2056).encode(), b'\x04\x68')
 
     def test_construction_from_float(self):
+        self.assertInterchangeable(Float16(0.9), Float16('0.89990234375'))
+
         # Test round-half-to-even
 
         self.assertEqual(Float16(2048.0).encode(), b'\x00\x68')
