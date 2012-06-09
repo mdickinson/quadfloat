@@ -803,9 +803,9 @@ class _BinaryFloatBase(object):
 
         if self._type == _NAN:
             return '{sign}{signaling}NaN({payload})'.format(
-                sign = '-' if self._sign else '',
-                signaling = 's' if self._signaling else '',
-                payload = self._payload,
+                sign='-' if self._sign else '',
+                signaling='s' if self._signaling else '',
+                payload=self._payload,
             )
 
         # General nonzero finite case.
@@ -839,7 +839,7 @@ class _BinaryFloatBase(object):
         # Find appropriate power of 10.
         # Invariant: 10 ** (n-1) <= high / denominator < 10 ** n.
         n = len(str(high)) - len(str(denominator))
-        n += (high // 10**n if n >= 0 else high * 10**-n) >= denominator
+        n += (high // 10 ** n if n >= 0 else high * 10 ** -n) >= denominator
 
         # So now we want to compute digits of high / denominator * 10**-n.
         high *= 10 ** max(-n, 0)
