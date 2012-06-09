@@ -2,6 +2,7 @@ import decimal
 import unittest
 
 from binary_interchange_format import BinaryInterchangeFormat
+from binary_interchange_format import _bytes_from_iterable
 
 
 Float16 = BinaryInterchangeFormat(width=16)
@@ -253,9 +254,9 @@ class TestFloat16(unittest.TestCase):
         ]
 
         # With Float16, it's feasible to test *all* the values.
-        for high_byte in xrange(256):
-            for low_byte in xrange(256):
-                value = Float16.decode(chr(low_byte) + chr(high_byte))
+        for high_byte in range(256):
+            for low_byte in range(256):
+                value = Float16.decode(_bytes_from_iterable([low_byte, high_byte]))
                 test_values.append(value)
 
         for value in test_values:

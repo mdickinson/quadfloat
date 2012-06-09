@@ -1,5 +1,4 @@
 import decimal as _decimal
-import itertools as _itertools
 import math as _math
 import re as _re
 import sys as _sys
@@ -19,11 +18,24 @@ if _sys.version_info.major == 2:
     def _int_from_bytes(bs):
         return int(_binascii.hexlify(bs[::-1]), 16)
 
+    def _bytes_from_iterable(ns):
+        """
+        Create a bytestring from an iterable of integers.
+
+        Each element of the iterable should be in range(256).
+
+        """
+        return ''.join(chr(n) for n in ns)
+
+    # Iterator version of zip.
+    from future_builtins import zip
+
 else:
     _STRING_TYPES = str,
     _INTEGER_TYPES = int,
     _int_to_bytes = lambda n, length: n.to_bytes(length, byteorder='little')
     _int_from_bytes = lambda bs: int.from_bytes(bs, byteorder='little')
+    _bytes_from_iterable = bytes
 
 
 # Constants, utility functions.
@@ -843,7 +855,7 @@ class _BinaryFloatBase(object):
 
         high_digits = _digits_from_rational(high, denominator, closed=closed)
         low_digits = _digits_from_rational(low, denominator, closed=not closed)
-        pairs = _itertools.izip_longest(low_digits, high_digits)
+        pairs = zip(low_digits, high_digits)
 
         digits = []
         for low_digit, high_digit in pairs:
