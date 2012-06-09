@@ -213,7 +213,7 @@ class BinaryInterchangeFormat(object):
         # Formula: 1 + ceiling(self.precision * log10(2)) or equivalently, 2 +
         #  floor(self.precision * log10(2)), (since precision >= 1 and log10(2)
         #  is irrational).
-        return len(str(2 ** self.precision)) + 1
+        return len(str(1 << self.precision)) + 1
 
     @property
     def class_(self):
@@ -233,7 +233,7 @@ class BinaryInterchangeFormat(object):
         signaling NaN to a quiet NaN.
 
         """
-        max_payload = 2 ** (self.precision - 2) - 1
+        max_payload = (1 << (self.precision - 2)) - 1
 
         return self.class_(
             type=_NAN,
@@ -621,17 +621,17 @@ class BinaryInterchangeFormat(object):
 
         # Extract fields.
         equivalent_int = _int_from_bytes(encoded_value)
-        significand_field = equivalent_int & (2 ** significand_field_width - 1)
+        significand_field = equivalent_int & ((1 << significand_field_width) - 1)
         equivalent_int >>= significand_field_width
-        exponent_field = equivalent_int & (2 ** exponent_field_width - 1)
+        exponent_field = equivalent_int & ((1 << exponent_field_width) - 1)
         equivalent_int >>= exponent_field_width
         sign = equivalent_int
 
-        assert 0 <= exponent_field <= 2 ** exponent_field_width - 1
-        assert 0 <= significand_field <= 2 ** significand_field_width - 1
+        assert 0 <= exponent_field < (1 << exponent_field_width)
+        assert 0 <= significand_field < (1 << significand_field_width)
 
         # Construct value.
-        if exponent_field == 2 ** exponent_field_width - 1:
+        if exponent_field == (1 << exponent_field_width) - 1:
             # Infinities, Nans.
             if significand_field == 0:
                 # Infinities.
@@ -660,12 +660,12 @@ class BinaryInterchangeFormat(object):
                 significand=significand_field,
             )
         else:
-            significand = significand_field + 2 ** (self.precision - 1)
+            # Normal number.
             return self.class_(
                 type=_FINITE,
                 sign=sign,
                 exponent=exponent_field - self.qbias,
-                significand=significand,
+                significand=significand_field + (1 << self.precision - 1),
             )
 
 
@@ -682,12 +682,12 @@ class _BinaryFloatBase(object):
 
             if not cls._format.qmin <= exponent <= cls._format.qmax:
                 raise ValueError("exponent {} out of range".format(exponent))
-            if not 0 <= significand < 2 ** cls._format.precision:
+            if not 0 <= significand < 1 << cls._format.precision:
                 raise ValueError("significand out of range")
 
             # Check normalization.
             normalized = (
-                significand >= 2 ** (cls._format.precision - 1) or
+                significand >= 1 << cls._format.precision - 1 or
                 exponent == cls._format.qmin
             )
             if not normalized:
@@ -715,7 +715,7 @@ class _BinaryFloatBase(object):
             # Payload must be at least 1 for a signaling nan, to avoid
             # confusion with the bit pattern for an infinity.
             min_payload = 1 if signaling else 0
-            if not min_payload <= payload < 2 ** (cls._format.precision - 2):
+            if not min_payload <= payload < 1 << (cls._format.precision - 2):
                 raise ValueError("NaN payload out of range.")
 
             self = object.__new__(cls)
@@ -819,7 +819,7 @@ class _BinaryFloatBase(object):
         # Is this a power of 2 that falls between two *normal* binades (so
         # that the ulp function has a discontinuity at this point)?
         is_boundary_case = (
-            self._significand == (2 ** (self._format.precision - 1)) and
+            self._significand == 1 << (self._format.precision - 1) and
             self._exponent > self._format.qmin
             )
 
@@ -924,7 +924,7 @@ class _BinaryFloatBase(object):
         """
         return (
             self._type == _FINITE and
-            2 ** (self._format.precision - 1) <= self._significand
+            1 << self._format.precision - 1 <= self._significand
         )
 
     def is_finite(self):
@@ -952,7 +952,7 @@ class _BinaryFloatBase(object):
         """
         return (
             self._type == _FINITE and
-            0 < self._significand < 2 ** (self._format.precision - 1)
+            0 < self._significand < 1 << self._format.precision - 1
         )
 
     def is_infinite(self):
@@ -1117,7 +1117,7 @@ class _BinaryFloatBase(object):
             # Parse payload, and clip to bounds if necessary.
             payload = int(m.group('payload') or 0)
             min_payload = 1 if signaling else 0
-            max_payload = 2 ** (cls._format.precision - 2) - 1
+            max_payload = (1 << cls._format.precision - 2) - 1
             if payload < min_payload:
                 payload = min_payload
             elif payload > max_payload:
@@ -1147,13 +1147,13 @@ class _BinaryFloatBase(object):
             else:
                 exponent_field = self._exponent + self._format.qbias
                 significand_field = (
-                    self._significand - 2 ** (self._format.precision - 1)
+                    self._significand - (1 << self._format.precision - 1)
                 )
         elif self._type == _INFINITE:
-            exponent_field = 2 ** exponent_field_width - 1
+            exponent_field = (1 << exponent_field_width) - 1
             significand_field = 0
         elif self._type == _NAN:
-            exponent_field = 2 ** exponent_field_width - 1
+            exponent_field = (1 << exponent_field_width) - 1
             significand_field = (
                 ((not self._signaling) << significand_field_width - 1) +
                 self._payload
