@@ -2,7 +2,7 @@ import decimal
 import unittest
 
 from binary_interchange_format import BinaryInterchangeFormat
-from binary_interchange_format import _bytes_from_iterable
+from binary_interchange_format import _bytes_from_iterable, _divide_nearest
 
 
 Float16 = BinaryInterchangeFormat(width=16)
@@ -274,15 +274,25 @@ class TestFloat16(unittest.TestCase):
         # First, just tests for the value represented by the output string,
         # rather than the string representation itself (exact positioning of
         # decimal point, exponent, etc.)
+
+        TINY = 2.0**-24
         test_pairs = [
-            (Float16('0.015625'), decimal.Decimal('0.01563')),
-            (Float16('1.23'), decimal.Decimal('1.23')),
-            (Float16('4152'), decimal.Decimal('415e1')),
-            (Float16('4148'), decimal.Decimal('4148')),
+            (Float16(TINY), '6e-8'),
+            (Float16(2 * TINY), '1e-7'),
+            (Float16(3 * TINY), '2e-7'),
+            (Float16(4 * TINY), '2.4e-7'),
+            (Float16(5 * TINY), '3e-7'),
+            (Float16('0.015625'), '0.01563'),
+            (Float16('1.23'), '1.23'),
+            (Float16('4152'), '415e1'),
+            (Float16('4148'), '4148'),
         ]
-        for input, expected in test_pairs:
-            actual = decimal.Decimal(str(input))
-            self.assertEqual(actual, expected)
+        for input, output_string in test_pairs:
+            input_string = str(input)
+            self.assertEqual(
+                decimal.Decimal(input_string),
+                decimal.Decimal(output_string),
+            )
 
         # Exhaustive testing for 3-digit decimal -> float16 -> decimal
         # round-tripping.
@@ -314,6 +324,50 @@ class TestFloat16(unittest.TestCase):
                 decimal.Decimal(input_string),
                 decimal.Decimal(output_string),
             )
+
+    def test_short_float_repr_subnormal_corner_case(self):
+        # Corner case: the naive algorithm establishes the exponent first and
+        # then outputs the shortest string for that exponent; this can fail to
+        # produce the closest shortest string in the case where the closest
+        # shortest string has a different exponent.  Some thought shows that
+        # this is only a problem when the interval of values rounding to the
+        # particular target value contains a subinterval of the form [9, 10] *
+        # 10**e for some e.  For the standard formats, an interval of this
+        # relative width can only occur for subnormal target values.
+
+        # This corner case doesn't occur for float16, float32, float64 or
+        # float128.
+
+        width = 16
+        format = BinaryInterchangeFormat(width)
+        TINY = format.decode(b'\x01' + b'\x00' * (width // 8 - 1))
+        for n in range(1, 100):
+            binary_value = n * TINY
+
+            # Find the closest 1-digit string to binary_value.
+            # XXX Use string formatting for this, once it's implemented.
+            a = binary_value._significand << max(binary_value._exponent, 0)
+            b = 1 << max(0, -binary_value._exponent)
+            n = len(str(a)) - len(str(b))
+            n += (a // 10 ** n if n >= 0 else a * 10 ** -n) >= b
+
+            # Invariant: 10 ** (n-1) <= abs(binary_value) <= 10 ** n.
+            # Want a single place, so binary_value * 10 ** 1-n
+            a *= 10 ** max(1 - n, 0)
+            b *= 10 ** max(0, n - 1)
+            assert b <= a < 10 * b
+            best_digit = _divide_nearest(a, b)
+            assert 1 <= best_digit <= 10
+            best_str = '{}e{}'.format(best_digit, n - 1)
+
+            # If the returned string has only one digit, it should be
+            # equal to the closest string.
+            output_str = str(binary_value)
+            if len(decimal.Decimal(output_str)._int.strip('0')) == 1:
+                self.assertEqual(
+                    decimal.Decimal(output_str),
+                    decimal.Decimal(best_str),
+                )
 
 
 if __name__ == '__main__':
