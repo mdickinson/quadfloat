@@ -15,20 +15,23 @@ Documentation
 Features
 --------
 
-* Addition and subtraction results need to give the correct sign for zero
-  results, depending on the rounding mode.
-
-* Implement short float repr.
+* Implement equality.
 
 * Fill out the rest of the IEEE 754 *required* functionality, excluding rounding modes,
   exceptions, signals.
 
 * Implement rounding modes.
 
+  * Addition and subtraction results need to give the correct sign for zero
+    results, depending on the rounding mode.
+
 * Implement exceptions, flags, etc.
 
 * Look at the rest of the recommended functionality (e.g., correctly-rounded
   math operations; could take some time!)
+
+* Support earlier versions of Python (e.g., 3.1, 2.6, 2.5) in addition to the current
+  versions (>= 2.7, >= 3.2).
 
 
 Internal refactoring
@@ -37,8 +40,6 @@ Internal refactoring
 * Better name for class_?  Should be private?
 
 * Remove dependence on decimal.
-
-* Factor out repeated rounding code.
 
 * Be consistent about internal uses of is_finite, is_infinite versus ._type
   tests.
@@ -53,13 +54,7 @@ Performance
 * Optimize addition / subtraction / fused-multiply-add for cases where
   exponents differ wildly.
 
-* Don't use 2 ** {} where not necessary;  use shifting operations instead.
-
 
 Tests
 -----
 
-* Float64 tests: random tests comparing with float.
-
-* Make sure that all tests pass on Python 3.2, Python 3.3 beta, Python 2.6 and
-  Python 2.7  (Python 3.1 support a nice-to-have, but not necessary.)
