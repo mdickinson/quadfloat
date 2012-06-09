@@ -134,6 +134,10 @@ def _digits_from_rational(a, b, closed=True):
         yield digit if closed else 9 - digit
 
 
+def _handle_invalid_bool(default_bool):
+    raise ValueError("Comparison involving signaling NaN")
+
+
 class BinaryInterchangeFormat(object):
     _class__cache = {}
 
@@ -1515,3 +1519,137 @@ class _BinaryFloatBase(object):
 
         # int() to convert from long if necessary
         return int(-q if sign else q)
+
+# Section 5.6.1: Comparisons.
+
+def _compare_inner(source1, source2):
+    """
+    Given non-NaN values source1 and source2, compare them, returning -1, 0 or
+    1 according as source1 < source2, source1 == source2, or source1 > source2.
+
+    """
+    # Zeros.
+    if source1.is_zero():
+        if source2.is_zero():
+            # Two zeros are equal.
+            return 0
+        else:
+            # cmp(0, x):  -1 if x is positive, 1 if x is negative
+            return 1 if source2._sign else -1
+    elif source2.is_zero():
+        # cmp(x, 0)
+        return -1 if source1._sign else 1
+
+    # Different signs.
+    if source1._sign != source2._sign:
+        return -1 if source1._sign else 1
+
+    # Infinities.
+    if source1._type == _INFINITE:
+        if source2._type == _INFINITE:
+            # Must have the same signs, so they're equal
+            return 0
+        else:
+            # cmp(inf, finite)
+            return -1 if source1._sign else 1
+    elif source2._type == _INFINITE:
+        return 1 if source2._sign else -1
+
+    # Compare adjusted exponents.
+    source1_exp = source1._significand.bit_length() + source1._exponent
+    source2_exp = source2._significand.bit_length() + source2._exponent
+    if source1_exp != source2_exp:
+        cmp = -1 if source1_exp < source2_exp else 1
+        return -cmp if source1._sign else cmp
+
+    # Compare significands.
+    exponent_diff = source1._exponent - source2._exponent
+    a = source1._significand << max(exponent_diff, 0)
+    b = source2._significand << max(0, -exponent_diff)
+    if a != b:
+        cmp = -1 if a < b else 1
+        return -cmp if source1._sign else cmp
+
+    # Values are equal.
+    return 0
+
+def _compare_nans(source1, source2, quiet_nan_result):
+    """
+    Do a comparison in the case that either source1 or source2 is
+    a NaN (quiet or signaling).
+
+    nan_result is the result to return in nonstop mode.
+
+    """
+    if source1.is_signaling() or source2.is_signaling():
+        return _handle_invalid_bool(quiet_nan_result)
+    else:
+        return quiet_nan_result
+
+def compare_quiet_equal(source1, source2):
+    """
+    Return True if source1 and source2 are numerically equal, else False.
+
+    """
+    if source1._type == _NAN or source2._type == _NAN:
+        return _compare_nans(source1, source2, False)
+    return _compare_inner(source1, source2) == 0
+
+def compare_quiet_not_equal(source1, source2):
+    """
+    Return True if source1 and source2 are numerically equal, else False.
+
+    """
+    if source1._type == _NAN or source2._type == _NAN:
+        return _compare_nans(source1, source2, True)
+    return _compare_inner(source1, source2) != 0
+
+def compare_quiet_greater(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _compare_nans(source1, source2, False)
+    return _compare_inner(source1, source2) > 0
+
+def compare_quiet_greater_equal(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _compare_nans(source1, source2, False)
+    return _compare_inner(source1, source2) >= 0
+
+def compare_quiet_less(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _compare_nans(source1, source2, False)
+    return _compare_inner(source1, source2) < 0
+
+def compare_quiet_less_equal(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _compare_nans(source1, source2, False)
+    return _compare_inner(source1, source2) <= 0
+
+def compare_quiet_unordered(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _compare_nans(source1, source2, True)
+    return False
+
+def compare_quiet_not_greater(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _compare_nans(source1, source2, True)
+    return _compare_inner(source1, source2) <= 0
+
+def compare_quiet_less_unordered(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _compare_nans(source1, source2, True)
+    return _compare_inner(source1, source2) < 0
+
+def compare_quiet_not_less(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _compare_nans(source1, source2, True)
+    return _compare_inner(source1, source2) >= 0
+
+def compare_quiet_greater_unordered(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _compare_nans(source1, source2, True)
+    return _compare_inner(source1, source2) > 0
+
+def compare_quiet_ordered(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _compare_nans(source1, source2, False)
+    return True

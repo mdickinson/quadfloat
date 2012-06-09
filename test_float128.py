@@ -2,6 +2,24 @@ import unittest
 
 from binary_interchange_format import BinaryInterchangeFormat
 
+from binary_interchange_format import (
+    compare_quiet_equal,
+    compare_quiet_not_equal,
+    compare_quiet_greater,
+    compare_quiet_greater_equal,
+    compare_quiet_less,
+    compare_quiet_less_equal,
+    compare_quiet_unordered,
+    compare_quiet_not_greater,
+    compare_quiet_less_unordered,
+    compare_quiet_not_less,
+    compare_quiet_greater_unordered,
+    compare_quiet_ordered,
+)
+
+Float16 = BinaryInterchangeFormat(width=16)
+Float32 = BinaryInterchangeFormat(width=32)
+Float64 = BinaryInterchangeFormat(width=64)
 Float128 = BinaryInterchangeFormat(width=128)
 
 
@@ -1190,6 +1208,265 @@ class TestFloat128(unittest.TestCase):
         self.assertInterchangeable(Float128('-snan(123)').copy_sign(Float128('-1.0')), Float128('-snan(123)'))
         self.assertInterchangeable(Float128('snan(123)').copy_sign(Float128('-1.0')), Float128('-snan(123)'))
 
+    # XXX Move comparison tests to a different test module?
+
+    def _comparison_test_pairs(self):
+        def pairs(seq):
+            """
+            Generate all pairs (x, y) from the given sequence where
+            x appears before y in the sequence.
+
+            """
+            for i, upper in enumerate(seq):
+                for lower in seq[:i]:
+                    yield lower, upper
+
+        EQ, LT, GT, UN = 'EQ', 'LT', 'GT', 'UN'
+
+        zeros = [Float128('0.0'), Float128('-0.0')]
+        positives = [
+            Float128('2.2'),
+            Float128('2.3'),
+            Float128('10.0'),
+            Float128('Infinity'),
+        ]
+        negatives = [x.negate() for x in positives[::-1]]
+        nans = [Float128('nan(123)'), Float128('-nan')]
+
+        # Non-nans are equal to themselves; all zeros are equal to all other
+        # zeros.
+        test_values = []
+        for x in negatives + zeros + positives:
+            test_values.append((x, x, EQ))
+        for x, y in pairs(zeros):
+            test_values.append((x, y, EQ))
+            test_values.append((y, x, EQ))
+
+        # Comparable but nonequal.
+        for x, y in pairs(negatives + positives):
+            test_values.append((x, y, LT))
+            test_values.append((y, x, GT))
+        for x in negatives:
+            for y in zeros:
+                test_values.append((x, y, LT))
+                test_values.append((y, x, GT))
+        for x in zeros:
+            for y in positives:
+                test_values.append((x, y, LT))
+                test_values.append((y, x, GT))
+
+        # Not comparable.
+        for x in negatives + zeros + positives:
+            for y in nans:
+                test_values.append((x, y, UN))
+                test_values.append((y, x, UN))
+        for x in nans:
+            test_values.append((x, x, UN))
+        for x, y in pairs(nans):
+            test_values.append((x, y, UN))
+            test_values.append((y, x, UN))
+
+        # Some mixed precision cases.
+        all_the_same = [Float16('1.25'), Float32('1.25'), Float64('1.25')]
+        for x in all_the_same:
+            for y in all_the_same:
+                test_values.append((x, y, EQ))
+
+        all_the_same = [Float16('inf'), Float32('inf'), Float64('inf')]
+        for x in all_the_same:
+            for y in all_the_same:
+                test_values.append((x, y, EQ))
+
+        for x, y, relation in test_values:
+            yield x, y, relation
+
+    def _signaling_nan_pairs(self):
+        snan = Float128('snan')
+        finite = Float128('2.3')
+        yield snan, finite
+
+    # Question: how should a quiet comparison involving a signaling NaN behave?
+    # The standard doesn't provide much guidance here.  Here's what we know:
+    #
+    #  - Comparisons are defined in a subsection of section 5.6
+    #    (Signaling-computational operations).
+    #
+    #  - 6.2: "Signaling NaNs ... under default exception handling, signal the
+    #    invalid operation exception for every ... signaling-computational
+    #    operation ..."
+    #
+    #  - 7.2: Simply lists the operations that produce invalid operation; the
+    #    default result for operations that don't produce a result in
+    #    floating-point format is not given by the standard.
+
+    def test_compare_quiet_equal(self):
+        for x, y in self._signaling_nan_pairs():
+            with self.assertRaises(ValueError):
+                compare_quiet_equal(x, y)
+
+        for x, y, relation in self._comparison_test_pairs():
+            actual = compare_quiet_equal(x, y)
+            expected = relation == 'EQ'
+            self.assertEqual(
+                actual,
+                expected,
+                msg="Failed comparison: {} {} {}".format(x, y, relation),
+            )
+
+    def test_compare_quiet_not_equal(self):
+        for x, y in self._signaling_nan_pairs():
+            with self.assertRaises(ValueError):
+                compare_quiet_not_equal(x, y)
+
+        for x, y, relation in self._comparison_test_pairs():
+            actual = compare_quiet_not_equal(x, y)
+            expected = relation != 'EQ'
+            self.assertEqual(
+                actual,
+                expected,
+                msg="Failed comparison: {} {} {}".format(x, y, relation),
+            )
+
+    def test_compare_quiet_greater(self):
+        for x, y in self._signaling_nan_pairs():
+            with self.assertRaises(ValueError):
+                compare_quiet_greater(x, y)
+
+        for x, y, relation in self._comparison_test_pairs():
+            actual = compare_quiet_greater(x, y)
+            expected = relation == 'GT'
+            self.assertEqual(
+                actual,
+                expected,
+                msg="Failed comparison: {} {} {}".format(x, y, relation),
+            )
+
+    def test_compare_quiet_greater_equal(self):
+        for x, y in self._signaling_nan_pairs():
+            with self.assertRaises(ValueError):
+                compare_quiet_greater_equal(x, y)
+
+        for x, y, relation in self._comparison_test_pairs():
+            actual = compare_quiet_greater_equal(x, y)
+            expected = relation in ('GT', 'EQ')
+            self.assertEqual(
+                actual,
+                expected,
+                msg="Failed comparison: {} {} {}".format(x, y, relation),
+            )
+
+    def test_compare_quiet_less(self):
+        for x, y in self._signaling_nan_pairs():
+            with self.assertRaises(ValueError):
+                compare_quiet_less(x, y)
+
+        for x, y, relation in self._comparison_test_pairs():
+            actual = compare_quiet_less(x, y)
+            expected = relation == 'LT'
+            self.assertEqual(
+                actual,
+                expected,
+                msg="Failed comparison: {} {} {}".format(x, y, relation),
+            )
+
+    def test_compare_quiet_less_equal(self):
+        for x, y in self._signaling_nan_pairs():
+            with self.assertRaises(ValueError):
+                compare_quiet_less_equal(x, y)
+
+        for x, y, relation in self._comparison_test_pairs():
+            actual = compare_quiet_less_equal(x, y)
+            expected = relation in ('LT', 'EQ')
+            self.assertEqual(
+                actual,
+                expected,
+                msg="Failed comparison: {} {} {}".format(x, y, relation),
+            )
+
+    def test_compare_quiet_unordered(self):
+        for x, y in self._signaling_nan_pairs():
+            with self.assertRaises(ValueError):
+                compare_quiet_unordered(x, y)
+
+        for x, y, relation in self._comparison_test_pairs():
+            actual = compare_quiet_unordered(x, y)
+            expected = relation == 'UN'
+            self.assertEqual(
+                actual,
+                expected,
+                msg="Failed comparison: {} {} {}".format(x, y, relation),
+            )
+
+    def test_compare_quiet_not_greater(self):
+        for x, y in self._signaling_nan_pairs():
+            with self.assertRaises(ValueError):
+                compare_quiet_not_greater(x, y)
+
+        for x, y, relation in self._comparison_test_pairs():
+            actual = compare_quiet_not_greater(x, y)
+            expected = relation != 'GT'
+            self.assertEqual(
+                actual,
+                expected,
+                msg="Failed comparison: {} {} {}".format(x, y, relation),
+            )
+
+    def test_compare_quiet_less_unordered(self):
+        for x, y in self._signaling_nan_pairs():
+            with self.assertRaises(ValueError):
+                compare_quiet_less_unordered(x, y)
+
+        for x, y, relation in self._comparison_test_pairs():
+            actual = compare_quiet_less_unordered(x, y)
+            expected = relation not in ('GT', 'EQ')
+            self.assertEqual(
+                actual,
+                expected,
+                msg="Failed comparison: {} {} {}".format(x, y, relation),
+            )
+
+    def test_compare_quiet_not_less(self):
+        for x, y in self._signaling_nan_pairs():
+            with self.assertRaises(ValueError):
+                compare_quiet_not_less(x, y)
+
+        for x, y, relation in self._comparison_test_pairs():
+            actual = compare_quiet_not_less(x, y)
+            expected = relation != 'LT'
+            self.assertEqual(
+                actual,
+                expected,
+                msg="Failed comparison: {} {} {}".format(x, y, relation),
+            )
+
+    def test_compare_quiet_greater_unordered(self):
+        for x, y in self._signaling_nan_pairs():
+            with self.assertRaises(ValueError):
+                compare_quiet_greater_unordered(x, y)
+
+        for x, y, relation in self._comparison_test_pairs():
+            actual = compare_quiet_greater_unordered(x, y)
+            expected = relation in ('GT', 'UN')
+            self.assertEqual(
+                actual,
+                expected,
+                msg="Failed comparison: {} {} {}".format(x, y, relation),
+            )
+
+    def test_compare_quiet_ordered(self):
+        for x, y in self._signaling_nan_pairs():
+            with self.assertRaises(ValueError):
+                compare_quiet_ordered(x, y)
+
+        for x, y, relation in self._comparison_test_pairs():
+            actual = compare_quiet_ordered(x, y)
+            expected = relation != 'UN'
+            self.assertEqual(
+                actual,
+                expected,
+                msg="Failed comparison: {} {} {}".format(x, y, relation),
+            )
+
     def test_short_float_repr(self):
         x = Float128('1.23456')
         self.assertEqual(str(x), '1.23456')
@@ -1197,4 +1474,3 @@ class TestFloat128(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
