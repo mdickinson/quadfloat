@@ -1170,6 +1170,10 @@ class _BinaryFloatBase(object):
         return _int_to_bytes(equivalent_int, self._format.width // 8)
 
     def copy(self):
+        """
+        Return a copy of self.
+
+        """
         if self._type == _FINITE:
             return type(self)(
                 type=_FINITE,
@@ -1196,6 +1200,10 @@ class _BinaryFloatBase(object):
             raise ValueError("invalid _type attribute: {}".format(self._type))
 
     def negate(self):
+        """
+        Return the negation of self.
+
+        """
         if self._type == _FINITE:
             return type(self)(
                 type=_FINITE,
@@ -1222,6 +1230,10 @@ class _BinaryFloatBase(object):
             raise ValueError("invalid _type attribute: {}".format(self._type))
 
     def abs(self):
+        """
+        Return the absolute value of self.
+
+        """
         if self._type == _FINITE:
             return type(self)(
                 type=_FINITE,
@@ -1238,6 +1250,38 @@ class _BinaryFloatBase(object):
             return type(self)(
                 type=_NAN,
                 sign=False,
+                payload=self._payload,
+                signaling=self._signaling,
+            )
+        else:
+            raise ValueError("invalid _type attribute: {}".format(self._type))
+
+    def copy_sign(self, other):
+        """
+        Return a value with the same format as self, but the sign bit of other.
+
+        """
+        # Currently implemented only as a homogeneous operation.
+        if not self._format == other._format:
+            raise ValueError(
+                "copy_sign operation not implemented for mixed formats."
+            )
+        if self._type == _FINITE:
+            return type(self)(
+                type=_FINITE,
+                sign=other._sign,
+                exponent=self._exponent,
+                significand=self._significand,
+            )
+        elif self._type == _INFINITE:
+            return type(self)(
+                type=_INFINITE,
+                sign=other._sign,
+            )
+        elif self._type == _NAN:
+            return type(self)(
+                type=_NAN,
+                sign=other._sign,
                 payload=self._payload,
                 signaling=self._signaling,
             )
