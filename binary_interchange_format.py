@@ -270,8 +270,8 @@ class BinaryInterchangeFormat(object):
 
     def _round_from_triple(self, sign, exponent, significand):
         """
-        Round the value (-1)**sign * significand * 2**exponent to the format
-        'self'.
+        Round the value (-1) ** sign * significand * 2 ** exponent to the
+        format 'self'.
 
         """
         if significand == 0:
@@ -287,7 +287,7 @@ class BinaryInterchangeFormat(object):
         d = exponent + significand.bit_length()
         e = max(d - self.precision, self.qmin) - 2
 
-        # Find q such that q * 2**e approximates significand * 2**exponent.
+        # Find q such that q * 2 ** e approximates significand * 2 ** exponent.
         shift = exponent - e
         if shift >= 0:
             q = significand << shift
@@ -420,8 +420,8 @@ class BinaryInterchangeFormat(object):
 
         # Finite / finite case.
 
-        # First find d such that 2**(d-1) <= abs(source1) / abs(source2) <
-        # 2**d.
+        # First find d such that 2 ** (d-1) <= abs(source1) / abs(source2) <
+        # 2 ** d.
         a = source1._significand
         b = source2._significand
         d = a.bit_length() - b.bit_length()
@@ -432,9 +432,9 @@ class BinaryInterchangeFormat(object):
         # extra bits for rounding purposes.
         e = max(d - self.precision, self.qmin) - 2
 
-        # Round (source1 / source2) * 2**-e to nearest integer.  source1 /
-        # source2 * 2**-e == source1._significand / source2._significand *
-        # 2**shift, where...
+        # Round (source1 / source2) * 2 ** -e to nearest integer.  source1 /
+        # source2 * 2 ** -e == source1._significand / source2._significand *
+        # 2 ** shift, where...
         shift = source1._exponent - source2._exponent - e
 
         a, b = a << max(shift, 0), b << max(0, -shift)
@@ -442,7 +442,7 @@ class BinaryInterchangeFormat(object):
         # Round-to-odd.
         q |= bool(r)
 
-        # Now result approximated by (-1)**sign * q * 2**e.
+        # Now result approximated by (-1) ** sign * q * 2 ** e.
         return self._final_round(sign, e, q)
 
     def square_root(self, source1):
@@ -841,7 +841,7 @@ class _BinaryFloatBase(object):
         n = len(str(high)) - len(str(denominator))
         n += (high // 10 ** n if n >= 0 else high * 10 ** -n) >= denominator
 
-        # So now we want to compute digits of high / denominator * 10**-n.
+        # So now we want to compute digits of high / denominator * 10 ** -n.
         high *= 10 ** max(-n, 0)
         target *= 10 ** max(-n, 0)
         low *= 10 ** max(-n, 0)
@@ -1020,7 +1020,7 @@ class _BinaryFloatBase(object):
         # Invariant: 2 ** (d - 1) <= a / b < 2 ** d.
         e = max(d - cls._format.precision, cls._format.qmin) - 2
 
-        # approximate a/b by number of the form q * 2**e; adjust e if
+        # approximate a/b by number of the form q * 2 ** e; adjust e if
         # necessary
         a, b = a << max(-e, 0), b << max(e, 0)
         q, r = divmod(a, b)
@@ -1095,7 +1095,7 @@ class _BinaryFloatBase(object):
             # The "- 2" gives us 2 extra bits to use for rounding.
             e = max(d - cls._format.precision, cls._format.qmin) - 2
 
-            # approximate a/b by number of the form q * 2**e; adjust e if
+            # approximate a/b by number of the form q * 2 ** e; adjust e if
             # necessary
             a, b = a << max(-e, 0), b << max(e, 0)
             q, r = divmod(a, b)
@@ -1343,9 +1343,9 @@ class _BinaryFloatBase(object):
             # seem right.
             raise ValueError("Cannot convert an infinity to an integer.")
 
-        # (-1)**sign * significand * 2**exponent
+        # (-1) ** sign * significand * 2 ** exponent
 
-        # Compute significand * 2**(exponent + 2), rounded to the nearest
+        # Compute significand * 2 ** (exponent + 2), rounded to the nearest
         # integer using round-to-odd.  Extra bits will be used for rounding.
         sign = self._sign
         e = self._exponent + 2
@@ -1371,9 +1371,9 @@ class _BinaryFloatBase(object):
             # seem right.
             raise ValueError("Cannot convert an infinity to an integer.")
 
-        # (-1)**sign * significand * 2**exponent
+        # (-1) ** sign * significand * 2 ** exponent
 
-        # Compute significand * 2**(exponent + 2), rounded to the nearest
+        # Compute significand * 2 ** (exponent + 2), rounded to the nearest
         # integer using round-to-odd.  Extra bits will be used for rounding.
         sign = self._sign
         e = self._exponent + 2
@@ -1399,9 +1399,9 @@ class _BinaryFloatBase(object):
             # seem right.
             raise ValueError("Cannot convert an infinity to an integer.")
 
-        # (-1)**sign * significand * 2**exponent
+        # (-1) ** sign * significand * 2 ** exponent
 
-        # Compute significand * 2**(exponent + 2), rounded to the nearest
+        # Compute significand * 2 ** (exponent + 2), rounded to the nearest
         # integer using round-to-odd.  Extra bits will be used for rounding.
         sign = self._sign
         e = self._exponent + 2
@@ -1427,9 +1427,9 @@ class _BinaryFloatBase(object):
             # seem right.
             raise ValueError("Cannot convert an infinity to an integer.")
 
-        # (-1)**sign * significand * 2**exponent
+        # (-1) ** sign * significand * 2 ** exponent
 
-        # Compute significand * 2**(exponent + 2), rounded to the nearest
+        # Compute significand * 2 ** (exponent + 2), rounded to the nearest
         # integer using round-to-odd.  Extra bits will be used for rounding.
         sign = self._sign
         e = self._exponent + 2
@@ -1455,9 +1455,9 @@ class _BinaryFloatBase(object):
             # seem right.
             raise ValueError("Cannot convert an infinity to an integer.")
 
-        # (-1)**sign * significand * 2**exponent
+        # (-1) ** sign * significand * 2 ** exponent
 
-        # Compute significand * 2**(exponent + 2), rounded to the nearest
+        # Compute significand * 2 ** (exponent + 2), rounded to the nearest
         # integer using round-to-odd.  Extra bits will be used for rounding.
         sign = self._sign
         e = self._exponent + 2
