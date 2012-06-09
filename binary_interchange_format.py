@@ -876,6 +876,17 @@ class _BinaryFloatBase(object):
         assert low_digit < best_final_digit <= high_digit
         digits.append(best_final_digit)
 
+        if digits == [1]:
+            # Special corner case: it's possible in this case that the
+            # actual closest short string to the target starts with 0.
+            # Recompute.
+            best_final_digit2 = _divide_nearest(100 * target, denominator)
+            if best_final_digit2 < 10:
+                # No need to check that this is in range, since this special
+                # case can only occur for subnormals, and there the original
+                # interval is always symmetric.
+                digits = [0, best_final_digit2]
+
         # Cheat by getting the decimal module to do the string formatting
         # (insertion of decimal point, etc.) for us.
         return str(
@@ -884,7 +895,7 @@ class _BinaryFloatBase(object):
                     '-' if self._sign else '',
                     ''.join(map(str, digits)),
                     n,
-                    )
+                 )
             )
         )
 
