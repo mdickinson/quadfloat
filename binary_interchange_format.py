@@ -1386,6 +1386,59 @@ class _BinaryFloatBase(object):
         __div__ = __truediv__
         __rdiv__ = __rtruediv__
 
+    # Overloaded comparisons.
+
+    def __eq__(self, other):
+        if isinstance(other, _INTEGER_TYPES):
+
+            fmt = self._format
+
+            # For comparison with a NaN, just replace the integer with a zero
+            # in the same format as self.
+            if self._type == _NAN:
+                return _compare_nans(self, fmt._zero(False), False)
+
+            # Round other to format, with result converted_other.  the sign of
+            # error matches that of cmp(converted_other, other).  Thus
+            # if self == converted_other, cmp(self, other) == error.
+            if other == 0:
+                converted_other = fmt._zero(False)
+                error = 0
+            else:
+                sign = other < 0
+                other = abs(other)
+                d = other.bit_length()
+                exponent = max(d - fmt.precision, fmt.qmin) - 2
+                significand = _rshift_to_odd(other, exponent)
+
+                error = _round_ties_to_even_offsets[significand & 7]
+                significand = (significand + error) >> 2
+                exponent += 2
+
+                if significand.bit_length() == fmt.precision + 1:
+                    significand >>= 1
+                    exponent += 1
+
+                if exponent > fmt.qmax:
+                    converted_other = fmt._infinity(sign)
+                    error = 1
+                else:
+                    converted_other = fmt.class_(
+                        type=_FINITE,
+                        sign=sign,
+                        exponent=exponent,
+                        significand=significand,
+                    )
+                if sign:
+                    error = -error
+
+            result = _compare_inner(self, converted_other)
+            if result == 0:
+                result = error
+            return result == 0
+
+
+
     # 5.4.1 Arithmetic operations (conversions to integer).
     def convert_to_integer_ties_to_even(self):
         if self._type == _NAN:

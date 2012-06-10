@@ -223,6 +223,14 @@ class TestMixed(unittest.TestCase):
         self.assertEqual(c._format, Float32)
         self.assertInterchangeable(c, Float32(2**64))
 
+    def test_equality_operation(self):
+        # Comparisons between integers and floats.
+        self.assertFalse(Float64(3.2) == 0)
+        self.assertTrue(Float64(0) == 0)
+        # Check that we're not simply converting the integer to a float.
+        self.assertFalse(Float64(2**64) == 2 ** 64 + 1)
+        self.assertTrue(Float64(2**64) == 2 ** 64)
+
 
 if __name__ == '__main__':
     unittest.main()
