@@ -1315,7 +1315,7 @@ class _BinaryFloatBase(object):
             pass
         elif isinstance(other, float):
             other = _Float64(other)
-        elif isinstance(other, int):
+        elif isinstance(other, _INTEGER_TYPES):
             other = self._format(other)
         else:
             raise TypeError(

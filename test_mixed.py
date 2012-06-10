@@ -215,6 +215,14 @@ class TestMixed(unittest.TestCase):
         self.assertEqual(c._format, Float32)
         self.assertInterchangeable(c, Float32('0.142857142857142857142857'))
 
+    def test_mixed_arithmetic(self):
+        # Check that large integers work.
+        a = Float32(0)
+        b = 2**64
+        c = a + b
+        self.assertEqual(c._format, Float32)
+        self.assertInterchangeable(c, Float32(2**64))
+
 
 if __name__ == '__main__':
     unittest.main()
