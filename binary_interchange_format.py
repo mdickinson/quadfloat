@@ -279,12 +279,7 @@ class BinaryInterchangeFormat(object):
 
         """
         if significand == 0:
-            return self.class_(
-                type=_FINITE,
-                sign=sign,
-                exponent=self.qmin,
-                significand=0,
-            )
+            return self._zero(sign)
 
         # ... first find exponent e of result.  Allow two extra bits for doing
         # later rounding.
@@ -629,7 +624,7 @@ class BinaryInterchangeFormat(object):
         equivalent_int >>= significand_field_width
         exponent_field = equivalent_int & ((1 << exponent_field_width) - 1)
         equivalent_int >>= exponent_field_width
-        sign = equivalent_int
+        sign = bool(equivalent_int)
 
         assert 0 <= exponent_field < (1 << exponent_field_width)
         assert 0 <= significand_field < (1 << significand_field_width)
@@ -1047,10 +1042,10 @@ class _BinaryFloatBase(object):
             )
 
         if n < 0:
-            sign = 1
+            sign = True
             n = -n
         else:
-            sign = 0
+            sign = False
 
         # Figure out exponent.
         e = max(n.bit_length() - cls._format.precision, cls._format.qmin) - 2
