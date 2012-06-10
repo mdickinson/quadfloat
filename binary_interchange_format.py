@@ -95,14 +95,50 @@ def _isqrt(n):
         m = m + q >> 1
 
 
+def _divide_to_odd(a, b):
+    """
+    Compute a / b, rounding inexact results to the nearest *odd*
+    integer.
+
+    >>> _divide_to_odd(-1, 4)
+    -1
+    >>> _divide_to_odd(0, 4)
+    0
+    >>> _divide_to_odd(1, 4)
+    1
+    >>> _divide_to_odd(4, 4)
+    1
+    >>> _divide_to_odd(5, 4)
+    1
+    >>> _divide_to_odd(7, 4)
+    1
+    >>> _divide_to_odd(8, 4)
+    2
+
+    """
+    q, r = divmod(a, b)
+    return q | bool(r)
+
+
+def _rshift_to_odd(a, shift):
+    """
+    Compute a / 2**shift, rounding inexact results to the nearest *odd*
+    integer.
+
+    """
+    if shift <= 0:
+        return a << -shift
+    else:
+        return (a >> shift) | bool(a & ~(-1 << shift))
+
+
 def _divide_nearest(a, b):
     """
     Compute the nearest integer to the quotient a / b, rounding ties to the
     nearest even integer.  a and b should be integers, with b positive.
 
     """
-    q, r = divmod(4 * a, b)
-    q |= bool(r)
+    q = _divide_to_odd(4 * a, b)
     return (q + _round_ties_to_even_offsets[q & 7]) >> 2
 
 
@@ -229,6 +265,125 @@ class BinaryInterchangeFormat(object):
 
         return BinaryInterchangeFormat._class__cache[self]
 
+    def _from_int(self, n):
+        """
+        Convert an integer to this format.
+
+        """
+        if n == 0:
+            return self._zero(False)
+
+        sign = n < 0
+        n = abs(n)
+
+        # Find d such that 2 ** (d - 1) <= n < 2 ** d.
+        d = n.bit_length()
+
+        # Figure out exponent.
+        exponent = max(d - self.precision, self.qmin) - 2
+        significand = _rshift_to_odd(n, exponent)
+        return self._final_round(sign, exponent, significand)
+
+    def _from_str(self, s):
+        """
+        Convert an input string to this format.
+
+        """
+        m = _number_parser(s)
+        if m is None:
+            raise ValueError('invalid numeric string')
+
+        sign = m.group('sign') == '-'
+
+        if m.group('finite'):
+            # Finite number.
+            fraction = m.group('frac') or ''
+            intpart = int(m.group('int') + fraction)
+            exp = int(m.group('exp') or '0') - len(fraction)
+
+            # Quick return for zeros.
+            if not intpart:
+                return self._zero(sign)
+
+            # Express (absolute value of) incoming string in form a / b;
+            # find d such that 2 ** (d - 1) <= a / b < 2 ** d.
+            a, b = intpart * 10 ** max(exp, 0), 10 ** max(0, -exp)
+            d = a.bit_length() - b.bit_length()
+            d += (a >> d if d >= 0 else a << -d) >= b
+
+            # Approximate a / b by number of the form q * 2 ** e.  We compute
+            # two extra bits (hence the '- 2' below) of the result and round to
+            # odd.
+            exponent = max(d - self.precision, self.qmin) - 2
+            significand = _divide_to_odd(
+                a << max(-exponent, 0),
+                b << max(exponent, 0),
+            )
+            return self._final_round(sign, exponent, significand)
+
+        elif m.group('infinite'):
+            # Infinity.
+            return self._infinity(sign)
+
+        elif m.group('nan'):
+            # NaN.
+            signaling = bool(m.group('signaling'))
+
+            # Parse payload, and clip to bounds if necessary.
+            payload = int(m.group('payload') or 0)
+            min_payload = 1 if signaling else 0
+            max_payload = (1 << self.precision - 2) - 1
+            if payload < min_payload:
+                payload = min_payload
+            elif payload > max_payload:
+                payload = max_payload
+
+            return self._nan(
+                sign=sign,
+                signaling=signaling,
+                payload=payload,
+            )
+        else:
+            assert False, "Shouldn't get here."
+
+    def _from_float(self, value):
+        """
+        Convert a float to this format.
+
+        """
+        sign = _math.copysign(1.0, value) < 0
+
+        if _math.isnan(value):
+            # XXX Consider trying to extract and transfer the payload here.
+            return self._nan(
+                sign=sign,
+                signaling=False,
+                payload=0,
+            )
+
+        if _math.isinf(value):
+            return self._infinity(sign)
+
+        # Zeros
+        if value == 0.0:
+            return self._zero(sign)
+
+        # Express absolute value of incoming float in format a / b;
+        # find d such that 2 ** (d - 1) <= a / b < 2 ** d.
+        a, b = abs(value).as_integer_ratio()
+        d = a.bit_length() - b.bit_length()
+        d += (a >> d if d >= 0 else a << -d) >= b
+
+        # Approximate a / b by number of the form q * 2 ** e.  We compute
+        # two extra bits (hence the '- 2' below) of the result and round to
+        # odd.
+        exponent = max(d - self.precision, self.qmin) - 2
+        significand = _divide_to_odd(
+            a << max(-exponent, 0),
+            b << max(exponent, 0),
+        )
+        return self._final_round(sign, exponent, significand)
+
     def _from_nan(self, source):
         """
         Convert a NaN (possibly in a different format) to this format.
@@ -272,7 +427,7 @@ class BinaryInterchangeFormat(object):
             significand=q,
         )
 
-    def _round_from_triple(self, sign, exponent, significand):
+    def _from_triple(self, sign, exponent, significand):
         """
         Round the value (-1) ** sign * significand * 2 ** exponent to the
         format 'self'.
@@ -281,19 +436,12 @@ class BinaryInterchangeFormat(object):
         if significand == 0:
             return self._zero(sign)
 
-        # ... first find exponent e of result.  Allow two extra bits for doing
-        # later rounding.
         d = exponent + significand.bit_length()
-        e = max(d - self.precision, self.qmin) - 2
 
         # Find q such that q * 2 ** e approximates significand * 2 ** exponent.
-        shift = exponent - e
-        if shift >= 0:
-            q = significand << shift
-        else:
-            # round-to-odd
-            q = (significand >> -shift) | bool(significand & ~(-1 << -shift))
-
+        # Allow two extra bits for the final round.
+        e = max(d - self.precision, self.qmin) - 2
+        q = _rshift_to_odd(significand, e - exponent)
         return self._final_round(sign, e, q)
 
     def _handle_nans(self, *sources):
@@ -341,7 +489,7 @@ class BinaryInterchangeFormat(object):
         sign = (significand < 0 or
                 significand == 0 and source1._sign and source2._sign)
 
-        return self._round_from_triple(
+        return self._from_triple(
             sign=sign,
             exponent=exponent,
             significand=abs(significand),
@@ -383,7 +531,7 @@ class BinaryInterchangeFormat(object):
         # finite * finite case.
         significand = source1._significand * source2._significand
         exponent = source1._exponent + source2._exponent
-        return self._round_from_triple(
+        return self._from_triple(
             sign=sign,
             exponent=exponent,
             significand=significand,
@@ -530,7 +678,7 @@ class BinaryInterchangeFormat(object):
         sign = (significand < 0 or
                 significand == 0 and sign12 and source3._sign)
 
-        return self._round_from_triple(
+        return self._from_triple(
             sign=sign,
             exponent=exponent,
             significand=abs(significand),
@@ -541,7 +689,7 @@ class BinaryInterchangeFormat(object):
         Convert the integer n to this format.
 
         """
-        return self.class_._from_int(n)
+        return self._from_int(n)
 
     def _zero(self, sign):
         """
@@ -563,6 +711,18 @@ class BinaryInterchangeFormat(object):
         return self.class_(
             type=_INFINITE,
             sign=sign,
+        )
+
+    def _nan(self, sign, signaling, payload):
+        """
+        Return a NaN for this format.
+
+        """
+        return self.class_(
+            type=_NAN,
+            sign=sign,
+            signaling=signaling,
+            payload=payload,
         )
 
     def _common_format(fmt1, fmt2):
@@ -771,15 +931,15 @@ class _BinaryFloatBase(object):
         """
         if isinstance(value, float):
             # Initialize from a float.
-            return cls._from_float(value)
+            return cls._format._from_float(value)
 
         elif isinstance(value, _INTEGER_TYPES):
             # Initialize from an integer.
-            return cls._from_int(value)
+            return cls._format._from_int(value)
 
         elif isinstance(value, _STRING_TYPES):
             # Initialize from a string.
-            return cls._from_str(value)
+            return cls._format._from_str(value)
 
         else:
             raise TypeError(
@@ -982,154 +1142,6 @@ class _BinaryFloatBase(object):
         """
         # Currently no non-canonical values are supported.
         return True
-
-    @classmethod
-    def _from_float(cls, value):
-        """
-        Convert an integer to a Float<nnn> instance.
-
-        """
-        sign = _math.copysign(1.0, value) < 0
-
-        if _math.isnan(value):
-            # XXX Think about transferring signaling bit and payload.
-            return cls(
-                type=_NAN,
-                sign=sign,
-            )
-
-        if _math.isinf(value):
-            return cls(type=_INFINITE, sign=sign)
-
-        # Zeros
-        if value == 0.0:
-            return cls(
-                type=_FINITE,
-                sign=sign,
-                exponent=cls._format.qmin,
-                significand=0,
-            )
-
-        a, b = abs(value).as_integer_ratio()
-
-        # compute exponent e for result; may be one too small in the case
-        # that the rounded value of a/b lies in a different binade from a/b
-        d = a.bit_length() - b.bit_length()
-        d += (a >> d if d >= 0 else a << -d) >= b
-        # Invariant: 2 ** (d - 1) <= a / b < 2 ** d.
-        e = max(d - cls._format.precision, cls._format.qmin) - 2
-
-        # approximate a/b by number of the form q * 2 ** e; adjust e if
-        # necessary
-        a, b = a << max(-e, 0), b << max(e, 0)
-        q, r = divmod(a, b)
-        q |= bool(r)
-
-        return cls._format._final_round(sign, e, q)
-
-    @classmethod
-    def _from_int(cls, n):
-        """
-        Convert an integer to a Float<nnn> instance.
-
-        """
-        if n == 0:
-            return cls(
-                type=_FINITE,
-                sign=False,
-                exponent=cls._format.qmin,
-                significand=0,
-            )
-
-        if n < 0:
-            sign = True
-            n = -n
-        else:
-            sign = False
-
-        # Figure out exponent.
-        e = max(n.bit_length() - cls._format.precision, cls._format.qmin) - 2
-
-        shift = -e
-        if shift >= 0:
-            q = n << shift
-        else:
-            q = (n >> -shift) | bool(n & ~(-1 << -shift))
-
-        return cls._format._final_round(sign, e, q)
-
-    @classmethod
-    def _from_str(cls, s):
-        """
-        Convert an input string to a Float<nnn> instance.
-
-        """
-        m = _number_parser(s)
-        if m is None:
-            raise ValueError('invalid numeric string')
-
-        sign = m.group('sign') == '-'
-
-        if m.group('finite'):
-            # Finite number.
-            fraction = m.group('frac') or ''
-            intpart = int(m.group('int') + fraction)
-            exp = int(m.group('exp') or '0') - len(fraction)
-            a, b = intpart * 10 ** max(exp, 0), 10 ** max(0, -exp)
-
-            # quick return for zeros
-            if not a:
-                return cls(
-                    type=_FINITE,
-                    sign=sign,
-                    exponent=cls._format.qmin,
-                    significand=0,
-                )
-
-            # compute exponent e for result; may be one too small in the case
-            # that the rounded value of a/b lies in a different binade from a/b
-            d = a.bit_length() - b.bit_length()
-            d += (a >> d if d >= 0 else a << -d) >= b
-            # Invariant: 2 ** (d - 1) <= a / b < 2 ** d.
-            # The "- 2" gives us 2 extra bits to use for rounding.
-            e = max(d - cls._format.precision, cls._format.qmin) - 2
-
-            # approximate a/b by number of the form q * 2 ** e; adjust e if
-            # necessary
-            a, b = a << max(-e, 0), b << max(e, 0)
-            q, r = divmod(a, b)
-            # round to odd
-            q |= bool(r)
-            return cls._format._final_round(sign, e, q)
-
-        elif m.group('infinite'):
-            # Infinity.
-            return cls(
-                type=_INFINITE,
-                sign=sign,
-            )
-
-        elif m.group('nan'):
-            # NaN.
-            signaling = bool(m.group('signaling'))
-
-            # Parse payload, and clip to bounds if necessary.
-            payload = int(m.group('payload') or 0)
-            min_payload = 1 if signaling else 0
-            max_payload = (1 << cls._format.precision - 2) - 1
-            if payload < min_payload:
-                payload = min_payload
-            elif payload > max_payload:
-                payload = max_payload
-
-            return cls(
-                type=_NAN,
-                sign=sign,
-                signaling=signaling,
-                payload=payload,
-            )
-        else:
-            assert False, "Shouldn't get here."
 
     def encode(self):
         """
