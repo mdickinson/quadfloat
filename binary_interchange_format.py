@@ -1653,3 +1653,53 @@ def compare_quiet_ordered(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
     return True
+
+def compare_signaling_equal(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _handle_invalid_bool(False)
+    return _compare_inner(source1, source2) == 0
+
+def compare_signaling_greater(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _handle_invalid_bool(False)
+    return _compare_inner(source1, source2) > 0
+
+def compare_signaling_greater_equal(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _handle_invalid_bool(False)
+    return _compare_inner(source1, source2) >= 0
+
+def compare_signaling_less(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _handle_invalid_bool(False)
+    return _compare_inner(source1, source2) < 0
+
+def compare_signaling_less_equal(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _handle_invalid_bool(False)
+    return _compare_inner(source1, source2) <= 0
+
+def compare_signaling_not_equal(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _handle_invalid_bool(True)
+    return _compare_inner(source1, source2) != 0
+
+def compare_signaling_not_greater(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _handle_invalid_bool(True)
+    return _compare_inner(source1, source2) <= 0
+
+def compare_signaling_less_unordered(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _handle_invalid_bool(True)
+    return _compare_inner(source1, source2) < 0
+
+def compare_signaling_not_less(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _handle_invalid_bool(True)
+    return _compare_inner(source1, source2) >= 0
+
+def compare_signaling_greater_unordered(source1, source2):
+    if source1._type == _NAN or source2._type == _NAN:
+        return _handle_invalid_bool(True)
+    return _compare_inner(source1, source2) > 0
