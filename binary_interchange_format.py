@@ -1451,22 +1451,11 @@ class _BinaryFloatBase(object):
             # seem right.
             raise ValueError("Cannot convert an infinity to an integer.")
 
-        # (-1) ** sign * significand * 2 ** exponent
-
-        # Compute significand * 2 ** (exponent + 2), rounded to the nearest
-        # integer using round-to-odd.  Extra bits will be used for rounding.
-        sign = self._sign
-        e = self._exponent + 2
-        if e >= 0:
-            q = self._significand << e
-        else:
-            q = self._significand >> -e | bool(self._significand & ~(-1 << -e))
-
-        # Round ties to even.
+        # Round to odd, with 2 extra bits.
+        q = _rshift_to_odd(self._significand, -self._exponent - 2)
         q = (q + _round_ties_to_even_offsets[q & 7]) >> 2
-
-        # int() to convert from long if necessary
-        return int(-q if sign else q)
+        # Use int() to convert from long if necessary
+        return int(-q if self._sign else q)
 
     def convert_to_integer_toward_zero(self):
         if self._type == _NAN:
@@ -1479,22 +1468,11 @@ class _BinaryFloatBase(object):
             # seem right.
             raise ValueError("Cannot convert an infinity to an integer.")
 
-        # (-1) ** sign * significand * 2 ** exponent
-
-        # Compute significand * 2 ** (exponent + 2), rounded to the nearest
-        # integer using round-to-odd.  Extra bits will be used for rounding.
-        sign = self._sign
-        e = self._exponent + 2
-        if e >= 0:
-            q = self._significand << e
-        else:
-            q = self._significand >> -e | bool(self._significand & ~(-1 << -e))
-
-        # Round toward zero.
+        # Round to odd, with 2 extra bits.
+        q = _rshift_to_odd(self._significand, -self._exponent - 2)
         q = (q + _round_toward_zero_offsets[q & 7]) >> 2
-
-        # int() to convert from long if necessary
-        return int(-q if sign else q)
+        # Use int() to convert from long if necessary
+        return int(-q if self._sign else q)
 
     def convert_to_integer_toward_positive(self):
         if self._type == _NAN:
@@ -1507,22 +1485,10 @@ class _BinaryFloatBase(object):
             # seem right.
             raise ValueError("Cannot convert an infinity to an integer.")
 
-        # (-1) ** sign * significand * 2 ** exponent
-
-        # Compute significand * 2 ** (exponent + 2), rounded to the nearest
-        # integer using round-to-odd.  Extra bits will be used for rounding.
-        sign = self._sign
-        e = self._exponent + 2
-        if e >= 0:
-            q = self._significand << e
-        else:
-            q = self._significand >> -e | bool(self._significand & ~(-1 << -e))
-
-        # Round toward positive.
-        q = q >> 2 if sign else -(-q >> 2)
-
+        # Round to odd, with 2 extra bits.
+        q = _rshift_to_odd(self._significand, -self._exponent - 2)
         # int() to convert from long if necessary
-        return int(-q if sign else q)
+        return int(-((q if self._sign else -q) >> 2))
 
     def convert_to_integer_toward_negative(self):
         if self._type == _NAN:
@@ -1537,20 +1503,10 @@ class _BinaryFloatBase(object):
 
         # (-1) ** sign * significand * 2 ** exponent
 
-        # Compute significand * 2 ** (exponent + 2), rounded to the nearest
-        # integer using round-to-odd.  Extra bits will be used for rounding.
-        sign = self._sign
-        e = self._exponent + 2
-        if e >= 0:
-            q = self._significand << e
-        else:
-            q = self._significand >> -e | bool(self._significand & ~(-1 << -e))
-
-        # Round toward negative.
-        q = -(-q >> 2) if sign else q >> 2
-
+        # Round to odd, with 2 extra bits.
+        q = _rshift_to_odd(self._significand, -self._exponent - 2)
         # int() to convert from long if necessary
-        return int(-q if sign else q)
+        return int((-q if self._sign else q) >> 2)
 
     def convert_to_integer_ties_to_away(self):
         if self._type == _NAN:
@@ -1567,18 +1523,10 @@ class _BinaryFloatBase(object):
 
         # Compute significand * 2 ** (exponent + 2), rounded to the nearest
         # integer using round-to-odd.  Extra bits will be used for rounding.
-        sign = self._sign
-        e = self._exponent + 2
-        if e >= 0:
-            q = self._significand << e
-        else:
-            q = self._significand >> -e | bool(self._significand & ~(-1 << -e))
-
-        # Round ties to away.
+        q = _rshift_to_odd(self._significand, -self._exponent - 2)
         q = (q + _round_ties_to_away_offsets[q & 7]) >> 2
-
         # int() to convert from long if necessary
-        return int(-q if sign else q)
+        return int(-q if self._sign else q)
 
 # Section 5.6.1: Comparisons.
 
