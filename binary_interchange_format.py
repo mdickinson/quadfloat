@@ -203,7 +203,7 @@ class BinaryInterchangeFormat(object):
         return hash((BinaryInterchangeFormat, self.width))
 
     def __call__(self, *args, **kwargs):
-        return self.class_._from_value(*args, **kwargs)
+        return self._from_value(*args, **kwargs)
 
     @property
     def precision(self):
@@ -264,6 +264,31 @@ class BinaryInterchangeFormat(object):
             BinaryInterchangeFormat._class__cache[self] = BinaryFormat
 
         return BinaryInterchangeFormat._class__cache[self]
+
+    def _from_value(self, value=0):
+        """
+        Float<nnn>([value])
+
+        Create a new Float<nnn> instance from the given input.
+
+        """
+        if isinstance(value, float):
+            # Initialize from a float.
+            return self._from_float(value)
+
+        elif isinstance(value, _INTEGER_TYPES):
+            # Initialize from an integer.
+            return self._from_int(value)
+
+        elif isinstance(value, _STRING_TYPES):
+            # Initialize from a string.
+            return self._from_str(value)
+
+        else:
+            raise TypeError(
+                "Cannot construct a Float<nnn> instance from a "
+                "value of type {}".format(type(value))
+            )
 
     def _from_int(self, n):
         """
@@ -742,18 +767,19 @@ class BinaryInterchangeFormat(object):
         """
         # For now, just returns the appropriate infinity.  Someday this should
         # handle rounding modes, flags, etc.
-        cls = self.class_
-        return cls(type=_INFINITE, sign=sign)
+        return self.class_(
+            type=_INFINITE,
+            sign=sign,
+        )
 
     def _handle_invalid(self, snan=None):
         """
         Handle an invalid operation.
 
         """
-        cls = self.class_
         if snan is not None:
             # Invalid operation from an snan: quiet the sNaN.
-            return cls(
+            return self.class_(
                 type=_NAN,
                 sign=snan._sign,
                 payload=snan._payload,
@@ -762,9 +788,11 @@ class BinaryInterchangeFormat(object):
 
         # For now, just return a quiet NaN.  Someday this should be more
         # sophisticated.
-        return cls(
+        return self.class_(
             type=_NAN,
             sign=False,
+            payload=0,
+            signaling=False,
         )
 
     def decode(self, encoded_value):
@@ -833,9 +861,11 @@ _Float64 = BinaryInterchangeFormat(64)
 
 class _BinaryFloatBase(object):
     def __new__(cls, **kwargs):
-        type = kwargs.pop('type')
-        sign = kwargs.pop('sign')
-        if type == _FINITE:
+        self = object.__new__(cls)
+        self._type = kwargs.pop('type')
+        self._sign = bool(kwargs.pop('sign'))
+
+        if self._type == _FINITE:
             exponent = kwargs.pop('exponent')
             significand = kwargs.pop('significand')
 
@@ -859,17 +889,13 @@ class _BinaryFloatBase(object):
                     )
                 )
 
-            self = object.__new__(cls)
             self._exponent = int(exponent)
             self._significand = int(significand)
-        elif type == _INFINITE:
-            self = object.__new__(cls)
-        elif type == _NAN:
-            # XXX Not sure why we're giving defaults here;  maybe we should
-            # always specify on construction (and use nice defaults in suitable
-            # helper functions).
-            payload = kwargs.pop('payload', 0)
-            signaling = kwargs.pop('signaling', False)
+        elif self._type == _INFINITE:
+            pass
+        elif self._type == _NAN:
+            payload = kwargs.pop('payload')
+            signaling = kwargs.pop('signaling')
 
             # Payload must be at least 1 for a signaling nan, to avoid
             # confusion with the bit pattern for an infinity.
@@ -877,15 +903,12 @@ class _BinaryFloatBase(object):
             if not min_payload <= payload < 1 << (cls._format.precision - 2):
                 raise ValueError("NaN payload out of range.")
 
-            self = object.__new__(cls)
             self._payload = int(payload)
             self._signaling = bool(signaling)
 
         else:
-            raise ValueError("Unrecognized type: {}".format(type))
+            raise ValueError("Unrecognized type: {}".format(self._type))
 
-        self._type = type
-        self._sign = bool(sign)
         return self
 
     def _equivalent(self, other):
@@ -920,32 +943,6 @@ class _BinaryFloatBase(object):
             )
         else:
             return False
-
-    @classmethod
-    def _from_value(cls, value=0):
-        """
-        Float<nnn>([value])
-
-        Create a new Float<nnn> instance from the given input.
-
-        """
-        if isinstance(value, float):
-            # Initialize from a float.
-            return cls._format._from_float(value)
-
-        elif isinstance(value, _INTEGER_TYPES):
-            # Initialize from an integer.
-            return cls._format._from_int(value)
-
-        elif isinstance(value, _STRING_TYPES):
-            # Initialize from a string.
-            return cls._format._from_str(value)
-
-        else:
-            raise TypeError(
-                "Cannot construct a Float<nnn> instance from a "
-                "value of type {}".format(type(value))
-            )
 
     def _to_short_str(self):
         """
