@@ -419,8 +419,7 @@ class BinaryInterchangeFormat(object):
         """
         max_payload = (1 << (self.precision - 2)) - 1
 
-        return self.class_(
-            type=_NAN,
+        return self._nan(
             sign=source._sign,
             signaling=False,
             payload=min(source._payload, max_payload),
@@ -445,8 +444,7 @@ class BinaryInterchangeFormat(object):
         if e > self.qmax:
             return self._handle_overflow(sign)
 
-        return self.class_(
-            type=_FINITE,
+        return self._finite(
             sign=sign,
             exponent=e,
             significand=q,
@@ -750,6 +748,18 @@ class BinaryInterchangeFormat(object):
             payload=payload,
         )
 
+    def _finite(self, sign, exponent, significand):
+        """
+        Return a finite number in this format.
+
+        """
+        return self.class_(
+            type=_FINITE,
+            sign=sign,
+            exponent=exponent,
+            significand=significand,
+        )
+
     def _common_format(fmt1, fmt2):
         """
         Return the common BinaryInterchangeFormat suitable for mixed binary
@@ -767,10 +777,7 @@ class BinaryInterchangeFormat(object):
         """
         # For now, just returns the appropriate infinity.  Someday this should
         # handle rounding modes, flags, etc.
-        return self.class_(
-            type=_INFINITE,
-            sign=sign,
-        )
+        return self._infinity(sign)
 
     def _handle_invalid(self, snan=None):
         """
@@ -779,8 +786,7 @@ class BinaryInterchangeFormat(object):
         """
         if snan is not None:
             # Invalid operation from an snan: quiet the sNaN.
-            return self.class_(
-                type=_NAN,
+            return self._nan(
                 sign=snan._sign,
                 payload=snan._payload,
                 signaling=False,
@@ -788,8 +794,7 @@ class BinaryInterchangeFormat(object):
 
         # For now, just return a quiet NaN.  Someday this should be more
         # sophisticated.
-        return self.class_(
-            type=_NAN,
+        return self._nan(
             sign=False,
             payload=0,
             signaling=False,
@@ -832,24 +837,17 @@ class BinaryInterchangeFormat(object):
                 # quiet (1) or signaling (0).
                 assert 0 <= significand_field <= 1
                 signaling = not significand_field
-                return self.class_(
-                    type=_NAN,
-                    sign=sign,
-                    payload=payload,
-                    signaling=signaling,
-                )
+                return self._nan(sign, signaling, payload)
         elif exponent_field == 0:
             # Subnormals, Zeros.
-            return self.class_(
-                type=_FINITE,
+            return self._finite(
                 sign=sign,
                 exponent=self.qmin,
                 significand=significand_field,
             )
         else:
             # Normal number.
-            return self.class_(
-                type=_FINITE,
+            return self._finite(
                 sign=sign,
                 exponent=exponent_field - self.qbias,
                 significand=significand_field + (1 << self.precision - 1),
