@@ -13,7 +13,7 @@ Float64 = BinaryInterchangeFormat(width=64)
 class TestFloat16(unittest.TestCase):
     def assertInterchangeable(self, quad1, quad2):
         """
-        Assert that two Float128 instances are interchangeable.
+        Assert that two Float16 instances are interchangeable.
 
         This means more than just being numerically equal:  for example, -0.0
         and 0.0 are equal, but not interchangeable.
