@@ -34,10 +34,10 @@ if _sys.version_info.major == 2:
     from future_builtins import zip
 
     # Values used to compute hashes.
-    if _sys.maxint == 2**31 - 1:
-        _PyHASH_MODULUS = 2**31 - 1
-    elif _sys.maxint == 2**63 - 1:
-        _PyHASH_MODULUS == 2**61 - 1
+    if _sys.maxint == 2 ** 31 - 1:
+        _PyHASH_MODULUS = 2 ** 31 - 1
+    elif _sys.maxint == 2 ** 63 - 1:
+        _PyHASH_MODULUS == 2 ** 61 - 1
     _PyHASH_2INV = pow(2, _PyHASH_MODULUS - 2, _PyHASH_MODULUS)
     _PyHASH_INF = hash(float('inf'))
     _PyHASH_NAN = hash(float('nan'))
@@ -850,7 +850,10 @@ class BinaryInterchangeFormat(object):
 
         # Extract fields.
         equivalent_int = _int_from_bytes(encoded_value)
-        significand_field = equivalent_int & ((1 << significand_field_width) - 1)
+        significand_field = (
+            equivalent_int &
+            ((1 << significand_field_width) - 1)
+        )
         equivalent_int >>= significand_field_width
         exponent_field = equivalent_int & ((1 << exponent_field_width) - 1)
         equivalent_int >>= exponent_field_width
@@ -1628,6 +1631,7 @@ class _BinaryFloatBase(object):
         # int() to convert from long if necessary
         return int(-q if self._sign else q)
 
+
 # Section 5.6.1: Comparisons.
 
 def _compare_ordered(source1, source2):
@@ -1681,6 +1685,7 @@ def _compare_ordered(source1, source2):
     # Values are equal.
     return 0
 
+
 def _compare_nans(source1, source2, quiet_nan_result):
     """
     Do a comparison in the case that either source1 or source2 is
@@ -1694,6 +1699,7 @@ def _compare_nans(source1, source2, quiet_nan_result):
     else:
         return quiet_nan_result
 
+
 def compare_quiet_equal(source1, source2):
     """
     Return True if source1 and source2 are numerically equal, else False.
@@ -1702,6 +1708,7 @@ def compare_quiet_equal(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
     return _compare_ordered(source1, source2) == 0
+
 
 def compare_quiet_not_equal(source1, source2):
     """
@@ -1712,100 +1719,120 @@ def compare_quiet_not_equal(source1, source2):
         return _compare_nans(source1, source2, True)
     return _compare_ordered(source1, source2) != 0
 
+
 def compare_quiet_greater(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
     return _compare_ordered(source1, source2) > 0
+
 
 def compare_quiet_greater_equal(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
     return _compare_ordered(source1, source2) >= 0
 
+
 def compare_quiet_less(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
     return _compare_ordered(source1, source2) < 0
+
 
 def compare_quiet_less_equal(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
     return _compare_ordered(source1, source2) <= 0
 
+
 def compare_quiet_unordered(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
     return False
+
 
 def compare_quiet_not_greater(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
     return _compare_ordered(source1, source2) <= 0
 
+
 def compare_quiet_less_unordered(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
     return _compare_ordered(source1, source2) < 0
+
 
 def compare_quiet_not_less(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
     return _compare_ordered(source1, source2) >= 0
 
+
 def compare_quiet_greater_unordered(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
     return _compare_ordered(source1, source2) > 0
+
 
 def compare_quiet_ordered(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
     return True
 
+
 def compare_signaling_equal(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(False)
     return _compare_ordered(source1, source2) == 0
+
 
 def compare_signaling_greater(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(False)
     return _compare_ordered(source1, source2) > 0
 
+
 def compare_signaling_greater_equal(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(False)
     return _compare_ordered(source1, source2) >= 0
+
 
 def compare_signaling_less(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(False)
     return _compare_ordered(source1, source2) < 0
 
+
 def compare_signaling_less_equal(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(False)
     return _compare_ordered(source1, source2) <= 0
+
 
 def compare_signaling_not_equal(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(True)
     return _compare_ordered(source1, source2) != 0
 
+
 def compare_signaling_not_greater(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(True)
     return _compare_ordered(source1, source2) <= 0
+
 
 def compare_signaling_less_unordered(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(True)
     return _compare_ordered(source1, source2) < 0
 
+
 def compare_signaling_not_less(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(True)
     return _compare_ordered(source1, source2) >= 0
+
 
 def compare_signaling_greater_unordered(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
