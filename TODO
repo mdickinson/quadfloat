@@ -5,6 +5,9 @@ Bugs
 
 * Missing documentation.
 
+* Formats should be lowercase: float16, not Float16.  (Matches builtin float,
+  and reflects fact that the formats are objects, not classes.)
+
 
 Documentation
 -------------
@@ -14,8 +17,6 @@ Documentation
 
 Features
 --------
-
-* Implement equality.
 
 * Fill out the rest of the IEEE 754 *required* functionality, excluding rounding modes,
   exceptions, signals.
