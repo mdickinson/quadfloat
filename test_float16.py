@@ -439,6 +439,7 @@ class TestFloat16(unittest.TestCase):
                 self.assertFalse(x > y, msg='{!r} {!r} {!r}'.format(x, y, reln))
                 self.assertTrue(x <= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
                 self.assertTrue(x >= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertEqual(hash(x), hash(y))
             elif reln == 'LT':
                 self.assertFalse(x == y, msg='{!r} {!r} {!r}'.format(x, y, reln))
                 self.assertTrue(x != y, msg='{!r} {!r} {!r}'.format(x, y, reln))
@@ -473,6 +474,18 @@ class TestFloat16(unittest.TestCase):
                     x <= y
                 with self.assertRaises(ValueError):
                     x >= y
+
+    def test_hash(self):
+        test_strings = ['inf', '-inf', 'nan', '-nan', '0.0', '-0.0',
+                        '1.0', '0.125', '-1.0', '-2.0', '-1024.0']
+
+        for test_string in test_strings:
+            self.assertEqual(hash(Float16(test_string)), hash(float(test_string)))
+
+        # Signaling NaNs can't be hashed.
+        snan = Float16('snan')
+        with self.assertRaises(ValueError):
+            hash(snan)
 
 
 if __name__ == '__main__':

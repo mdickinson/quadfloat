@@ -33,12 +33,25 @@ if _sys.version_info.major == 2:
     # Iterator version of zip.
     from future_builtins import zip
 
+    # Values used to compute hashes.
+    if _sys.maxint == 2**31 - 1:
+        _PyHASH_MODULUS = 2**31 - 1
+    elif _sys.maxint == 2**63 - 1:
+        _PyHASH_MODULUS == 2**61 - 1
+    _PyHASH_2INV = pow(2, _PyHASH_MODULUS - 2, _PyHASH_MODULUS)
+    _PyHASH_INF = hash(float('inf'))
+    _PyHASH_NAN = hash(float('nan'))
+
 else:
     _STRING_TYPES = str,
     _INTEGER_TYPES = int,
     _int_to_bytes = lambda n, length: n.to_bytes(length, byteorder='little')
     _int_from_bytes = lambda bs: int.from_bytes(bs, byteorder='little')
     _bytes_from_iterable = bytes
+    _PyHASH_MODULUS = _sys.hash_info.modulus
+    _PyHASH_2INV = pow(2, _PyHASH_MODULUS - 2, _PyHASH_MODULUS)
+    _PyHASH_INF = sys.hash_info.inf
+    _PyHASH_NAN = sys.hash_info.nan
 
 
 # Constants, utility functions.
@@ -1447,6 +1460,66 @@ class _BinaryFloatBase(object):
             return _compare_nans(self, other, unordered_result)
         result = _compare_ordered(self, other) or flags['error']
         return operator(result, 0)
+
+    def _py27_hash(self):
+        """
+        Return hash value compatible with ints and floats.
+
+        Raise TypeError for signaling NaNs.
+
+        """
+        if self._type == _NAN:
+            if self._signaling:
+                raise ValueError('Signaling NaNs are unhashable.')
+
+            return hash(float('nan'))
+
+        if self._type == _INFINITE:
+            return hash(float('-inf')) if self._sign else hash(float('inf'))
+
+        # Now we've got something finite.  If it's an integer, return
+        # the hash of the corresponding integer.
+        # XXX. This is needlessly inefficient for huge values.
+        if self == int(self):
+            return hash(int(self))
+
+        # Otherwise, if it's equal to the corresponding Python float,
+        # return the hash of that float.
+        elif self == float(self):
+            return hash(float(self))
+
+        # Otherwise, don't worry about matching anything else, and just
+        # return the py3k hash.
+        else:
+            return self._py32_hash()
+
+    def _py32_hash(self):
+        """
+        Return hash value compatible with other numeric types.
+        Uses the formulas described in the 'built-in types' section
+        of the Python docs.
+
+        """
+        if self._type == _NAN:
+            raise NotImplementedError
+        elif self._type == _INFINITE:
+            raise NotImplementedError
+        else:
+            if self._exponent >= 0:
+                exp_hash = pow(2, self._exponent, _PyHASH_MODULUS)
+            else:
+                exp_hash = pow(_PyHASH_2INV, -self._exponent, _PyHASH_MODULUS)
+            hash_ = self._significand * exp_hash % _PyHASH_MODULUS
+            ans = -hash_ if self._sign else hash_
+
+            return -2 if ans == -1 else ans
+
+    if _sys.version_info.major == 2:
+        def __hash__(self):
+            return self._py27_hash()
+    else:
+        def __hash__(self):
+            return self._py32_hash()
 
     def __eq__(self, other):
         return self._rich_compare_general(other, _operator.eq, False)
