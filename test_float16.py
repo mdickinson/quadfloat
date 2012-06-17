@@ -366,6 +366,111 @@ class TestFloat16(unittest.TestCase):
                     decimal.Decimal(best_str),
                 )
 
+    def _comparison_test_values(self):
+        zeros = [Float16('0.0'), Float16('-0.0'), 0]
+        # List of lists;  all values in each of the inner lists are
+        # equal; outer list ordered numerically.
+        positives = [
+            [Float16(0.5)],
+            [Float16(1 - 2**-11)],
+            [Float16('1.0'), 1],
+            [Float16(1 + 2**-10)],
+            [Float16(1.5)],
+            [Float16('2.0'), 2],
+            [Float16(2**11-1), 2**11 - 1],
+            [Float16(2**11), 2**11],
+            [2**11 + 1],
+            [Float16(2**16 - 2**5), 2**16 - 2**5],
+            [2**16 - 2**4 - 1],
+            [2**16 - 2**4],
+            [2**16],
+            [Float16('inf')],
+        ]
+        negatives = [
+            [-x for x in sublist]
+            for sublist in positives
+        ]
+
+        all_pairs = list(reversed(negatives)) + [zeros] + positives
+
+        for i, xset in enumerate(all_pairs):
+            for yset in all_pairs[:i]:
+                for x in xset:
+                    for y in yset:
+                        yield x, y, 'GT'
+                        yield y, x, 'LT'
+            yset = all_pairs[i]
+            for x in xset:
+                for y in yset:
+                    yield x, y, 'EQ'
+
+        # quiet nans
+        nans = [Float16('nan'), Float16('-nan(123)')]
+        for xset in all_pairs:
+            for x in xset:
+                for y in nans:
+                    yield x, y, 'UN'
+                    yield y, x, 'UN'
+        for x in nans:
+            for y in nans:
+                yield x, y, 'UN'
+
+        # signaling nans
+        snans = [Float16('-snan'), Float16('snan(456)')]
+        for xset in all_pairs + [nans]:
+            for x in xset:
+                for y in snans:
+                    yield x, y, 'SI'
+                    yield y, x, 'SI'
+        for x in snans:
+            for y in snans:
+                yield x, y, 'SI'
+
+    def test_rich_comparison_operators(self):
+        # Test overloads for __eq__, __lt__, etc.
+        for x, y, reln in self._comparison_test_values():
+            if reln == 'EQ':
+                self.assertTrue(x == y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertFalse(x != y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertFalse(x < y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertFalse(x > y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertTrue(x <= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertTrue(x >= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+            elif reln == 'LT':
+                self.assertFalse(x == y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertTrue(x != y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertTrue(x < y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertFalse(x > y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertTrue(x <= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertFalse(x >= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+            elif reln == 'GT':
+                self.assertFalse(x == y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertTrue(x != y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertFalse(x < y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertTrue(x > y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertFalse(x <= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertTrue(x >= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+            elif reln == 'UN':
+                self.assertFalse(x == y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertTrue(x != y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertFalse(x < y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertFalse(x > y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertFalse(x <= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertFalse(x >= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+            elif reln == 'SI':
+                with self.assertRaises(ValueError):
+                    x == y
+                with self.assertRaises(ValueError):
+                    x != y
+                with self.assertRaises(ValueError):
+                    x < y
+                with self.assertRaises(ValueError):
+                    x > y
+                with self.assertRaises(ValueError):
+                    x <= y
+                with self.assertRaises(ValueError):
+                    x >= y
+
 
 if __name__ == '__main__':
     unittest.main()

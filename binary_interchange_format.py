@@ -1,5 +1,6 @@
 import decimal as _decimal
 import math as _math
+import operator as _operator
 import re as _re
 import sys as _sys
 
@@ -170,6 +171,9 @@ def _digits_from_rational(a, b, closed=True):
         yield digit if closed else 9 - digit
 
 
+_Flags = dict
+
+
 def _handle_invalid_bool(default_bool):
     raise ValueError("Comparison involving signaling NaN")
 
@@ -290,24 +294,26 @@ class BinaryInterchangeFormat(object):
                 "value of type {}".format(type(value))
             )
 
-    def _from_int(self, n):
+    def _from_int(self, n, flags=None):
         """
-        Convert an integer to this format.
+        Convert the integer `n` to this format.
 
         """
         if n == 0:
-            return self._zero(False)
+            converted = self._zero(False)
+            if flags is not None:
+                flags['error'] = 0
+        else:
+            sign, n = n < 0, abs(n)
 
-        sign = n < 0
-        n = abs(n)
+            # Find d such that 2 ** (d - 1) <= n < 2 ** d.
+            d = n.bit_length()
 
-        # Find d such that 2 ** (d - 1) <= n < 2 ** d.
-        d = n.bit_length()
+            exponent = max(d - self.precision, self.qmin) - 2
+            significand = _rshift_to_odd(n, exponent)
+            converted = self._final_round(sign, exponent, significand, flags)
 
-        # Figure out exponent.
-        exponent = max(d - self.precision, self.qmin) - 2
-        significand = _rshift_to_odd(n, exponent)
-        return self._final_round(sign, exponent, significand)
+        return converted
 
     def _from_str(self, s):
         """
@@ -425,30 +431,37 @@ class BinaryInterchangeFormat(object):
             payload=min(source._payload, max_payload),
         )
 
-    def _final_round(self, sign, e, q):
+    def _final_round(self, sign, e, q, flags=None):
         """
         Make final rounding adjustment, using the rounding mode from the
         current context.  For now, only round-ties-to-even is supported.
 
         """
         # Do the round ties to even, get rid of the 2 excess rounding bits.
-        q += _round_ties_to_even_offsets[q & 7]
-        q, e = q >> 2, e + 2
+        adj = _round_ties_to_even_offsets[q & 7]
+        q, e = (q + adj) >> 2, e + 2
 
         # Check whether we need to adjust the exponent.
         if q.bit_length() == self.precision + 1:
-            q >>= 1
-            e += 1
+            q, e = q >> 1, e + 1
 
-        # Overflow.
         if e > self.qmax:
+            if flags is not None:
+                flags['error'] = -1 if sign else 1
             return self._handle_overflow(sign)
 
-        return self._finite(
-            sign=sign,
-            exponent=e,
-            significand=q,
-        )
+        else:
+            if flags is not None:
+                if sign:
+                    flags['error'] = (adj < 0) - (adj > 0)
+                else:
+                    flags['error'] = (adj > 0) - (adj < 0)
+
+            return self._finite(
+                sign=sign,
+                exponent=e,
+                significand=q,
+            )
 
     def _from_triple(self, sign, exponent, significand):
         """
@@ -1383,56 +1396,42 @@ class _BinaryFloatBase(object):
 
     # Overloaded comparisons.
 
-    def __eq__(self, other):
+    def _rich_compare_general(self, other, operator, unordered_result):
+        # operator should be one of the 6 comparison operators from
+        # the operator module.
+
+        flags = _Flags()
         if isinstance(other, _INTEGER_TYPES):
+            other = self._format._from_int(other, flags)
 
-            fmt = self._format
+        elif isinstance(other, _BinaryFloatBase):
+            flags['error'] = 0
 
-            # For comparison with a NaN, just replace the integer with a zero
-            # in the same format as self.
-            if self._type == _NAN:
-                return _compare_nans(self, fmt._zero(False), False)
+        else:
+            raise NotImplementedError
 
-            # Round other to format, with result converted_other.  the sign of
-            # error matches that of cmp(converted_other, other).  Thus
-            # if self == converted_other, cmp(self, other) == error.
-            if other == 0:
-                converted_other = fmt._zero(False)
-                error = 0
-            else:
-                sign = other < 0
-                other = abs(other)
-                d = other.bit_length()
-                exponent = max(d - fmt.precision, fmt.qmin) - 2
-                significand = _rshift_to_odd(other, exponent)
+        if self._type == _NAN or other._type == _NAN:
+            return _compare_nans(self, other, unordered_result)
+        result = _compare_inner(self, other) or flags['error']
+        return operator(result, 0)
 
-                error = _round_ties_to_even_offsets[significand & 7]
-                significand = (significand + error) >> 2
-                exponent += 2
+    def __eq__(self, other):
+        return self._rich_compare_general(other, _operator.eq, False)
 
-                if significand.bit_length() == fmt.precision + 1:
-                    significand >>= 1
-                    exponent += 1
+    def __ne__(self, other):
+        return self._rich_compare_general(other, _operator.ne, True)
 
-                if exponent > fmt.qmax:
-                    converted_other = fmt._infinity(sign)
-                    error = 1
-                else:
-                    converted_other = fmt.class_(
-                        type=_FINITE,
-                        sign=sign,
-                        exponent=exponent,
-                        significand=significand,
-                    )
-                if sign:
-                    error = -error
+    def __lt__(self, other):
+        return self._rich_compare_general(other, _operator.lt, False)
 
-            result = _compare_inner(self, converted_other)
-            if result == 0:
-                result = error
-            return result == 0
+    def __gt__(self, other):
+        return self._rich_compare_general(other, _operator.gt, False)
 
+    def __le__(self, other):
+        return self._rich_compare_general(other, _operator.le, False)
 
+    def __ge__(self, other):
+        return self._rich_compare_general(other, _operator.ge, False)
 
     # 5.4.1 Arithmetic operations (conversions to integer).
     def convert_to_integer_ties_to_even(self):
