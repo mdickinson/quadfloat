@@ -10,6 +10,20 @@ Float32 = BinaryInterchangeFormat(width=32)
 Float64 = BinaryInterchangeFormat(width=64)
 
 
+# Float16 details:
+#
+#    11-bit precision
+#     5-bit exponent, so normal range is 2**-14 through 2**16.
+#
+#   next up from 1 is 1 + 2**-10
+#   next down from 1 is 1 - 2**-11
+#   max representable value is 2**16 - 2**5
+#   smallest +ve integer that rounds to infinity is 2**16 - 2**4.
+#   smallest +ve representable normal value is 2**-14.
+#   smallest +ve representable value is 2**-24.
+#   smallest +ve integer that can't be represented exactly is 2**11 + 1
+
+
 class TestFloat16(unittest.TestCase):
     def assertInterchangeable(self, quad1, quad2):
         """
