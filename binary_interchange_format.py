@@ -50,8 +50,8 @@ else:
     _bytes_from_iterable = bytes
     _PyHASH_MODULUS = _sys.hash_info.modulus
     _PyHASH_2INV = pow(2, _PyHASH_MODULUS - 2, _PyHASH_MODULUS)
-    _PyHASH_INF = sys.hash_info.inf
-    _PyHASH_NAN = sys.hash_info.nan
+    _PyHASH_INF = _sys.hash_info.inf
+    _PyHASH_NAN = _sys.hash_info.nan
 
 
 # Constants, utility functions.
