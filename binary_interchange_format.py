@@ -40,6 +40,7 @@ if _sys.version_info.major == 2:
         _PyHASH_MODULUS == 2 ** 61 - 1
     _PyHASH_2INV = pow(2, _PyHASH_MODULUS - 2, _PyHASH_MODULUS)
     _PyHASH_INF = hash(float('inf'))
+    _PyHASH_NINF = hash(float('-inf'))
     _PyHASH_NAN = hash(float('nan'))
 
 else:
@@ -51,6 +52,7 @@ else:
     _PyHASH_MODULUS = _sys.hash_info.modulus
     _PyHASH_2INV = pow(2, _PyHASH_MODULUS - 2, _PyHASH_MODULUS)
     _PyHASH_INF = _sys.hash_info.inf
+    _PyHASH_NINF = -_sys.hash_info.inf
     _PyHASH_NAN = _sys.hash_info.nan
 
 
@@ -1464,7 +1466,7 @@ class _BinaryFloatBase(object):
         result = _compare_ordered(self, other) or flags['error']
         return operator(result, 0)
 
-    def _py27_hash(self):
+    def __hash__(self):
         """
         Return hash value compatible with ints and floats.
 
@@ -1474,42 +1476,24 @@ class _BinaryFloatBase(object):
         if self._type == _NAN:
             if self._signaling:
                 raise ValueError('Signaling NaNs are unhashable.')
-
-            return hash(float('nan'))
-
-        if self._type == _INFINITE:
-            return hash(float('-inf')) if self._sign else hash(float('inf'))
-
-        # Now we've got something finite.  If it's an integer, return
-        # the hash of the corresponding integer.
-        # XXX. This is needlessly inefficient for huge values.
-        if self == int(self):
-            return hash(int(self))
-
-        # Otherwise, if it's equal to the corresponding Python float,
-        # return the hash of that float.
-        elif self == float(self):
-            return hash(float(self))
-
-        # Otherwise, don't worry about matching anything else, and just
-        # return the py3k hash.
-        else:
-            return self._py32_hash()
-
-    def _py32_hash(self):
-        """
-        Return hash value compatible with other numeric types.
-        Uses the formulas described in the 'built-in types' section
-        of the Python docs.
-
-        """
-        if self._type == _NAN:
-            if self._signaling:
-                raise ValueError('Signaling NaNs are unhashable.')
             return _PyHASH_NAN
         elif self._type == _INFINITE:
-            return -_PyHASH_INF if self._sign else _PyHASH_INF
+            return _PyHASH_NINF if self._sign else _PyHASH_INF
+        elif _sys.version_info.major == 2:
+            # For Python 2, check whether the value matches that of
+            # a Python int or float;  if so, use the hash of that.
+            # We don't even try to get the hashes to match those
+            # of Fraction or Decimal instances.
+
+            # XXX. This is needlessly inefficient for huge values.
+            if self == int(self):
+                return hash(int(self))
+            elif self == float(self):
+                return hash(float(self))
         else:
+            # Assuming Python >= 3.2, compatibility with floats and ints
+            # (not to mention Fraction and Decimal instances) follows if
+            # we use the formulas described in the Python docs.
             if self._exponent >= 0:
                 exp_hash = pow(2, self._exponent, _PyHASH_MODULUS)
             else:
@@ -1518,13 +1502,6 @@ class _BinaryFloatBase(object):
             ans = -hash_ if self._sign else hash_
 
             return -2 if ans == -1 else ans
-
-    if _sys.version_info.major == 2:
-        def __hash__(self):
-            return self._py27_hash()
-    else:
-        def __hash__(self):
-            return self._py32_hash()
 
     def __eq__(self, other):
         return self._rich_compare_general(other, _operator.eq, False)
