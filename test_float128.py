@@ -1000,7 +1000,7 @@ class TestFloat128(unittest.TestCase):
     if sys.version_info.major == 2:
         def test_long(self):
             self.assertIsInstance(long(Float128(-1.75)), long)
-            self.assertEqual(long(Float128(-1.75)), -1L)
+            self.assertEqual(long(Float128(-1.75)), long(-1))
             self.assertIsInstance(long(Float128(2**64)), long)
             self.assertEqual(long(Float128(2**64)), long(2**64))
 

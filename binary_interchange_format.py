@@ -1504,9 +1504,11 @@ class _BinaryFloatBase(object):
 
         """
         if self._type == _NAN:
-            raise NotImplementedError
+            if self._signaling:
+                raise ValueError('Signaling NaNs are unhashable.')
+            return _PyHASH_NAN
         elif self._type == _INFINITE:
-            raise NotImplementedError
+            return -_PyHASH_INF if self._sign else _PyHASH_INF
         else:
             if self._exponent >= 0:
                 exp_hash = pow(2, self._exponent, _PyHASH_MODULUS)
