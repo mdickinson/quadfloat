@@ -1,3 +1,4 @@
+import sys
 import unittest
 
 from binary_interchange_format import BinaryInterchangeFormat
@@ -994,6 +995,13 @@ class TestFloat128(unittest.TestCase):
         self.assertEqual(int(Float128(1.25)), 1)
         self.assertEqual(int(Float128(1.5)), 1)
         self.assertEqual(int(Float128(1.75)), 1)
+
+    if sys.version_info.major == 2:
+        def test_long(self):
+            self.assertIsInstance(long(Float128(-1.75)), long)
+            self.assertEqual(long(Float128(-1.75)), -1L)
+            self.assertIsInstance(long(Float128(2**64)), long)
+            self.assertEqual(long(Float128(2**64)), long(2**64))
 
     def test_convert_to_integer_ties_to_even(self):
         nan = Float128('nan')
