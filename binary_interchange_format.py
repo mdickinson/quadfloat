@@ -377,7 +377,7 @@ class BinaryInterchangeFormat(object):
         else:
             assert False, "Shouldn't get here."
 
-    def _from_float(self, value):
+    def _from_float(self, value, flags=None):
         """
         Convert a float to this format.
 
@@ -386,34 +386,43 @@ class BinaryInterchangeFormat(object):
 
         if _math.isnan(value):
             # XXX Consider trying to extract and transfer the payload here.
-            return self._nan(
+            # We don't set the error flag for NaNs; maybe we should.
+            converted = self._nan(
                 sign=sign,
                 signaling=False,
                 payload=0,
             )
 
-        if _math.isinf(value):
-            return self._infinity(sign)
+        elif _math.isinf(value):
+            # Infinities.
+            if flags is not None:
+                flags['error'] = 0
+            converted = self._infinity(sign)
+        elif value == 0.0:
+            # Zeros
+            if flags is not None:
+                flags['error'] = 0
+            converted = self._zero(sign)
+        else:
+            # Finite values.
 
-        # Zeros
-        if value == 0.0:
-            return self._zero(sign)
+            # Express absolute value of incoming float in format a / b;
+            # find d such that 2 ** (d - 1) <= a / b < 2 ** d.
+            a, b = abs(value).as_integer_ratio()
+            d = a.bit_length() - b.bit_length()
+            d += (a >> d if d >= 0 else a << -d) >= b
 
-        # Express absolute value of incoming float in format a / b;
-        # find d such that 2 ** (d - 1) <= a / b < 2 ** d.
-        a, b = abs(value).as_integer_ratio()
-        d = a.bit_length() - b.bit_length()
-        d += (a >> d if d >= 0 else a << -d) >= b
+            # Approximate a / b by number of the form q * 2 ** e.  We compute
+            # two extra bits (hence the '- 2' below) of the result and round to
+            # odd.
+            exponent = max(d - self.precision, self.qmin) - 2
+            significand = _divide_to_odd(
+                a << max(-exponent, 0),
+                b << max(exponent, 0),
+            )
+            converted = self._final_round(sign, exponent, significand, flags)
 
-        # Approximate a / b by number of the form q * 2 ** e.  We compute
-        # two extra bits (hence the '- 2' below) of the result and round to
-        # odd.
-        exponent = max(d - self.precision, self.qmin) - 2
-        significand = _divide_to_odd(
-            a << max(-exponent, 0),
-            b << max(exponent, 0),
-        )
-        return self._final_round(sign, exponent, significand)
+        return converted
 
     def _from_nan(self, source):
         """
@@ -1329,9 +1338,9 @@ class _BinaryFloatBase(object):
         if isinstance(other, _BinaryFloatBase):
             pass
         elif isinstance(other, float):
-            other = _Float64(other)
+            other = _Float64._from_float(other)
         elif isinstance(other, _INTEGER_TYPES):
-            other = self._format(other)
+            other = self._format._from_int(other)
         else:
             raise TypeError(
                 "Can't convert operand {} of type {} to "
@@ -1403,6 +1412,9 @@ class _BinaryFloatBase(object):
         flags = _Flags()
         if isinstance(other, _INTEGER_TYPES):
             other = self._format._from_int(other, flags)
+
+        elif isinstance(other, float):
+            other = self._format._from_float(other, flags)
 
         elif isinstance(other, _BinaryFloatBase):
             flags['error'] = 0

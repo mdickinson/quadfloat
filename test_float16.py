@@ -371,10 +371,13 @@ class TestFloat16(unittest.TestCase):
         # List of lists;  all values in each of the inner lists are
         # equal; outer list ordered numerically.
         positives = [
-            [Float16(0.5)],
-            [Float16(1 - 2**-11)],
-            [Float16('1.0'), 1],
-            [Float16(1 + 2**-10)],
+            [0.4999999999],
+            [Float16(0.5), 0.5],
+            [Float16(1 - 2**-11), 1.0 - 2.0**-11],
+            [1.0 - 2.0**-12],
+            [Float16('1.0'), 1, 1.0],
+            [1.0 + 2.0 ** -11],
+            [Float16(1 + 2**-10), 1 + 2.0**-10],
             [Float16(1.5)],
             [Float16('2.0'), 2],
             [Float16(2**11-1), 2**11 - 1],
