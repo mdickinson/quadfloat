@@ -1364,7 +1364,7 @@ class _BinaryFloatBase(object):
     # Overload for conversion to float.
     def __float__(self):
         if self._type == _NAN:
-            return float('nan')
+            return float('-nan') if self._sign else float('nan')
         elif self._type == _INFINITE:
             return float('-inf') if self._sign else float('inf')
         else:
