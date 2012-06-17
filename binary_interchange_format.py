@@ -1424,7 +1424,7 @@ class _BinaryFloatBase(object):
 
         if self._type == _NAN or other._type == _NAN:
             return _compare_nans(self, other, unordered_result)
-        result = _compare_inner(self, other) or flags['error']
+        result = _compare_ordered(self, other) or flags['error']
         return operator(result, 0)
 
     def __eq__(self, other):
@@ -1536,7 +1536,7 @@ class _BinaryFloatBase(object):
 
 # Section 5.6.1: Comparisons.
 
-def _compare_inner(source1, source2):
+def _compare_ordered(source1, source2):
     """
     Given non-NaN values source1 and source2, compare them, returning -1, 0 or
     1 according as source1 < source2, source1 == source2, or source1 > source2.
@@ -1607,7 +1607,7 @@ def compare_quiet_equal(source1, source2):
     """
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
-    return _compare_inner(source1, source2) == 0
+    return _compare_ordered(source1, source2) == 0
 
 def compare_quiet_not_equal(source1, source2):
     """
@@ -1616,27 +1616,27 @@ def compare_quiet_not_equal(source1, source2):
     """
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
-    return _compare_inner(source1, source2) != 0
+    return _compare_ordered(source1, source2) != 0
 
 def compare_quiet_greater(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
-    return _compare_inner(source1, source2) > 0
+    return _compare_ordered(source1, source2) > 0
 
 def compare_quiet_greater_equal(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
-    return _compare_inner(source1, source2) >= 0
+    return _compare_ordered(source1, source2) >= 0
 
 def compare_quiet_less(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
-    return _compare_inner(source1, source2) < 0
+    return _compare_ordered(source1, source2) < 0
 
 def compare_quiet_less_equal(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
-    return _compare_inner(source1, source2) <= 0
+    return _compare_ordered(source1, source2) <= 0
 
 def compare_quiet_unordered(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
@@ -1646,22 +1646,22 @@ def compare_quiet_unordered(source1, source2):
 def compare_quiet_not_greater(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
-    return _compare_inner(source1, source2) <= 0
+    return _compare_ordered(source1, source2) <= 0
 
 def compare_quiet_less_unordered(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
-    return _compare_inner(source1, source2) < 0
+    return _compare_ordered(source1, source2) < 0
 
 def compare_quiet_not_less(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
-    return _compare_inner(source1, source2) >= 0
+    return _compare_ordered(source1, source2) >= 0
 
 def compare_quiet_greater_unordered(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
-    return _compare_inner(source1, source2) > 0
+    return _compare_ordered(source1, source2) > 0
 
 def compare_quiet_ordered(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
@@ -1671,49 +1671,49 @@ def compare_quiet_ordered(source1, source2):
 def compare_signaling_equal(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(False)
-    return _compare_inner(source1, source2) == 0
+    return _compare_ordered(source1, source2) == 0
 
 def compare_signaling_greater(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(False)
-    return _compare_inner(source1, source2) > 0
+    return _compare_ordered(source1, source2) > 0
 
 def compare_signaling_greater_equal(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(False)
-    return _compare_inner(source1, source2) >= 0
+    return _compare_ordered(source1, source2) >= 0
 
 def compare_signaling_less(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(False)
-    return _compare_inner(source1, source2) < 0
+    return _compare_ordered(source1, source2) < 0
 
 def compare_signaling_less_equal(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(False)
-    return _compare_inner(source1, source2) <= 0
+    return _compare_ordered(source1, source2) <= 0
 
 def compare_signaling_not_equal(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(True)
-    return _compare_inner(source1, source2) != 0
+    return _compare_ordered(source1, source2) != 0
 
 def compare_signaling_not_greater(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(True)
-    return _compare_inner(source1, source2) <= 0
+    return _compare_ordered(source1, source2) <= 0
 
 def compare_signaling_less_unordered(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(True)
-    return _compare_inner(source1, source2) < 0
+    return _compare_ordered(source1, source2) < 0
 
 def compare_signaling_not_less(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(True)
-    return _compare_inner(source1, source2) >= 0
+    return _compare_ordered(source1, source2) >= 0
 
 def compare_signaling_greater_unordered(source1, source2):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(True)
-    return _compare_inner(source1, source2) > 0
+    return _compare_ordered(source1, source2) > 0
