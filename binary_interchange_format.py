@@ -1,3 +1,5 @@
+from __future__ import division
+
 import decimal as _decimal
 import math as _math
 import operator as _operator
@@ -1358,6 +1360,21 @@ class _BinaryFloatBase(object):
     if _sys.version_info.major == 2:
         def __long__(self):
             return long(int(self))
+
+    # Overload for conversion to float.
+    def __float__(self):
+        if self._type == _NAN:
+            return float('nan')
+        elif self._type == _INFINITE:
+            return float('-inf') if self._sign else float('inf')
+        else:
+            a, b = self._significand, 1
+            a, b = a << max(self._exponent, 0), b << max(0, -self._exponent)
+            try:
+                q = a / b
+            except OverflowError:
+                q = float('inf')
+            return -q if self._sign else q
 
     # Binary arithmetic operator overloads.
     def __add__(self, other):

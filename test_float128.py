@@ -1,3 +1,4 @@
+import math
 import sys
 import unittest
 
@@ -1002,6 +1003,21 @@ class TestFloat128(unittest.TestCase):
             self.assertEqual(long(Float128(-1.75)), -1L)
             self.assertIsInstance(long(Float128(2**64)), long)
             self.assertEqual(long(Float128(2**64)), long(2**64))
+
+    def test_float(self):
+        self.assertTrue(math.isnan(float(Float128('nan'))))
+        self.assertEqual(float(Float128('inf')), float('inf'))
+        self.assertEqual(float(Float128('-inf')), float('-inf'))
+        self.assertEqual(float(Float128('2.0')), 2.0)
+        self.assertEqual(float(Float128('-2.3')), -2.3)
+        self.assertEqual(float(Float128('1e400')), float('inf'))
+        self.assertEqual(float(Float128('-1e400')), float('-inf'))
+        poszero = float(Float128('0.0'))
+        self.assertEqual(poszero, 0.0)
+        self.assertEqual(math.copysign(1.0, poszero), math.copysign(1.0, 0.0))
+        negzero = float(Float128('-0.0'))
+        self.assertEqual(negzero, 0.0)
+        self.assertEqual(math.copysign(1.0, negzero), math.copysign(1.0, -0.0))
 
     def test_convert_to_integer_ties_to_even(self):
         nan = Float128('nan')
