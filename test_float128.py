@@ -34,6 +34,7 @@ float16 = BinaryInterchangeFormat(width=16)
 float32 = BinaryInterchangeFormat(width=32)
 float64 = BinaryInterchangeFormat(width=64)
 float128 = BinaryInterchangeFormat(width=128)
+float256 = BinaryInterchangeFormat(width=256)
 
 
 class TestFloat128(unittest.TestCase):
@@ -53,6 +54,38 @@ class TestFloat128(unittest.TestCase):
         encoded_q = q.encode()
         self.assertIsInstance(encoded_q, bytes)
         self.assertEqual(encoded_q, b'\0'*16)
+
+    def test_construction_from_binary_float_base(self):
+        input = float128('2.3')
+        q = float128(input)
+        self.assertInterchangeable(q, input)
+
+        # From smaller.
+        input = float64('2.3')
+        q = float128(input)
+        # Value of q should be approximately 2.3; it won't
+        # be exactly equal.
+        absdiff = abs(q - float128('2.3'))
+        self.assertLess(absdiff, 1e-15)
+
+        # From larger.
+        input = float256('2.3')
+        q = float128(input)
+        self.assertInterchangeable(q, float128('2.3'))
+
+        # From an infinity.
+        self.assertInterchangeable(float128(float16('inf')), float128('inf'))
+        self.assertInterchangeable(float128(float256('-inf')), float128('-inf'))
+
+        # From a NaN; check payload is clipped.
+        input = float16('snan')
+        self.assertInterchangeable(float128(input), float128('snan'))
+        input = float16('-nan(123)')
+        self.assertInterchangeable(float128(input), float128('-nan(123)'))
+
+        input_string = 'nan({})'.format(2**230)
+        input = float256(input_string)
+        self.assertInterchangeable(float128(input), float128(input_string))
 
     def test_construction_from_int(self):
         q = float128(3)

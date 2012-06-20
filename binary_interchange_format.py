@@ -293,7 +293,11 @@ class BinaryInterchangeFormat(object):
         Create a new Float<nnn> instance from the given input.
 
         """
-        if isinstance(value, float):
+        if isinstance(value, _BinaryFloatBase):
+            # Initialize from another _BinaryFloatBase instance.
+            return self._from_binary_float_base(value)
+
+        elif isinstance(value, float):
             # Initialize from a float.
             return self._from_float(value)
 
@@ -310,6 +314,31 @@ class BinaryInterchangeFormat(object):
                 "Cannot construct a Float<nnn> instance from a "
                 "value of type {}".format(type(value))
             )
+
+    def _from_binary_float_base(self, b):
+        """
+        Convert another _BinaryFloatBase instance to this format.
+
+        """
+        if b._type == _NAN:
+            converted = self._from_nan_triple(
+                sign=b._sign,
+                signaling=b._signaling,
+                payload=b._payload,
+            )
+        elif b._type == _INFINITE:
+            # Infinities convert with no loss of information.
+            converted = self._infinity(
+                sign=b._sign,
+            )
+        else:
+            # Finite value.
+            converted = self._from_triple(
+                sign=b._sign,
+                exponent=b._exponent,
+                significand=b._significand,
+            )
+        return converted
 
     def _from_int(self, n, flags=None):
         """
@@ -376,21 +405,13 @@ class BinaryInterchangeFormat(object):
         elif m.group('nan'):
             # NaN.
             signaling = bool(m.group('signaling'))
-
-            # Parse payload, and clip to bounds if necessary.
             payload = int(m.group('payload') or 0)
-            min_payload = 1 if signaling else 0
-            max_payload = (1 << self.precision - 2) - 1
-            if payload < min_payload:
-                payload = min_payload
-            elif payload > max_payload:
-                payload = max_payload
-
-            return self._nan(
+            return self._from_nan_triple(
                 sign=sign,
                 signaling=signaling,
                 payload=payload,
             )
+
         else:
             assert False, "Shouldn't get here."
 
@@ -449,12 +470,10 @@ class BinaryInterchangeFormat(object):
         signaling NaN to a quiet NaN.
 
         """
-        max_payload = (1 << (self.precision - 2)) - 1
-
-        return self._nan(
+        return self._from_nan_triple(
             sign=source._sign,
             signaling=False,
-            payload=min(source._payload, max_payload),
+            payload=source._payload,
         )
 
     def _final_round(self, sign, e, q, flags=None):
@@ -773,6 +792,23 @@ class BinaryInterchangeFormat(object):
         return self.class_(
             type=_INFINITE,
             sign=sign,
+        )
+
+    def _from_nan_triple(self, sign, signaling, payload):
+        """
+        Return a NaN for this format, clipping the payload as appropriate.
+
+        """
+        min_payload = 1 if signaling else 0
+        max_payload = (1 << self.precision - 2) - 1
+        if payload < min_payload:
+            payload = min_payload
+        elif payload > max_payload:
+            payload = max_payload
+        return self._nan(
+            sign=sign,
+            signaling=signaling,
+            payload=payload,
         )
 
     def _nan(self, sign, signaling, payload):
