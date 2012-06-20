@@ -30,16 +30,16 @@ from binary_interchange_format import (
     compare_signaling_greater_unordered,
 )
 
-Float16 = BinaryInterchangeFormat(width=16)
-Float32 = BinaryInterchangeFormat(width=32)
-Float64 = BinaryInterchangeFormat(width=64)
-Float128 = BinaryInterchangeFormat(width=128)
+float16 = BinaryInterchangeFormat(width=16)
+float32 = BinaryInterchangeFormat(width=32)
+float64 = BinaryInterchangeFormat(width=64)
+float128 = BinaryInterchangeFormat(width=128)
 
 
 class TestFloat128(unittest.TestCase):
     def assertInterchangeable(self, quad1, quad2):
         """
-        Assert that two Float128 instances are interchangeable.
+        Assert that two float128 instances are interchangeable.
 
         This means more than just being numerically equal:  for example, -0.0
         and 0.0 are equal, but not interchangeable.
@@ -49,259 +49,259 @@ class TestFloat128(unittest.TestCase):
                         msg = '{!r} not equivalent to {!r}'.format(quad1, quad2))
 
     def test_construction_no_args(self):
-        q = Float128()
+        q = float128()
         encoded_q = q.encode()
         self.assertIsInstance(encoded_q, bytes)
         self.assertEqual(encoded_q, b'\0'*16)
 
     def test_construction_from_int(self):
-        q = Float128(3)
-        q = Float128(-3)
+        q = float128(3)
+        q = float128(-3)
 
         # Testing round-half-to-even.
-        q = Float128(5**49)
-        r = Float128(5**49 - 1)
+        q = float128(5**49)
+        r = float128(5**49 - 1)
         self.assertInterchangeable(q, r)
 
-        q = Float128(5**49 + 2)
-        r = Float128(5**49 + 3)
+        q = float128(5**49 + 2)
+        r = float128(5**49 + 3)
         self.assertInterchangeable(q, r)
 
         # Values near powers of two.
         for exp in range(111, 115):
             for adjust in range(-100, 100):
                 n = 2 ** exp + adjust
-                q = Float128(n)
+                q = float128(n)
 
     def test_constructors_compatible(self):
         for n in range(-1000, 1000):
-            self.assertInterchangeable(Float128(n), Float128(str(n)))
-            self.assertInterchangeable(Float128(n), Float128(float(n)))
+            self.assertInterchangeable(float128(n), float128(str(n)))
+            self.assertInterchangeable(float128(n), float128(float(n)))
 
     def test_construction_from_float(self):
-        q = Float128(0.0)
-        self.assertInterchangeable(q, Float128(0))
-        q = Float128(1.0)
-        self.assertInterchangeable(q, Float128(1))
-        q = Float128(-13.0)
-        self.assertInterchangeable(q, Float128(-13))
+        q = float128(0.0)
+        self.assertInterchangeable(q, float128(0))
+        q = float128(1.0)
+        self.assertInterchangeable(q, float128(1))
+        q = float128(-13.0)
+        self.assertInterchangeable(q, float128(-13))
 
     def test_construction_from_str(self):
-        q = Float128('0.0')
-        self.assertInterchangeable(q, Float128(0))
-        q = Float128('1.0')
-        self.assertInterchangeable(q, Float128(1))
-        q = Float128('-13.0')
-        self.assertInterchangeable(q, Float128(-13))
+        q = float128('0.0')
+        self.assertInterchangeable(q, float128(0))
+        q = float128('1.0')
+        self.assertInterchangeable(q, float128(1))
+        q = float128('-13.0')
+        self.assertInterchangeable(q, float128(-13))
 
         # Tiny values.
-        q = Float128('3.2e-4966')
+        q = float128('3.2e-4966')
         self.assertEqual(
             q.encode(),
             b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
         )
-        q = Float128('3.3e-4966')
+        q = float128('3.3e-4966')
         self.assertEqual(
             q.encode(),
             b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
         )
-        q = Float128('-3.2e-4966')
+        q = float128('-3.2e-4966')
         self.assertEqual(
             q.encode(),
             b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80',
         )
-        q = Float128('-3.3e-4966')
+        q = float128('-3.3e-4966')
         self.assertEqual(
             q.encode(),
             b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80',
         )
 
         # Huge values.
-        q = Float128('1.1897e+4932')  # should be within range.
+        q = float128('1.1897e+4932')  # should be within range.
         self.assertTrue(q.is_finite())
 
-        q = Float128('1.1898e+4932')  # just overflows the range.
+        q = float128('1.1898e+4932')  # just overflows the range.
         self.assertTrue(q.is_infinite())
 
         # Infinities
-        q = Float128('Inf')
+        q = float128('Inf')
         self.assertTrue(q.is_infinite())
         self.assertFalse(q.is_sign_minus())
 
-        q = Float128('infinity')
+        q = float128('infinity')
         self.assertTrue(q.is_infinite())
         self.assertFalse(q.is_sign_minus())
 
-        q = Float128('-inf')
+        q = float128('-inf')
         self.assertTrue(q.is_infinite())
         self.assertTrue(q.is_sign_minus())
 
-        q = Float128('-INFINITY')
+        q = float128('-INFINITY')
         self.assertTrue(q.is_infinite())
         self.assertTrue(q.is_sign_minus())
 
         # Nans with and without payloads
         for nan_string in ['nan', 'NaN', 'NAN', 'nAN', 'nan(1)', 'nan(9999)']:
             for prefix in '+', '-', '':
-                q = Float128(prefix + nan_string)
+                q = float128(prefix + nan_string)
                 self.assertTrue(q.is_nan())
                 self.assertFalse(q.is_signaling())
 
             for prefix in '+', '-', '':
-                q = Float128(prefix + 's' + nan_string)
+                q = float128(prefix + 's' + nan_string)
                 self.assertTrue(q.is_nan())
                 self.assertTrue(q.is_signaling())
 
 
         # Out-of-range payloads should just be clipped to be within range.
-        q = Float128('nan(123123123123123123123123123123123123)')
+        q = float128('nan(123123123123123123123123123123123123)')
 
         with self.assertRaises(ValueError):
-            Float128('nan()')
+            float128('nan()')
 
         with self.assertRaises(ValueError):
-            Float128('+nan()')
+            float128('+nan()')
 
         with self.assertRaises(ValueError):
-            Float128('+snan(1')
+            float128('+snan(1')
 
     def test_is_canonical(self):
-        self.assertTrue(Float128('0.0').is_canonical())
-        self.assertTrue(Float128('-0.0').is_canonical())
-        self.assertTrue(Float128('8e-4933').is_canonical())
-        self.assertTrue(Float128('-8e-4933').is_canonical())
-        self.assertTrue(Float128('2.3').is_canonical())
-        self.assertTrue(Float128('-2.3').is_canonical())
-        self.assertTrue(Float128('Infinity').is_canonical())
-        self.assertTrue(Float128('-Infinity').is_canonical())
-        self.assertTrue(Float128('NaN').is_canonical())
-        self.assertTrue(Float128('-NaN').is_canonical())
-        self.assertTrue(Float128('sNaN').is_canonical())
-        self.assertTrue(Float128('-sNaN').is_canonical())
+        self.assertTrue(float128('0.0').is_canonical())
+        self.assertTrue(float128('-0.0').is_canonical())
+        self.assertTrue(float128('8e-4933').is_canonical())
+        self.assertTrue(float128('-8e-4933').is_canonical())
+        self.assertTrue(float128('2.3').is_canonical())
+        self.assertTrue(float128('-2.3').is_canonical())
+        self.assertTrue(float128('Infinity').is_canonical())
+        self.assertTrue(float128('-Infinity').is_canonical())
+        self.assertTrue(float128('NaN').is_canonical())
+        self.assertTrue(float128('-NaN').is_canonical())
+        self.assertTrue(float128('sNaN').is_canonical())
+        self.assertTrue(float128('-sNaN').is_canonical())
 
     def test_is_finite(self):
-        self.assertTrue(Float128('0.0').is_finite())
-        self.assertTrue(Float128('-0.0').is_finite())
-        self.assertTrue(Float128('8e-4933').is_finite())
-        self.assertTrue(Float128('-8e-4933').is_finite())
-        self.assertTrue(Float128('2.3').is_finite())
-        self.assertTrue(Float128('-2.3').is_finite())
-        self.assertFalse(Float128('Infinity').is_finite())
-        self.assertFalse(Float128('-Infinity').is_finite())
-        self.assertFalse(Float128('NaN').is_finite())
-        self.assertFalse(Float128('-NaN').is_finite())
-        self.assertFalse(Float128('sNaN').is_finite())
-        self.assertFalse(Float128('-sNaN').is_finite())
+        self.assertTrue(float128('0.0').is_finite())
+        self.assertTrue(float128('-0.0').is_finite())
+        self.assertTrue(float128('8e-4933').is_finite())
+        self.assertTrue(float128('-8e-4933').is_finite())
+        self.assertTrue(float128('2.3').is_finite())
+        self.assertTrue(float128('-2.3').is_finite())
+        self.assertFalse(float128('Infinity').is_finite())
+        self.assertFalse(float128('-Infinity').is_finite())
+        self.assertFalse(float128('NaN').is_finite())
+        self.assertFalse(float128('-NaN').is_finite())
+        self.assertFalse(float128('sNaN').is_finite())
+        self.assertFalse(float128('-sNaN').is_finite())
 
     def test_is_subnormal(self):
-        self.assertFalse(Float128('0.0').is_subnormal())
-        self.assertFalse(Float128('-0.0').is_subnormal())
-        self.assertTrue(Float128('3.3e-4932').is_subnormal())
-        self.assertTrue(Float128('-3.3e-4932').is_subnormal())
-        self.assertFalse(Float128('3.4e-4932').is_subnormal())
-        self.assertFalse(Float128('-3.4e-4932').is_subnormal())
-        self.assertFalse(Float128('2.3').is_subnormal())
-        self.assertFalse(Float128('-2.3').is_subnormal())
-        self.assertFalse(Float128('Infinity').is_subnormal())
-        self.assertFalse(Float128('-Infinity').is_subnormal())
-        self.assertFalse(Float128('NaN').is_subnormal())
-        self.assertFalse(Float128('-NaN').is_subnormal())
-        self.assertFalse(Float128('sNaN').is_subnormal())
-        self.assertFalse(Float128('-sNaN').is_subnormal())
+        self.assertFalse(float128('0.0').is_subnormal())
+        self.assertFalse(float128('-0.0').is_subnormal())
+        self.assertTrue(float128('3.3e-4932').is_subnormal())
+        self.assertTrue(float128('-3.3e-4932').is_subnormal())
+        self.assertFalse(float128('3.4e-4932').is_subnormal())
+        self.assertFalse(float128('-3.4e-4932').is_subnormal())
+        self.assertFalse(float128('2.3').is_subnormal())
+        self.assertFalse(float128('-2.3').is_subnormal())
+        self.assertFalse(float128('Infinity').is_subnormal())
+        self.assertFalse(float128('-Infinity').is_subnormal())
+        self.assertFalse(float128('NaN').is_subnormal())
+        self.assertFalse(float128('-NaN').is_subnormal())
+        self.assertFalse(float128('sNaN').is_subnormal())
+        self.assertFalse(float128('-sNaN').is_subnormal())
 
     def test_is_normal(self):
-        self.assertFalse(Float128('0.0').is_normal())
-        self.assertFalse(Float128('-0.0').is_normal())
-        self.assertFalse(Float128('3.3e-4932').is_normal())
-        self.assertFalse(Float128('-3.3e-4932').is_normal())
-        self.assertTrue(Float128('3.4e-4932').is_normal())
-        self.assertTrue(Float128('-3.4e-4932').is_normal())
-        self.assertTrue(Float128('2.3').is_normal())
-        self.assertTrue(Float128('-2.3').is_normal())
-        self.assertFalse(Float128('Infinity').is_normal())
-        self.assertFalse(Float128('-Infinity').is_normal())
-        self.assertFalse(Float128('NaN').is_normal())
-        self.assertFalse(Float128('-NaN').is_normal())
-        self.assertFalse(Float128('sNaN').is_normal())
-        self.assertFalse(Float128('-sNaN').is_normal())
+        self.assertFalse(float128('0.0').is_normal())
+        self.assertFalse(float128('-0.0').is_normal())
+        self.assertFalse(float128('3.3e-4932').is_normal())
+        self.assertFalse(float128('-3.3e-4932').is_normal())
+        self.assertTrue(float128('3.4e-4932').is_normal())
+        self.assertTrue(float128('-3.4e-4932').is_normal())
+        self.assertTrue(float128('2.3').is_normal())
+        self.assertTrue(float128('-2.3').is_normal())
+        self.assertFalse(float128('Infinity').is_normal())
+        self.assertFalse(float128('-Infinity').is_normal())
+        self.assertFalse(float128('NaN').is_normal())
+        self.assertFalse(float128('-NaN').is_normal())
+        self.assertFalse(float128('sNaN').is_normal())
+        self.assertFalse(float128('-sNaN').is_normal())
 
     def test_is_sign_minus(self):
-        self.assertFalse(Float128('0.0').is_sign_minus())
-        self.assertTrue(Float128('-0.0').is_sign_minus())
-        self.assertFalse(Float128('8e-4933').is_sign_minus())
-        self.assertTrue(Float128('-8e-4933').is_sign_minus())
-        self.assertFalse(Float128('2.3').is_sign_minus())
-        self.assertTrue(Float128('-2.3').is_sign_minus())
-        self.assertFalse(Float128('Infinity').is_sign_minus())
-        self.assertTrue(Float128('-Infinity').is_sign_minus())
-        self.assertFalse(Float128('NaN').is_sign_minus())
-        self.assertTrue(Float128('-NaN').is_sign_minus())
-        self.assertFalse(Float128('sNaN').is_sign_minus())
-        self.assertTrue(Float128('-sNaN').is_sign_minus())
+        self.assertFalse(float128('0.0').is_sign_minus())
+        self.assertTrue(float128('-0.0').is_sign_minus())
+        self.assertFalse(float128('8e-4933').is_sign_minus())
+        self.assertTrue(float128('-8e-4933').is_sign_minus())
+        self.assertFalse(float128('2.3').is_sign_minus())
+        self.assertTrue(float128('-2.3').is_sign_minus())
+        self.assertFalse(float128('Infinity').is_sign_minus())
+        self.assertTrue(float128('-Infinity').is_sign_minus())
+        self.assertFalse(float128('NaN').is_sign_minus())
+        self.assertTrue(float128('-NaN').is_sign_minus())
+        self.assertFalse(float128('sNaN').is_sign_minus())
+        self.assertTrue(float128('-sNaN').is_sign_minus())
 
     def test_is_infinite(self):
-        self.assertFalse(Float128('0.0').is_infinite())
-        self.assertFalse(Float128('-0.0').is_infinite())
-        self.assertFalse(Float128('8e-4933').is_infinite())
-        self.assertFalse(Float128('-8e-4933').is_infinite())
-        self.assertFalse(Float128('2.3').is_infinite())
-        self.assertFalse(Float128('-2.3').is_infinite())
-        self.assertTrue(Float128('Infinity').is_infinite())
-        self.assertTrue(Float128('-Infinity').is_infinite())
-        self.assertFalse(Float128('NaN').is_infinite())
-        self.assertFalse(Float128('-NaN').is_infinite())
-        self.assertFalse(Float128('sNaN').is_infinite())
-        self.assertFalse(Float128('-sNaN').is_infinite())
+        self.assertFalse(float128('0.0').is_infinite())
+        self.assertFalse(float128('-0.0').is_infinite())
+        self.assertFalse(float128('8e-4933').is_infinite())
+        self.assertFalse(float128('-8e-4933').is_infinite())
+        self.assertFalse(float128('2.3').is_infinite())
+        self.assertFalse(float128('-2.3').is_infinite())
+        self.assertTrue(float128('Infinity').is_infinite())
+        self.assertTrue(float128('-Infinity').is_infinite())
+        self.assertFalse(float128('NaN').is_infinite())
+        self.assertFalse(float128('-NaN').is_infinite())
+        self.assertFalse(float128('sNaN').is_infinite())
+        self.assertFalse(float128('-sNaN').is_infinite())
 
     def test_is_nan(self):
-        self.assertFalse(Float128('0.0').is_nan())
-        self.assertFalse(Float128('-0.0').is_nan())
-        self.assertFalse(Float128('8e-4933').is_nan())
-        self.assertFalse(Float128('-8e-4933').is_nan())
-        self.assertFalse(Float128('2.3').is_nan())
-        self.assertFalse(Float128('-2.3').is_nan())
-        self.assertFalse(Float128('Infinity').is_nan())
-        self.assertFalse(Float128('-Infinity').is_nan())
-        self.assertTrue(Float128('NaN').is_nan())
-        self.assertTrue(Float128('-NaN').is_nan())
-        self.assertTrue(Float128('sNaN').is_nan())
-        self.assertTrue(Float128('-sNaN').is_nan())
+        self.assertFalse(float128('0.0').is_nan())
+        self.assertFalse(float128('-0.0').is_nan())
+        self.assertFalse(float128('8e-4933').is_nan())
+        self.assertFalse(float128('-8e-4933').is_nan())
+        self.assertFalse(float128('2.3').is_nan())
+        self.assertFalse(float128('-2.3').is_nan())
+        self.assertFalse(float128('Infinity').is_nan())
+        self.assertFalse(float128('-Infinity').is_nan())
+        self.assertTrue(float128('NaN').is_nan())
+        self.assertTrue(float128('-NaN').is_nan())
+        self.assertTrue(float128('sNaN').is_nan())
+        self.assertTrue(float128('-sNaN').is_nan())
 
     def test_is_signaling(self):
-        self.assertFalse(Float128('0.0').is_signaling())
-        self.assertFalse(Float128('-0.0').is_signaling())
-        self.assertFalse(Float128('8e-4933').is_signaling())
-        self.assertFalse(Float128('-8e-4933').is_signaling())
-        self.assertFalse(Float128('2.3').is_signaling())
-        self.assertFalse(Float128('-2.3').is_signaling())
-        self.assertFalse(Float128('Infinity').is_signaling())
-        self.assertFalse(Float128('-Infinity').is_signaling())
-        self.assertFalse(Float128('NaN').is_signaling())
-        self.assertFalse(Float128('-NaN').is_signaling())
-        self.assertTrue(Float128('sNaN').is_signaling())
-        self.assertTrue(Float128('-sNaN').is_signaling())
+        self.assertFalse(float128('0.0').is_signaling())
+        self.assertFalse(float128('-0.0').is_signaling())
+        self.assertFalse(float128('8e-4933').is_signaling())
+        self.assertFalse(float128('-8e-4933').is_signaling())
+        self.assertFalse(float128('2.3').is_signaling())
+        self.assertFalse(float128('-2.3').is_signaling())
+        self.assertFalse(float128('Infinity').is_signaling())
+        self.assertFalse(float128('-Infinity').is_signaling())
+        self.assertFalse(float128('NaN').is_signaling())
+        self.assertFalse(float128('-NaN').is_signaling())
+        self.assertTrue(float128('sNaN').is_signaling())
+        self.assertTrue(float128('-sNaN').is_signaling())
 
     def test_is_zero(self):
-        self.assertTrue(Float128('0.0').is_zero())
-        self.assertTrue(Float128('-0.0').is_zero())
-        self.assertFalse(Float128('8e-4933').is_zero())
-        self.assertFalse(Float128('-8e-4933').is_zero())
-        self.assertFalse(Float128('2.3').is_zero())
-        self.assertFalse(Float128('-2.3').is_zero())
-        self.assertFalse(Float128('Infinity').is_zero())
-        self.assertFalse(Float128('-Infinity').is_zero())
-        self.assertFalse(Float128('NaN').is_zero())
-        self.assertFalse(Float128('-NaN').is_zero())
-        self.assertFalse(Float128('sNaN').is_zero())
-        self.assertFalse(Float128('-sNaN').is_zero())
+        self.assertTrue(float128('0.0').is_zero())
+        self.assertTrue(float128('-0.0').is_zero())
+        self.assertFalse(float128('8e-4933').is_zero())
+        self.assertFalse(float128('-8e-4933').is_zero())
+        self.assertFalse(float128('2.3').is_zero())
+        self.assertFalse(float128('-2.3').is_zero())
+        self.assertFalse(float128('Infinity').is_zero())
+        self.assertFalse(float128('-Infinity').is_zero())
+        self.assertFalse(float128('NaN').is_zero())
+        self.assertFalse(float128('-NaN').is_zero())
+        self.assertFalse(float128('sNaN').is_zero())
+        self.assertFalse(float128('-sNaN').is_zero())
 
     def test_encode(self):
         test_values = [
-            (Float128(0), b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'),
-            (Float128(1), b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x3f'),
-            (Float128(2), b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x40'),
-            (Float128(-1), b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xbf'),
-            (Float128(-2), b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xc0'),
+            (float128(0), b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'),
+            (float128(1), b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x3f'),
+            (float128(2), b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x40'),
+            (float128(-1), b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xbf'),
+            (float128(-2), b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xc0'),
         ]
         for quad, expected in test_values:
             actual = quad.encode()
@@ -312,34 +312,34 @@ class TestFloat128(unittest.TestCase):
 
     def test_encode_decode_roundtrip(self):
         test_values = [
-            Float128(0),
-            Float128(1),
-            Float128(-1),
-            Float128.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x7f'),  # inf
-            Float128.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff'),  # -inf
-            Float128.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\x7f'),  # qnan
-            Float128.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\xff'),  # qnan
-            Float128.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\x7f'),  # qnan
-            Float128.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\xff'),  # qnan
-            Float128.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x7f'),  # snan
-            Float128.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff'),  # snan
-            Float128('inf'),
-            Float128('-inf'),
-            Float128('nan'),
-            Float128('-nan'),
-            Float128('snan'),
-            Float128('-snan'),
+            float128(0),
+            float128(1),
+            float128(-1),
+            float128.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x7f'),  # inf
+            float128.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff'),  # -inf
+            float128.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\x7f'),  # qnan
+            float128.decode(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\xff'),  # qnan
+            float128.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\x7f'),  # qnan
+            float128.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xff\xff'),  # qnan
+            float128.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x7f'),  # snan
+            float128.decode(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff'),  # snan
+            float128('inf'),
+            float128('-inf'),
+            float128('nan'),
+            float128('-nan'),
+            float128('snan'),
+            float128('-snan'),
         ]
         for value in test_values:
             encoded_value = value.encode()
             self.assertIsInstance(encoded_value, bytes)
-            decoded_value = Float128.decode(encoded_value)
+            decoded_value = float128.decode(encoded_value)
             self.assertInterchangeable(value, decoded_value)
 
     def test_decode(self):
         # Wrong number of bytes to decode.
         with self.assertRaises(ValueError):
-            Float128.decode(b'\x00' * 8)
+            float128.decode(b'\x00' * 8)
 
     def test_decode_encode_roundtrip(self):
         test_values = [
@@ -361,7 +361,7 @@ class TestFloat128(unittest.TestCase):
         ]
         for value in test_values:
             self.assertIsInstance(value, bytes)
-            decoded_value = Float128.decode(value)
+            decoded_value = float128.decode(value)
             encoded_value = decoded_value.encode()
 
             self.assertIsInstance(encoded_value, bytes)
@@ -369,47 +369,47 @@ class TestFloat128(unittest.TestCase):
 
     def test_repr_construct_roundtrip(self):
         test_values = [
-            Float128('3.2'),
-            Float128(3.2),
-            Float128(1),
-            Float128('-1.0'),
-            Float128('0.0'),
-            Float128('-0.0'),
-            Float128('3.1415926535897932384626433'),
-            Float128('0.1'),
-            Float128('0.01'),
-            Float128('1e1000'),
-            Float128('1e-1000'),
-            Float128(0.10000000000001e-150),
-            Float128(0.32e-150),
-            Float128(0.99999999999999e-150),
-            Float128(0.10000000000001e-2),
-            Float128(0.32e-2),
-            Float128(0.99999999999999e-2),
-            Float128(0.10000000000001e-1),
-            Float128(0.32e-1),
-            Float128(0.99999999999999e-1),
-            Float128(0.10000000000001),
-            Float128(0.32),
-            Float128(0.99999999999999),
-            Float128(1),
-            Float128(3.2),
-            Float128(9.999999999999),
-            Float128(10.0),
-            Float128(10.00000000000001),
-            Float128(32),
-            Float128(0.10000000000001e150),
-            Float128(0.32e150),
-            Float128(0.99999999999999e150),
-            Float128(10**200),
-            Float128('inf'),
-            Float128('-inf'),
-            Float128('nan'),
-            Float128('-nan'),
-            Float128('snan'),
-            Float128('-snan'),
-            Float128('nan(123)'),
-            Float128('-snan(999999)'),
+            float128('3.2'),
+            float128(3.2),
+            float128(1),
+            float128('-1.0'),
+            float128('0.0'),
+            float128('-0.0'),
+            float128('3.1415926535897932384626433'),
+            float128('0.1'),
+            float128('0.01'),
+            float128('1e1000'),
+            float128('1e-1000'),
+            float128(0.10000000000001e-150),
+            float128(0.32e-150),
+            float128(0.99999999999999e-150),
+            float128(0.10000000000001e-2),
+            float128(0.32e-2),
+            float128(0.99999999999999e-2),
+            float128(0.10000000000001e-1),
+            float128(0.32e-1),
+            float128(0.99999999999999e-1),
+            float128(0.10000000000001),
+            float128(0.32),
+            float128(0.99999999999999),
+            float128(1),
+            float128(3.2),
+            float128(9.999999999999),
+            float128(10.0),
+            float128(10.00000000000001),
+            float128(32),
+            float128(0.10000000000001e150),
+            float128(0.32e150),
+            float128(0.99999999999999e150),
+            float128(10**200),
+            float128('inf'),
+            float128('-inf'),
+            float128('nan'),
+            float128('-nan'),
+            float128('snan'),
+            float128('-snan'),
+            float128('nan(123)'),
+            float128('-snan(999999)'),
         ]
         for value in test_values:
             repr_value = repr(value)
@@ -417,501 +417,501 @@ class TestFloat128(unittest.TestCase):
             self.assertInterchangeable(value, reconstructed_value)
 
             str_value = str(value)
-            reconstructed_value = Float128(str_value)
+            reconstructed_value = float128(str_value)
             self.assertInterchangeable(value, reconstructed_value)
 
     def test_multiplication(self):
         # First steps
-        a = Float128(2)
-        b = Float128('inf')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('inf'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('inf'))
+        a = float128(2)
+        b = float128('inf')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('inf'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('inf'))
 
-        a = Float128(-2)
-        b = Float128('inf')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('-inf'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('-inf'))
+        a = float128(-2)
+        b = float128('inf')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('-inf'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('-inf'))
 
-        a = Float128(2)
-        b = Float128('-inf')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('-inf'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('-inf'))
+        a = float128(2)
+        b = float128('-inf')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('-inf'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('-inf'))
 
-        a = Float128(-2)
-        b = Float128('-inf')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('inf'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('inf'))
+        a = float128(-2)
+        b = float128('-inf')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('inf'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('inf'))
 
-        a = Float128('0.0')
-        b = Float128('inf')
-        self.assertTrue((Float128.multiplication(a, b)).is_nan())
-        self.assertTrue((Float128.multiplication(b, a)).is_nan())
+        a = float128('0.0')
+        b = float128('inf')
+        self.assertTrue((float128.multiplication(a, b)).is_nan())
+        self.assertTrue((float128.multiplication(b, a)).is_nan())
 
-        a = Float128('0.0')
-        b = Float128('0.0')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('0.0'))
+        a = float128('0.0')
+        b = float128('0.0')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('0.0'))
 
-        a = Float128('-0.0')
-        b = Float128('0.0')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('-0.0'))
+        a = float128('-0.0')
+        b = float128('0.0')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('-0.0'))
 
-        a = Float128('0.0')
-        b = Float128('-0.0')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('-0.0'))
+        a = float128('0.0')
+        b = float128('-0.0')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('-0.0'))
 
-        a = Float128('-0.0')
-        b = Float128('-0.0')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('0.0'))
+        a = float128('-0.0')
+        b = float128('-0.0')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('0.0'))
 
-        a = Float128('2.0')
-        b = Float128('0.0')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('0.0'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('0.0'))
+        a = float128('2.0')
+        b = float128('0.0')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('0.0'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('0.0'))
 
-        a = Float128('-2.0')
-        b = Float128('0.0')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('-0.0'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('-0.0'))
+        a = float128('-2.0')
+        b = float128('0.0')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('-0.0'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('-0.0'))
 
-        a = Float128('2.0')
-        b = Float128('-0.0')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('-0.0'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('-0.0'))
+        a = float128('2.0')
+        b = float128('-0.0')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('-0.0'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('-0.0'))
 
-        a = Float128('-2.0')
-        b = Float128('-0.0')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('0.0'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('0.0'))
+        a = float128('-2.0')
+        b = float128('-0.0')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('0.0'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('0.0'))
 
-        a = Float128('2.0')
-        b = Float128('3.0')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('6.0'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('6.0'))
+        a = float128('2.0')
+        b = float128('3.0')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('6.0'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('6.0'))
 
         # signaling nans?
-        a = Float128('-snan(123)')
-        b = Float128('2.3')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('2.3')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('-nan(123)'))
 
-        a = Float128('-snan(123)')
-        b = Float128('nan(456)')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('nan(456)')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('-nan(123)'))
 
-        a = Float128('-snan(123)')
-        b = Float128('-inf')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('-inf')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('-nan(123)'))
 
-        a = Float128('-snan(123)')
-        b = Float128('-2.3')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('-2.3')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('-nan(123)'))
 
         # first snan wins
-        a = Float128('snan(123)')
-        b = Float128('-snan(456)')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('nan(123)'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('-nan(456)'))
+        a = float128('snan(123)')
+        b = float128('-snan(456)')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('nan(123)'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('-nan(456)'))
 
         # quiet nans with payload
-        a = Float128('2.0')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('nan(789)'))
+        a = float128('2.0')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('nan(789)'))
 
-        a = Float128('-2.0')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('nan(789)'))
+        a = float128('-2.0')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('nan(789)'))
 
-        a = Float128('inf')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('nan(789)'))
+        a = float128('inf')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('nan(789)'))
 
-        a = Float128('-inf')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.multiplication(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.multiplication(b, a), Float128('nan(789)'))
+        a = float128('-inf')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.multiplication(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.multiplication(b, a), float128('nan(789)'))
 
     def test_addition(self):
         # Cases where zeros are involved.
-        a = Float128('0.0')
-        b = Float128('0.0')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('0.0'))
+        a = float128('0.0')
+        b = float128('0.0')
+        self.assertInterchangeable(float128.addition(a, b), float128('0.0'))
 
-        a = Float128('0.0')
-        b = Float128('-0.0')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('0.0'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('0.0'))
+        a = float128('0.0')
+        b = float128('-0.0')
+        self.assertInterchangeable(float128.addition(a, b), float128('0.0'))
+        self.assertInterchangeable(float128.addition(b, a), float128('0.0'))
 
-        a = Float128('-0.0')
-        b = Float128('-0.0')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('-0.0'))
+        a = float128('-0.0')
+        b = float128('-0.0')
+        self.assertInterchangeable(float128.addition(a, b), float128('-0.0'))
 
-        a = Float128('2.0')
-        b = Float128('0.0')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('2.0'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('2.0'))
+        a = float128('2.0')
+        b = float128('0.0')
+        self.assertInterchangeable(float128.addition(a, b), float128('2.0'))
+        self.assertInterchangeable(float128.addition(b, a), float128('2.0'))
 
-        a = Float128('2.0')
-        b = Float128('-2.0')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('0.0'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('0.0'))
+        a = float128('2.0')
+        b = float128('-2.0')
+        self.assertInterchangeable(float128.addition(a, b), float128('0.0'))
+        self.assertInterchangeable(float128.addition(b, a), float128('0.0'))
 
-        a = Float128('2.0')
-        b = Float128('3.0')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('5.0'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('5.0'))
+        a = float128('2.0')
+        b = float128('3.0')
+        self.assertInterchangeable(float128.addition(a, b), float128('5.0'))
+        self.assertInterchangeable(float128.addition(b, a), float128('5.0'))
 
         # Infinities.
-        a = Float128('inf')
-        b = Float128('2.0')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('inf'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('inf'))
+        a = float128('inf')
+        b = float128('2.0')
+        self.assertInterchangeable(float128.addition(a, b), float128('inf'))
+        self.assertInterchangeable(float128.addition(b, a), float128('inf'))
 
-        a = Float128('inf')
-        b = Float128('-2.0')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('inf'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('inf'))
+        a = float128('inf')
+        b = float128('-2.0')
+        self.assertInterchangeable(float128.addition(a, b), float128('inf'))
+        self.assertInterchangeable(float128.addition(b, a), float128('inf'))
 
-        a = Float128('-inf')
-        b = Float128('2.0')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('-inf'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('-inf'))
+        a = float128('-inf')
+        b = float128('2.0')
+        self.assertInterchangeable(float128.addition(a, b), float128('-inf'))
+        self.assertInterchangeable(float128.addition(b, a), float128('-inf'))
 
-        a = Float128('-inf')
-        b = Float128('-2.0')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('-inf'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('-inf'))
+        a = float128('-inf')
+        b = float128('-2.0')
+        self.assertInterchangeable(float128.addition(a, b), float128('-inf'))
+        self.assertInterchangeable(float128.addition(b, a), float128('-inf'))
 
-        a = Float128('-inf')
-        b = Float128('inf')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('nan'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('nan'))
+        a = float128('-inf')
+        b = float128('inf')
+        self.assertInterchangeable(float128.addition(a, b), float128('nan'))
+        self.assertInterchangeable(float128.addition(b, a), float128('nan'))
 
-        a = Float128('inf')
-        b = Float128('inf')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('inf'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('inf'))
+        a = float128('inf')
+        b = float128('inf')
+        self.assertInterchangeable(float128.addition(a, b), float128('inf'))
+        self.assertInterchangeable(float128.addition(b, a), float128('inf'))
 
-        a = Float128('-inf')
-        b = Float128('-inf')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('-inf'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('-inf'))
+        a = float128('-inf')
+        b = float128('-inf')
+        self.assertInterchangeable(float128.addition(a, b), float128('-inf'))
+        self.assertInterchangeable(float128.addition(b, a), float128('-inf'))
 
         # signaling nans?
-        a = Float128('-snan(123)')
-        b = Float128('2.3')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('2.3')
+        self.assertInterchangeable(float128.addition(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.addition(b, a), float128('-nan(123)'))
 
-        a = Float128('-snan(123)')
-        b = Float128('nan(456)')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('nan(456)')
+        self.assertInterchangeable(float128.addition(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.addition(b, a), float128('-nan(123)'))
 
-        a = Float128('-snan(123)')
-        b = Float128('-inf')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('-inf')
+        self.assertInterchangeable(float128.addition(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.addition(b, a), float128('-nan(123)'))
 
-        a = Float128('-snan(123)')
-        b = Float128('-2.3')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('-2.3')
+        self.assertInterchangeable(float128.addition(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.addition(b, a), float128('-nan(123)'))
 
         # first snan wins
-        a = Float128('snan(123)')
-        b = Float128('-snan(456)')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('nan(123)'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('-nan(456)'))
+        a = float128('snan(123)')
+        b = float128('-snan(456)')
+        self.assertInterchangeable(float128.addition(a, b), float128('nan(123)'))
+        self.assertInterchangeable(float128.addition(b, a), float128('-nan(456)'))
 
         # quiet nans with payload
-        a = Float128('2.0')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('nan(789)'))
+        a = float128('2.0')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.addition(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.addition(b, a), float128('nan(789)'))
 
-        a = Float128('-2.0')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('nan(789)'))
+        a = float128('-2.0')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.addition(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.addition(b, a), float128('nan(789)'))
 
-        a = Float128('inf')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('nan(789)'))
+        a = float128('inf')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.addition(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.addition(b, a), float128('nan(789)'))
 
-        a = Float128('-inf')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.addition(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.addition(b, a), Float128('nan(789)'))
+        a = float128('-inf')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.addition(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.addition(b, a), float128('nan(789)'))
 
     def test_subtraction(self):
         # Cases where zeros are involved.
-        a = Float128('0.0')
-        b = Float128('0.0')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('0.0'))
+        a = float128('0.0')
+        b = float128('0.0')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('0.0'))
 
-        a = Float128('0.0')
-        b = Float128('-0.0')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('0.0'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-0.0'))
+        a = float128('0.0')
+        b = float128('-0.0')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('0.0'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('-0.0'))
 
-        a = Float128('-0.0')
-        b = Float128('-0.0')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('0.0'))
+        a = float128('-0.0')
+        b = float128('-0.0')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('0.0'))
 
-        a = Float128('2.0')
-        b = Float128('0.0')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('2.0'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-2.0'))
+        a = float128('2.0')
+        b = float128('0.0')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('2.0'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('-2.0'))
 
-        a = Float128('2.0')
-        b = Float128('-2.0')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('4.0'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-4.0'))
+        a = float128('2.0')
+        b = float128('-2.0')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('4.0'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('-4.0'))
 
-        a = Float128('2.0')
-        b = Float128('2.0')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('0.0'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('0.0'))
+        a = float128('2.0')
+        b = float128('2.0')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('0.0'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('0.0'))
 
-        a = Float128('2.0')
-        b = Float128('3.0')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-1.0'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('1.0'))
+        a = float128('2.0')
+        b = float128('3.0')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('-1.0'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('1.0'))
 
         # Infinities.
-        a = Float128('inf')
-        b = Float128('2.0')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('inf'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-inf'))
+        a = float128('inf')
+        b = float128('2.0')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('inf'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('-inf'))
 
-        a = Float128('inf')
-        b = Float128('-2.0')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('inf'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-inf'))
+        a = float128('inf')
+        b = float128('-2.0')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('inf'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('-inf'))
 
-        a = Float128('-inf')
-        b = Float128('2.0')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-inf'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('inf'))
+        a = float128('-inf')
+        b = float128('2.0')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('-inf'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('inf'))
 
-        a = Float128('-inf')
-        b = Float128('-2.0')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-inf'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('inf'))
+        a = float128('-inf')
+        b = float128('-2.0')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('-inf'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('inf'))
 
-        a = Float128('inf')
-        b = Float128('inf')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('nan'))
+        a = float128('inf')
+        b = float128('inf')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('nan'))
 
-        a = Float128('-inf')
-        b = Float128('-inf')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('nan'))
+        a = float128('-inf')
+        b = float128('-inf')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('nan'))
 
-        a = Float128('-inf')
-        b = Float128('inf')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-inf'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('inf'))
+        a = float128('-inf')
+        b = float128('inf')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('-inf'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('inf'))
 
         # signaling nans?
-        a = Float128('-snan(123)')
-        b = Float128('2.3')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('2.3')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('-nan(123)'))
 
-        a = Float128('-snan(123)')
-        b = Float128('nan(456)')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('nan(456)')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('-nan(123)'))
 
-        a = Float128('-snan(123)')
-        b = Float128('-inf')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('-inf')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('-nan(123)'))
 
-        a = Float128('-snan(123)')
-        b = Float128('-2.3')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('-2.3')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('-nan(123)'))
 
         # first snan wins
-        a = Float128('snan(123)')
-        b = Float128('-snan(456)')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('nan(123)'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('-nan(456)'))
+        a = float128('snan(123)')
+        b = float128('-snan(456)')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('nan(123)'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('-nan(456)'))
 
         # quiet nans with payload
-        a = Float128('2.0')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('nan(789)'))
+        a = float128('2.0')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('nan(789)'))
 
-        a = Float128('-2.0')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('nan(789)'))
+        a = float128('-2.0')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('nan(789)'))
 
-        a = Float128('inf')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('nan(789)'))
+        a = float128('inf')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('nan(789)'))
 
-        a = Float128('-inf')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.subtraction(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.subtraction(b, a), Float128('nan(789)'))
+        a = float128('-inf')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.subtraction(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.subtraction(b, a), float128('nan(789)'))
 
     def test_division(self):
         # Finite: check all combinations of signs.
-        a = Float128('1.0')
-        b = Float128('2.0')
-        self.assertInterchangeable(Float128.division(a, b), Float128('0.5'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('2.0'))
+        a = float128('1.0')
+        b = float128('2.0')
+        self.assertInterchangeable(float128.division(a, b), float128('0.5'))
+        self.assertInterchangeable(float128.division(b, a), float128('2.0'))
 
-        a = Float128('-1.0')
-        b = Float128('2.0')
-        self.assertInterchangeable(Float128.division(a, b), Float128('-0.5'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('-2.0'))
+        a = float128('-1.0')
+        b = float128('2.0')
+        self.assertInterchangeable(float128.division(a, b), float128('-0.5'))
+        self.assertInterchangeable(float128.division(b, a), float128('-2.0'))
 
-        a = Float128('1.0')
-        b = Float128('-2.0')
-        self.assertInterchangeable(Float128.division(a, b), Float128('-0.5'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('-2.0'))
+        a = float128('1.0')
+        b = float128('-2.0')
+        self.assertInterchangeable(float128.division(a, b), float128('-0.5'))
+        self.assertInterchangeable(float128.division(b, a), float128('-2.0'))
 
-        a = Float128('-1.0')
-        b = Float128('-2.0')
-        self.assertInterchangeable(Float128.division(a, b), Float128('0.5'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('2.0'))
+        a = float128('-1.0')
+        b = float128('-2.0')
+        self.assertInterchangeable(float128.division(a, b), float128('0.5'))
+        self.assertInterchangeable(float128.division(b, a), float128('2.0'))
 
         # One or other argument zero (but not both).
-        a = Float128('0.0')
-        b = Float128('2.0')
-        self.assertInterchangeable(Float128.division(a, b), Float128('0.0'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('inf'))
+        a = float128('0.0')
+        b = float128('2.0')
+        self.assertInterchangeable(float128.division(a, b), float128('0.0'))
+        self.assertInterchangeable(float128.division(b, a), float128('inf'))
 
-        a = Float128('0.0')
-        b = Float128('-2.0')
-        self.assertInterchangeable(Float128.division(a, b), Float128('-0.0'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('-inf'))
+        a = float128('0.0')
+        b = float128('-2.0')
+        self.assertInterchangeable(float128.division(a, b), float128('-0.0'))
+        self.assertInterchangeable(float128.division(b, a), float128('-inf'))
 
-        a = Float128('-0.0')
-        b = Float128('2.0')
-        self.assertInterchangeable(Float128.division(a, b), Float128('-0.0'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('-inf'))
+        a = float128('-0.0')
+        b = float128('2.0')
+        self.assertInterchangeable(float128.division(a, b), float128('-0.0'))
+        self.assertInterchangeable(float128.division(b, a), float128('-inf'))
 
-        a = Float128('-0.0')
-        b = Float128('-2.0')
-        self.assertInterchangeable(Float128.division(a, b), Float128('0.0'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('inf'))
+        a = float128('-0.0')
+        b = float128('-2.0')
+        self.assertInterchangeable(float128.division(a, b), float128('0.0'))
+        self.assertInterchangeable(float128.division(b, a), float128('inf'))
 
         # Zero divided by zero.
-        a = Float128('0.0')
-        b = Float128('0.0')
-        self.assertTrue(Float128.division(a, b).is_nan())
+        a = float128('0.0')
+        b = float128('0.0')
+        self.assertTrue(float128.division(a, b).is_nan())
 
-        a = Float128('-0.0')
-        b = Float128('0.0')
-        self.assertTrue(Float128.division(a, b).is_nan())
+        a = float128('-0.0')
+        b = float128('0.0')
+        self.assertTrue(float128.division(a, b).is_nan())
 
-        a = Float128('-0.0')
-        b = Float128('-0.0')
-        self.assertTrue(Float128.division(a, b).is_nan())
+        a = float128('-0.0')
+        b = float128('-0.0')
+        self.assertTrue(float128.division(a, b).is_nan())
 
-        a = Float128('0.0')
-        b = Float128('-0.0')
-        self.assertTrue(Float128.division(a, b).is_nan())
+        a = float128('0.0')
+        b = float128('-0.0')
+        self.assertTrue(float128.division(a, b).is_nan())
 
         # One or other arguments is infinity.
-        a = Float128('inf')
-        b = Float128('2.3')
-        self.assertInterchangeable(Float128.division(a, b), Float128('inf'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('0.0'))
+        a = float128('inf')
+        b = float128('2.3')
+        self.assertInterchangeable(float128.division(a, b), float128('inf'))
+        self.assertInterchangeable(float128.division(b, a), float128('0.0'))
 
-        a = Float128('-inf')
-        b = Float128('2.3')
-        self.assertInterchangeable(Float128.division(a, b), Float128('-inf'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('-0.0'))
+        a = float128('-inf')
+        b = float128('2.3')
+        self.assertInterchangeable(float128.division(a, b), float128('-inf'))
+        self.assertInterchangeable(float128.division(b, a), float128('-0.0'))
 
-        a = Float128('-inf')
-        b = Float128('-2.3')
-        self.assertInterchangeable(Float128.division(a, b), Float128('inf'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('0.0'))
+        a = float128('-inf')
+        b = float128('-2.3')
+        self.assertInterchangeable(float128.division(a, b), float128('inf'))
+        self.assertInterchangeable(float128.division(b, a), float128('0.0'))
 
-        a = Float128('inf')
-        b = Float128('-2.3')
-        self.assertInterchangeable(Float128.division(a, b), Float128('-inf'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('-0.0'))
+        a = float128('inf')
+        b = float128('-2.3')
+        self.assertInterchangeable(float128.division(a, b), float128('-inf'))
+        self.assertInterchangeable(float128.division(b, a), float128('-0.0'))
 
         # Both arguments are infinity.
-        a = Float128('inf')
-        b = Float128('inf')
-        self.assertTrue(Float128.division(a, b).is_nan())
+        a = float128('inf')
+        b = float128('inf')
+        self.assertTrue(float128.division(a, b).is_nan())
 
-        a = Float128('-inf')
-        b = Float128('inf')
-        self.assertTrue(Float128.division(a, b).is_nan())
+        a = float128('-inf')
+        b = float128('inf')
+        self.assertTrue(float128.division(a, b).is_nan())
 
-        a = Float128('-inf')
-        b = Float128('-inf')
-        self.assertTrue(Float128.division(a, b).is_nan())
+        a = float128('-inf')
+        b = float128('-inf')
+        self.assertTrue(float128.division(a, b).is_nan())
 
-        a = Float128('inf')
-        b = Float128('-inf')
-        self.assertTrue(Float128.division(a, b).is_nan())
+        a = float128('inf')
+        b = float128('-inf')
+        self.assertTrue(float128.division(a, b).is_nan())
         
         # signaling nans?
-        a = Float128('-snan(123)')
-        b = Float128('2.3')
-        self.assertInterchangeable(Float128.division(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('2.3')
+        self.assertInterchangeable(float128.division(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.division(b, a), float128('-nan(123)'))
 
-        a = Float128('-snan(123)')
-        b = Float128('nan(456)')
-        self.assertInterchangeable(Float128.division(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('nan(456)')
+        self.assertInterchangeable(float128.division(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.division(b, a), float128('-nan(123)'))
 
-        a = Float128('-snan(123)')
-        b = Float128('-inf')
-        self.assertInterchangeable(Float128.division(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('-inf')
+        self.assertInterchangeable(float128.division(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.division(b, a), float128('-nan(123)'))
 
-        a = Float128('-snan(123)')
-        b = Float128('-2.3')
-        self.assertInterchangeable(Float128.division(a, b), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('-nan(123)'))
+        a = float128('-snan(123)')
+        b = float128('-2.3')
+        self.assertInterchangeable(float128.division(a, b), float128('-nan(123)'))
+        self.assertInterchangeable(float128.division(b, a), float128('-nan(123)'))
 
         # first snan wins
-        a = Float128('snan(123)')
-        b = Float128('-snan(456)')
-        self.assertInterchangeable(Float128.division(a, b), Float128('nan(123)'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('-nan(456)'))
+        a = float128('snan(123)')
+        b = float128('-snan(456)')
+        self.assertInterchangeable(float128.division(a, b), float128('nan(123)'))
+        self.assertInterchangeable(float128.division(b, a), float128('-nan(456)'))
 
         # quiet nans with payload
-        a = Float128('2.0')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.division(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('nan(789)'))
+        a = float128('2.0')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.division(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.division(b, a), float128('nan(789)'))
 
-        a = Float128('-2.0')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.division(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('nan(789)'))
+        a = float128('-2.0')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.division(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.division(b, a), float128('nan(789)'))
 
-        a = Float128('inf')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.division(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('nan(789)'))
+        a = float128('inf')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.division(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.division(b, a), float128('nan(789)'))
 
-        a = Float128('-inf')
-        b = Float128('nan(789)')
-        self.assertInterchangeable(Float128.division(a, b), Float128('nan(789)'))
-        self.assertInterchangeable(Float128.division(b, a), Float128('nan(789)'))
+        a = float128('-inf')
+        b = float128('nan(789)')
+        self.assertInterchangeable(float128.division(a, b), float128('nan(789)'))
+        self.assertInterchangeable(float128.division(b, a), float128('nan(789)'))
 
         # XXX Tests for correct rounding.
         # XXX Tests for subnormal results, underflow.
@@ -959,292 +959,292 @@ class TestFloat128(unittest.TestCase):
             ('12', '2.5', '-0.0', '30.0'),
         ]
         for strs in test_values:
-            a, b, c, expected = map(Float128, strs)
+            a, b, c, expected = map(float128, strs)
             self.assertInterchangeable(
-                Float128.fused_multiply_add(a, b, c),
+                float128.fused_multiply_add(a, b, c),
                 expected,
             )
 
     def test_convert_from_int(self):
-        self.assertInterchangeable(Float128.convert_from_int(5), Float128('5.0'))
+        self.assertInterchangeable(float128.convert_from_int(5), float128('5.0'))
 
     def test_int(self):
-        nan = Float128('nan')
+        nan = float128('nan')
         with self.assertRaises(ValueError):
             int(nan)
 
-        inf = Float128('inf')
+        inf = float128('inf')
         with self.assertRaises(ValueError):
             int(inf)
-        ninf = Float128('-inf')
+        ninf = float128('-inf')
         with self.assertRaises(ValueError):
             int(ninf)
 
-        self.assertEqual(int(Float128(-1.75)), -1)
-        self.assertEqual(int(Float128(-1.5)), -1)
-        self.assertEqual(int(Float128(-1.25)), -1)
-        self.assertEqual(int(Float128(-1.0)), -1)
-        self.assertEqual(int(Float128(-0.75)), 0)
-        self.assertEqual(int(Float128(-0.5)), 0)
-        self.assertEqual(int(Float128(-0.25)), 0)
-        self.assertEqual(int(Float128(-0.0)), 0)
-        self.assertEqual(int(Float128(0.0)), 0)
-        self.assertEqual(int(Float128(0.25)), 0)
-        self.assertEqual(int(Float128(0.5)), 0)
-        self.assertEqual(int(Float128(0.75)), 0)
-        self.assertEqual(int(Float128(1.0)), 1)
-        self.assertEqual(int(Float128(1.25)), 1)
-        self.assertEqual(int(Float128(1.5)), 1)
-        self.assertEqual(int(Float128(1.75)), 1)
+        self.assertEqual(int(float128(-1.75)), -1)
+        self.assertEqual(int(float128(-1.5)), -1)
+        self.assertEqual(int(float128(-1.25)), -1)
+        self.assertEqual(int(float128(-1.0)), -1)
+        self.assertEqual(int(float128(-0.75)), 0)
+        self.assertEqual(int(float128(-0.5)), 0)
+        self.assertEqual(int(float128(-0.25)), 0)
+        self.assertEqual(int(float128(-0.0)), 0)
+        self.assertEqual(int(float128(0.0)), 0)
+        self.assertEqual(int(float128(0.25)), 0)
+        self.assertEqual(int(float128(0.5)), 0)
+        self.assertEqual(int(float128(0.75)), 0)
+        self.assertEqual(int(float128(1.0)), 1)
+        self.assertEqual(int(float128(1.25)), 1)
+        self.assertEqual(int(float128(1.5)), 1)
+        self.assertEqual(int(float128(1.75)), 1)
 
     if sys.version_info.major == 2:
         def test_long(self):
-            self.assertIsInstance(long(Float128(-1.75)), long)
-            self.assertEqual(long(Float128(-1.75)), long(-1))
-            self.assertIsInstance(long(Float128(2**64)), long)
-            self.assertEqual(long(Float128(2**64)), long(2**64))
+            self.assertIsInstance(long(float128(-1.75)), long)
+            self.assertEqual(long(float128(-1.75)), long(-1))
+            self.assertIsInstance(long(float128(2**64)), long)
+            self.assertEqual(long(float128(2**64)), long(2**64))
 
     def test_float(self):
-        self.assertTrue(math.isnan(float(Float128('nan'))))
-        self.assertEqual(float(Float128('inf')), float('inf'))
-        self.assertEqual(float(Float128('-inf')), float('-inf'))
-        self.assertEqual(float(Float128('2.0')), 2.0)
-        self.assertEqual(float(Float128('-2.3')), -2.3)
-        self.assertEqual(float(Float128('1e400')), float('inf'))
-        self.assertEqual(float(Float128('-1e400')), float('-inf'))
-        poszero = float(Float128('0.0'))
+        self.assertTrue(math.isnan(float(float128('nan'))))
+        self.assertEqual(float(float128('inf')), float('inf'))
+        self.assertEqual(float(float128('-inf')), float('-inf'))
+        self.assertEqual(float(float128('2.0')), 2.0)
+        self.assertEqual(float(float128('-2.3')), -2.3)
+        self.assertEqual(float(float128('1e400')), float('inf'))
+        self.assertEqual(float(float128('-1e400')), float('-inf'))
+        poszero = float(float128('0.0'))
         self.assertEqual(poszero, 0.0)
         self.assertEqual(math.copysign(1.0, poszero), math.copysign(1.0, 0.0))
-        negzero = float(Float128('-0.0'))
+        negzero = float(float128('-0.0'))
         self.assertEqual(negzero, 0.0)
         self.assertEqual(math.copysign(1.0, negzero), math.copysign(1.0, -0.0))
 
     def test_convert_to_integer_ties_to_even(self):
-        nan = Float128('nan')
+        nan = float128('nan')
         with self.assertRaises(ValueError):
             nan.convert_to_integer_ties_to_even()
 
-        inf = Float128('inf')
+        inf = float128('inf')
         with self.assertRaises(ValueError):
             inf.convert_to_integer_ties_to_even()
-        ninf = Float128('-inf')
+        ninf = float128('-inf')
         with self.assertRaises(ValueError):
             ninf.convert_to_integer_ties_to_even()
 
-        self.assertEqual(Float128(-1.75).convert_to_integer_ties_to_even(), -2)
-        self.assertEqual(Float128(-1.5).convert_to_integer_ties_to_even(), -2)
-        self.assertEqual(Float128(-1.25).convert_to_integer_ties_to_even(), -1)
-        self.assertEqual(Float128(-1.0).convert_to_integer_ties_to_even(), -1)
-        self.assertEqual(Float128(-0.75).convert_to_integer_ties_to_even(), -1)
-        self.assertEqual(Float128(-0.5).convert_to_integer_ties_to_even(), 0)
-        self.assertEqual(Float128(-0.25).convert_to_integer_ties_to_even(), 0)
-        self.assertEqual(Float128(-0.0).convert_to_integer_ties_to_even(), 0)
-        self.assertEqual(Float128(0.0).convert_to_integer_ties_to_even(), 0)
-        self.assertEqual(Float128(0.25).convert_to_integer_ties_to_even(), 0)
-        self.assertEqual(Float128(0.5).convert_to_integer_ties_to_even(), 0)
-        self.assertEqual(Float128(0.75).convert_to_integer_ties_to_even(), 1)
-        self.assertEqual(Float128(1.0).convert_to_integer_ties_to_even(), 1)
-        self.assertEqual(Float128(1.25).convert_to_integer_ties_to_even(), 1)
-        self.assertEqual(Float128(1.5).convert_to_integer_ties_to_even(), 2)
-        self.assertEqual(Float128(1.75).convert_to_integer_ties_to_even(), 2)
+        self.assertEqual(float128(-1.75).convert_to_integer_ties_to_even(), -2)
+        self.assertEqual(float128(-1.5).convert_to_integer_ties_to_even(), -2)
+        self.assertEqual(float128(-1.25).convert_to_integer_ties_to_even(), -1)
+        self.assertEqual(float128(-1.0).convert_to_integer_ties_to_even(), -1)
+        self.assertEqual(float128(-0.75).convert_to_integer_ties_to_even(), -1)
+        self.assertEqual(float128(-0.5).convert_to_integer_ties_to_even(), 0)
+        self.assertEqual(float128(-0.25).convert_to_integer_ties_to_even(), 0)
+        self.assertEqual(float128(-0.0).convert_to_integer_ties_to_even(), 0)
+        self.assertEqual(float128(0.0).convert_to_integer_ties_to_even(), 0)
+        self.assertEqual(float128(0.25).convert_to_integer_ties_to_even(), 0)
+        self.assertEqual(float128(0.5).convert_to_integer_ties_to_even(), 0)
+        self.assertEqual(float128(0.75).convert_to_integer_ties_to_even(), 1)
+        self.assertEqual(float128(1.0).convert_to_integer_ties_to_even(), 1)
+        self.assertEqual(float128(1.25).convert_to_integer_ties_to_even(), 1)
+        self.assertEqual(float128(1.5).convert_to_integer_ties_to_even(), 2)
+        self.assertEqual(float128(1.75).convert_to_integer_ties_to_even(), 2)
 
     def test_convert_to_integer_toward_zero(self):
-        nan = Float128('nan')
+        nan = float128('nan')
         with self.assertRaises(ValueError):
             nan.convert_to_integer_toward_zero()
 
-        inf = Float128('inf')
+        inf = float128('inf')
         with self.assertRaises(ValueError):
             inf.convert_to_integer_toward_zero()
-        ninf = Float128('-inf')
+        ninf = float128('-inf')
         with self.assertRaises(ValueError):
             ninf.convert_to_integer_toward_zero()
 
-        self.assertEqual(Float128(-1.75).convert_to_integer_toward_zero(), -1)
-        self.assertEqual(Float128(-1.5).convert_to_integer_toward_zero(), -1)
-        self.assertEqual(Float128(-1.25).convert_to_integer_toward_zero(), -1)
-        self.assertEqual(Float128(-1.0).convert_to_integer_toward_zero(), -1)
-        self.assertEqual(Float128(-0.75).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(Float128(-0.5).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(Float128(-0.25).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(Float128(-0.0).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(Float128(0.0).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(Float128(0.25).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(Float128(0.5).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(Float128(0.75).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(Float128(1.0).convert_to_integer_toward_zero(), 1)
-        self.assertEqual(Float128(1.25).convert_to_integer_toward_zero(), 1)
-        self.assertEqual(Float128(1.5).convert_to_integer_toward_zero(), 1)
-        self.assertEqual(Float128(1.75).convert_to_integer_toward_zero(), 1)
+        self.assertEqual(float128(-1.75).convert_to_integer_toward_zero(), -1)
+        self.assertEqual(float128(-1.5).convert_to_integer_toward_zero(), -1)
+        self.assertEqual(float128(-1.25).convert_to_integer_toward_zero(), -1)
+        self.assertEqual(float128(-1.0).convert_to_integer_toward_zero(), -1)
+        self.assertEqual(float128(-0.75).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(float128(-0.5).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(float128(-0.25).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(float128(-0.0).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(float128(0.0).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(float128(0.25).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(float128(0.5).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(float128(0.75).convert_to_integer_toward_zero(), 0)
+        self.assertEqual(float128(1.0).convert_to_integer_toward_zero(), 1)
+        self.assertEqual(float128(1.25).convert_to_integer_toward_zero(), 1)
+        self.assertEqual(float128(1.5).convert_to_integer_toward_zero(), 1)
+        self.assertEqual(float128(1.75).convert_to_integer_toward_zero(), 1)
 
     def test_convert_to_integer_toward_positive(self):
-        nan = Float128('nan')
+        nan = float128('nan')
         with self.assertRaises(ValueError):
             nan.convert_to_integer_toward_positive()
 
-        inf = Float128('inf')
+        inf = float128('inf')
         with self.assertRaises(ValueError):
             inf.convert_to_integer_toward_positive()
-        ninf = Float128('-inf')
+        ninf = float128('-inf')
         with self.assertRaises(ValueError):
             ninf.convert_to_integer_toward_positive()
 
-        self.assertEqual(Float128(-1.75).convert_to_integer_toward_positive(), -1)
-        self.assertEqual(Float128(-1.5).convert_to_integer_toward_positive(), -1)
-        self.assertEqual(Float128(-1.25).convert_to_integer_toward_positive(), -1)
-        self.assertEqual(Float128(-1.0).convert_to_integer_toward_positive(), -1)
-        self.assertEqual(Float128(-0.75).convert_to_integer_toward_positive(), 0)
-        self.assertEqual(Float128(-0.5).convert_to_integer_toward_positive(), 0)
-        self.assertEqual(Float128(-0.25).convert_to_integer_toward_positive(), 0)
-        self.assertEqual(Float128(-0.0).convert_to_integer_toward_positive(), 0)
-        self.assertEqual(Float128(0.0).convert_to_integer_toward_positive(), 0)
-        self.assertEqual(Float128(0.25).convert_to_integer_toward_positive(), 1)
-        self.assertEqual(Float128(0.5).convert_to_integer_toward_positive(), 1)
-        self.assertEqual(Float128(0.75).convert_to_integer_toward_positive(), 1)
-        self.assertEqual(Float128(1.0).convert_to_integer_toward_positive(), 1)
-        self.assertEqual(Float128(1.25).convert_to_integer_toward_positive(), 2)
-        self.assertEqual(Float128(1.5).convert_to_integer_toward_positive(), 2)
-        self.assertEqual(Float128(1.75).convert_to_integer_toward_positive(), 2)
+        self.assertEqual(float128(-1.75).convert_to_integer_toward_positive(), -1)
+        self.assertEqual(float128(-1.5).convert_to_integer_toward_positive(), -1)
+        self.assertEqual(float128(-1.25).convert_to_integer_toward_positive(), -1)
+        self.assertEqual(float128(-1.0).convert_to_integer_toward_positive(), -1)
+        self.assertEqual(float128(-0.75).convert_to_integer_toward_positive(), 0)
+        self.assertEqual(float128(-0.5).convert_to_integer_toward_positive(), 0)
+        self.assertEqual(float128(-0.25).convert_to_integer_toward_positive(), 0)
+        self.assertEqual(float128(-0.0).convert_to_integer_toward_positive(), 0)
+        self.assertEqual(float128(0.0).convert_to_integer_toward_positive(), 0)
+        self.assertEqual(float128(0.25).convert_to_integer_toward_positive(), 1)
+        self.assertEqual(float128(0.5).convert_to_integer_toward_positive(), 1)
+        self.assertEqual(float128(0.75).convert_to_integer_toward_positive(), 1)
+        self.assertEqual(float128(1.0).convert_to_integer_toward_positive(), 1)
+        self.assertEqual(float128(1.25).convert_to_integer_toward_positive(), 2)
+        self.assertEqual(float128(1.5).convert_to_integer_toward_positive(), 2)
+        self.assertEqual(float128(1.75).convert_to_integer_toward_positive(), 2)
 
     def test_convert_to_integer_toward_negative(self):
-        nan = Float128('nan')
+        nan = float128('nan')
         with self.assertRaises(ValueError):
             nan.convert_to_integer_toward_negative()
 
-        inf = Float128('inf')
+        inf = float128('inf')
         with self.assertRaises(ValueError):
             inf.convert_to_integer_toward_negative()
-        ninf = Float128('-inf')
+        ninf = float128('-inf')
         with self.assertRaises(ValueError):
             ninf.convert_to_integer_toward_negative()
 
-        self.assertEqual(Float128(-1.75).convert_to_integer_toward_negative(), -2)
-        self.assertEqual(Float128(-1.5).convert_to_integer_toward_negative(), -2)
-        self.assertEqual(Float128(-1.25).convert_to_integer_toward_negative(), -2)
-        self.assertEqual(Float128(-1.0).convert_to_integer_toward_negative(), -1)
-        self.assertEqual(Float128(-0.75).convert_to_integer_toward_negative(), -1)
-        self.assertEqual(Float128(-0.5).convert_to_integer_toward_negative(), -1)
-        self.assertEqual(Float128(-0.25).convert_to_integer_toward_negative(), -1)
-        self.assertEqual(Float128(-0.0).convert_to_integer_toward_negative(), 0)
-        self.assertEqual(Float128(0.0).convert_to_integer_toward_negative(), 0)
-        self.assertEqual(Float128(0.25).convert_to_integer_toward_negative(), 0)
-        self.assertEqual(Float128(0.5).convert_to_integer_toward_negative(), 0)
-        self.assertEqual(Float128(0.75).convert_to_integer_toward_negative(), 0)
-        self.assertEqual(Float128(1.0).convert_to_integer_toward_negative(), 1)
-        self.assertEqual(Float128(1.25).convert_to_integer_toward_negative(), 1)
-        self.assertEqual(Float128(1.5).convert_to_integer_toward_negative(), 1)
-        self.assertEqual(Float128(1.75).convert_to_integer_toward_negative(), 1)
+        self.assertEqual(float128(-1.75).convert_to_integer_toward_negative(), -2)
+        self.assertEqual(float128(-1.5).convert_to_integer_toward_negative(), -2)
+        self.assertEqual(float128(-1.25).convert_to_integer_toward_negative(), -2)
+        self.assertEqual(float128(-1.0).convert_to_integer_toward_negative(), -1)
+        self.assertEqual(float128(-0.75).convert_to_integer_toward_negative(), -1)
+        self.assertEqual(float128(-0.5).convert_to_integer_toward_negative(), -1)
+        self.assertEqual(float128(-0.25).convert_to_integer_toward_negative(), -1)
+        self.assertEqual(float128(-0.0).convert_to_integer_toward_negative(), 0)
+        self.assertEqual(float128(0.0).convert_to_integer_toward_negative(), 0)
+        self.assertEqual(float128(0.25).convert_to_integer_toward_negative(), 0)
+        self.assertEqual(float128(0.5).convert_to_integer_toward_negative(), 0)
+        self.assertEqual(float128(0.75).convert_to_integer_toward_negative(), 0)
+        self.assertEqual(float128(1.0).convert_to_integer_toward_negative(), 1)
+        self.assertEqual(float128(1.25).convert_to_integer_toward_negative(), 1)
+        self.assertEqual(float128(1.5).convert_to_integer_toward_negative(), 1)
+        self.assertEqual(float128(1.75).convert_to_integer_toward_negative(), 1)
 
     def test_convert_to_integer_ties_to_away(self):
-        nan = Float128('nan')
+        nan = float128('nan')
         with self.assertRaises(ValueError):
             nan.convert_to_integer_ties_to_away()
 
-        inf = Float128('inf')
+        inf = float128('inf')
         with self.assertRaises(ValueError):
             inf.convert_to_integer_ties_to_away()
-        ninf = Float128('-inf')
+        ninf = float128('-inf')
         with self.assertRaises(ValueError):
             ninf.convert_to_integer_ties_to_away()
 
-        self.assertEqual(Float128(-1.75).convert_to_integer_ties_to_away(), -2)
-        self.assertEqual(Float128(-1.5).convert_to_integer_ties_to_away(), -2)
-        self.assertEqual(Float128(-1.25).convert_to_integer_ties_to_away(), -1)
-        self.assertEqual(Float128(-1.0).convert_to_integer_ties_to_away(), -1)
-        self.assertEqual(Float128(-0.75).convert_to_integer_ties_to_away(), -1)
-        self.assertEqual(Float128(-0.5).convert_to_integer_ties_to_away(), -1)
-        self.assertEqual(Float128(-0.25).convert_to_integer_ties_to_away(), 0)
-        self.assertEqual(Float128(-0.0).convert_to_integer_ties_to_away(), 0)
-        self.assertEqual(Float128(0.0).convert_to_integer_ties_to_away(), 0)
-        self.assertEqual(Float128(0.25).convert_to_integer_ties_to_away(), 0)
-        self.assertEqual(Float128(0.5).convert_to_integer_ties_to_away(), 1)
-        self.assertEqual(Float128(0.75).convert_to_integer_ties_to_away(), 1)
-        self.assertEqual(Float128(1.0).convert_to_integer_ties_to_away(), 1)
-        self.assertEqual(Float128(1.25).convert_to_integer_ties_to_away(), 1)
-        self.assertEqual(Float128(1.5).convert_to_integer_ties_to_away(), 2)
-        self.assertEqual(Float128(1.75).convert_to_integer_ties_to_away(), 2)
+        self.assertEqual(float128(-1.75).convert_to_integer_ties_to_away(), -2)
+        self.assertEqual(float128(-1.5).convert_to_integer_ties_to_away(), -2)
+        self.assertEqual(float128(-1.25).convert_to_integer_ties_to_away(), -1)
+        self.assertEqual(float128(-1.0).convert_to_integer_ties_to_away(), -1)
+        self.assertEqual(float128(-0.75).convert_to_integer_ties_to_away(), -1)
+        self.assertEqual(float128(-0.5).convert_to_integer_ties_to_away(), -1)
+        self.assertEqual(float128(-0.25).convert_to_integer_ties_to_away(), 0)
+        self.assertEqual(float128(-0.0).convert_to_integer_ties_to_away(), 0)
+        self.assertEqual(float128(0.0).convert_to_integer_ties_to_away(), 0)
+        self.assertEqual(float128(0.25).convert_to_integer_ties_to_away(), 0)
+        self.assertEqual(float128(0.5).convert_to_integer_ties_to_away(), 1)
+        self.assertEqual(float128(0.75).convert_to_integer_ties_to_away(), 1)
+        self.assertEqual(float128(1.0).convert_to_integer_ties_to_away(), 1)
+        self.assertEqual(float128(1.25).convert_to_integer_ties_to_away(), 1)
+        self.assertEqual(float128(1.5).convert_to_integer_ties_to_away(), 2)
+        self.assertEqual(float128(1.75).convert_to_integer_ties_to_away(), 2)
 
     def test_copy(self):
-        self.assertInterchangeable(Float128('-2.0').copy(), Float128('-2.0'))
-        self.assertInterchangeable(Float128('2.0').copy(), Float128('2.0'))
-        self.assertInterchangeable(Float128('-0.0').copy(), Float128('-0.0'))
-        self.assertInterchangeable(Float128('0.0').copy(), Float128('0.0'))
-        self.assertInterchangeable(Float128('-inf').copy(), Float128('-inf'))
-        self.assertInterchangeable(Float128('inf').copy(), Float128('inf'))
-        self.assertInterchangeable(Float128('-nan').copy(), Float128('-nan'))
-        self.assertInterchangeable(Float128('nan').copy(), Float128('nan'))
-        self.assertInterchangeable(Float128('-snan').copy(), Float128('-snan'))
-        self.assertInterchangeable(Float128('snan').copy(), Float128('snan'))
-        self.assertInterchangeable(Float128('-nan(123)').copy(), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128('nan(123)').copy(), Float128('nan(123)'))
-        self.assertInterchangeable(Float128('-snan(123)').copy(), Float128('-snan(123)'))
-        self.assertInterchangeable(Float128('snan(123)').copy(), Float128('snan(123)'))
+        self.assertInterchangeable(float128('-2.0').copy(), float128('-2.0'))
+        self.assertInterchangeable(float128('2.0').copy(), float128('2.0'))
+        self.assertInterchangeable(float128('-0.0').copy(), float128('-0.0'))
+        self.assertInterchangeable(float128('0.0').copy(), float128('0.0'))
+        self.assertInterchangeable(float128('-inf').copy(), float128('-inf'))
+        self.assertInterchangeable(float128('inf').copy(), float128('inf'))
+        self.assertInterchangeable(float128('-nan').copy(), float128('-nan'))
+        self.assertInterchangeable(float128('nan').copy(), float128('nan'))
+        self.assertInterchangeable(float128('-snan').copy(), float128('-snan'))
+        self.assertInterchangeable(float128('snan').copy(), float128('snan'))
+        self.assertInterchangeable(float128('-nan(123)').copy(), float128('-nan(123)'))
+        self.assertInterchangeable(float128('nan(123)').copy(), float128('nan(123)'))
+        self.assertInterchangeable(float128('-snan(123)').copy(), float128('-snan(123)'))
+        self.assertInterchangeable(float128('snan(123)').copy(), float128('snan(123)'))
 
     def test_negate(self):
-        self.assertInterchangeable(Float128('-2.0').negate(), Float128('2.0'))
-        self.assertInterchangeable(Float128('2.0').negate(), Float128('-2.0'))
-        self.assertInterchangeable(Float128('-0.0').negate(), Float128('0.0'))
-        self.assertInterchangeable(Float128('0.0').negate(), Float128('-0.0'))
-        self.assertInterchangeable(Float128('-inf').negate(), Float128('inf'))
-        self.assertInterchangeable(Float128('inf').negate(), Float128('-inf'))
-        self.assertInterchangeable(Float128('-nan').negate(), Float128('nan'))
-        self.assertInterchangeable(Float128('nan').negate(), Float128('-nan'))
-        self.assertInterchangeable(Float128('-snan').negate(), Float128('snan'))
-        self.assertInterchangeable(Float128('snan').negate(), Float128('-snan'))
-        self.assertInterchangeable(Float128('-nan(123)').negate(), Float128('nan(123)'))
-        self.assertInterchangeable(Float128('nan(123)').negate(), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128('-snan(123)').negate(), Float128('snan(123)'))
-        self.assertInterchangeable(Float128('snan(123)').negate(), Float128('-snan(123)'))
+        self.assertInterchangeable(float128('-2.0').negate(), float128('2.0'))
+        self.assertInterchangeable(float128('2.0').negate(), float128('-2.0'))
+        self.assertInterchangeable(float128('-0.0').negate(), float128('0.0'))
+        self.assertInterchangeable(float128('0.0').negate(), float128('-0.0'))
+        self.assertInterchangeable(float128('-inf').negate(), float128('inf'))
+        self.assertInterchangeable(float128('inf').negate(), float128('-inf'))
+        self.assertInterchangeable(float128('-nan').negate(), float128('nan'))
+        self.assertInterchangeable(float128('nan').negate(), float128('-nan'))
+        self.assertInterchangeable(float128('-snan').negate(), float128('snan'))
+        self.assertInterchangeable(float128('snan').negate(), float128('-snan'))
+        self.assertInterchangeable(float128('-nan(123)').negate(), float128('nan(123)'))
+        self.assertInterchangeable(float128('nan(123)').negate(), float128('-nan(123)'))
+        self.assertInterchangeable(float128('-snan(123)').negate(), float128('snan(123)'))
+        self.assertInterchangeable(float128('snan(123)').negate(), float128('-snan(123)'))
 
     def test_abs(self):
-        self.assertInterchangeable(Float128('-2.0').abs(), Float128('2.0'))
-        self.assertInterchangeable(Float128('2.0').abs(), Float128('2.0'))
-        self.assertInterchangeable(Float128('-0.0').abs(), Float128('0.0'))
-        self.assertInterchangeable(Float128('0.0').abs(), Float128('0.0'))
-        self.assertInterchangeable(Float128('-inf').abs(), Float128('inf'))
-        self.assertInterchangeable(Float128('inf').abs(), Float128('inf'))
-        self.assertInterchangeable(Float128('-nan').abs(), Float128('nan'))
-        self.assertInterchangeable(Float128('nan').abs(), Float128('nan'))
-        self.assertInterchangeable(Float128('-snan').abs(), Float128('snan'))
-        self.assertInterchangeable(Float128('snan').abs(), Float128('snan'))
-        self.assertInterchangeable(Float128('-nan(123)').abs(), Float128('nan(123)'))
-        self.assertInterchangeable(Float128('nan(123)').abs(), Float128('nan(123)'))
-        self.assertInterchangeable(Float128('-snan(123)').abs(), Float128('snan(123)'))
-        self.assertInterchangeable(Float128('snan(123)').abs(), Float128('snan(123)'))
+        self.assertInterchangeable(float128('-2.0').abs(), float128('2.0'))
+        self.assertInterchangeable(float128('2.0').abs(), float128('2.0'))
+        self.assertInterchangeable(float128('-0.0').abs(), float128('0.0'))
+        self.assertInterchangeable(float128('0.0').abs(), float128('0.0'))
+        self.assertInterchangeable(float128('-inf').abs(), float128('inf'))
+        self.assertInterchangeable(float128('inf').abs(), float128('inf'))
+        self.assertInterchangeable(float128('-nan').abs(), float128('nan'))
+        self.assertInterchangeable(float128('nan').abs(), float128('nan'))
+        self.assertInterchangeable(float128('-snan').abs(), float128('snan'))
+        self.assertInterchangeable(float128('snan').abs(), float128('snan'))
+        self.assertInterchangeable(float128('-nan(123)').abs(), float128('nan(123)'))
+        self.assertInterchangeable(float128('nan(123)').abs(), float128('nan(123)'))
+        self.assertInterchangeable(float128('-snan(123)').abs(), float128('snan(123)'))
+        self.assertInterchangeable(float128('snan(123)').abs(), float128('snan(123)'))
 
     def test_copy_sign(self):
-        self.assertInterchangeable(Float128('-2.0').copy_sign(Float128('1.0')), Float128('2.0'))
-        self.assertInterchangeable(Float128('2.0').copy_sign(Float128('1.0')), Float128('2.0'))
-        self.assertInterchangeable(Float128('-0.0').copy_sign(Float128('1.0')), Float128('0.0'))
-        self.assertInterchangeable(Float128('0.0').copy_sign(Float128('1.0')), Float128('0.0'))
-        self.assertInterchangeable(Float128('-inf').copy_sign(Float128('1.0')), Float128('inf'))
-        self.assertInterchangeable(Float128('inf').copy_sign(Float128('1.0')), Float128('inf'))
-        self.assertInterchangeable(Float128('-nan').copy_sign(Float128('1.0')), Float128('nan'))
-        self.assertInterchangeable(Float128('nan').copy_sign(Float128('1.0')), Float128('nan'))
-        self.assertInterchangeable(Float128('-snan').copy_sign(Float128('1.0')), Float128('snan'))
-        self.assertInterchangeable(Float128('snan').copy_sign(Float128('1.0')), Float128('snan'))
-        self.assertInterchangeable(Float128('-nan(123)').copy_sign(Float128('1.0')), Float128('nan(123)'))
-        self.assertInterchangeable(Float128('nan(123)').copy_sign(Float128('1.0')), Float128('nan(123)'))
-        self.assertInterchangeable(Float128('-snan(123)').copy_sign(Float128('1.0')), Float128('snan(123)'))
-        self.assertInterchangeable(Float128('snan(123)').copy_sign(Float128('1.0')), Float128('snan(123)'))
+        self.assertInterchangeable(float128('-2.0').copy_sign(float128('1.0')), float128('2.0'))
+        self.assertInterchangeable(float128('2.0').copy_sign(float128('1.0')), float128('2.0'))
+        self.assertInterchangeable(float128('-0.0').copy_sign(float128('1.0')), float128('0.0'))
+        self.assertInterchangeable(float128('0.0').copy_sign(float128('1.0')), float128('0.0'))
+        self.assertInterchangeable(float128('-inf').copy_sign(float128('1.0')), float128('inf'))
+        self.assertInterchangeable(float128('inf').copy_sign(float128('1.0')), float128('inf'))
+        self.assertInterchangeable(float128('-nan').copy_sign(float128('1.0')), float128('nan'))
+        self.assertInterchangeable(float128('nan').copy_sign(float128('1.0')), float128('nan'))
+        self.assertInterchangeable(float128('-snan').copy_sign(float128('1.0')), float128('snan'))
+        self.assertInterchangeable(float128('snan').copy_sign(float128('1.0')), float128('snan'))
+        self.assertInterchangeable(float128('-nan(123)').copy_sign(float128('1.0')), float128('nan(123)'))
+        self.assertInterchangeable(float128('nan(123)').copy_sign(float128('1.0')), float128('nan(123)'))
+        self.assertInterchangeable(float128('-snan(123)').copy_sign(float128('1.0')), float128('snan(123)'))
+        self.assertInterchangeable(float128('snan(123)').copy_sign(float128('1.0')), float128('snan(123)'))
 
-        self.assertInterchangeable(Float128('-2.0').copy_sign(Float128('-1.0')), Float128('-2.0'))
-        self.assertInterchangeable(Float128('2.0').copy_sign(Float128('-1.0')), Float128('-2.0'))
-        self.assertInterchangeable(Float128('-0.0').copy_sign(Float128('-1.0')), Float128('-0.0'))
-        self.assertInterchangeable(Float128('0.0').copy_sign(Float128('-1.0')), Float128('-0.0'))
-        self.assertInterchangeable(Float128('-inf').copy_sign(Float128('-1.0')), Float128('-inf'))
-        self.assertInterchangeable(Float128('inf').copy_sign(Float128('-1.0')), Float128('-inf'))
-        self.assertInterchangeable(Float128('-nan').copy_sign(Float128('-1.0')), Float128('-nan'))
-        self.assertInterchangeable(Float128('nan').copy_sign(Float128('-1.0')), Float128('-nan'))
-        self.assertInterchangeable(Float128('-snan').copy_sign(Float128('-1.0')), Float128('-snan'))
-        self.assertInterchangeable(Float128('snan').copy_sign(Float128('-1.0')), Float128('-snan'))
-        self.assertInterchangeable(Float128('-nan(123)').copy_sign(Float128('-1.0')), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128('nan(123)').copy_sign(Float128('-1.0')), Float128('-nan(123)'))
-        self.assertInterchangeable(Float128('-snan(123)').copy_sign(Float128('-1.0')), Float128('-snan(123)'))
-        self.assertInterchangeable(Float128('snan(123)').copy_sign(Float128('-1.0')), Float128('-snan(123)'))
+        self.assertInterchangeable(float128('-2.0').copy_sign(float128('-1.0')), float128('-2.0'))
+        self.assertInterchangeable(float128('2.0').copy_sign(float128('-1.0')), float128('-2.0'))
+        self.assertInterchangeable(float128('-0.0').copy_sign(float128('-1.0')), float128('-0.0'))
+        self.assertInterchangeable(float128('0.0').copy_sign(float128('-1.0')), float128('-0.0'))
+        self.assertInterchangeable(float128('-inf').copy_sign(float128('-1.0')), float128('-inf'))
+        self.assertInterchangeable(float128('inf').copy_sign(float128('-1.0')), float128('-inf'))
+        self.assertInterchangeable(float128('-nan').copy_sign(float128('-1.0')), float128('-nan'))
+        self.assertInterchangeable(float128('nan').copy_sign(float128('-1.0')), float128('-nan'))
+        self.assertInterchangeable(float128('-snan').copy_sign(float128('-1.0')), float128('-snan'))
+        self.assertInterchangeable(float128('snan').copy_sign(float128('-1.0')), float128('-snan'))
+        self.assertInterchangeable(float128('-nan(123)').copy_sign(float128('-1.0')), float128('-nan(123)'))
+        self.assertInterchangeable(float128('nan(123)').copy_sign(float128('-1.0')), float128('-nan(123)'))
+        self.assertInterchangeable(float128('-snan(123)').copy_sign(float128('-1.0')), float128('-snan(123)'))
+        self.assertInterchangeable(float128('snan(123)').copy_sign(float128('-1.0')), float128('-snan(123)'))
 
     def test_short_float_repr(self):
-        x = Float128('1.23456')
+        x = float128('1.23456')
         self.assertEqual(str(x), '1.23456')
 
     # XXX Move comparison tests to a different test module?
@@ -1262,15 +1262,15 @@ class TestFloat128(unittest.TestCase):
 
         EQ, LT, GT, UN = 'EQ', 'LT', 'GT', 'UN'
 
-        zeros = [Float128('0.0'), Float128('-0.0')]
+        zeros = [float128('0.0'), float128('-0.0')]
         positives = [
-            Float128('2.2'),
-            Float128('2.3'),
-            Float128('10.0'),
-            Float128('Infinity'),
+            float128('2.2'),
+            float128('2.3'),
+            float128('10.0'),
+            float128('Infinity'),
         ]
         negatives = [x.negate() for x in positives[::-1]]
-        nans = [Float128('nan(123)'), Float128('-nan')]
+        nans = [float128('nan(123)'), float128('-nan')]
 
         # Non-nans are equal to themselves; all zeros are equal to all other
         # zeros.
@@ -1306,12 +1306,12 @@ class TestFloat128(unittest.TestCase):
             test_values.append((y, x, UN))
 
         # Some mixed precision cases.
-        all_the_same = [Float16('1.25'), Float32('1.25'), Float64('1.25')]
+        all_the_same = [float16('1.25'), float32('1.25'), float64('1.25')]
         for x in all_the_same:
             for y in all_the_same:
                 test_values.append((x, y, EQ))
 
-        all_the_same = [Float16('inf'), Float32('inf'), Float64('inf')]
+        all_the_same = [float16('inf'), float32('inf'), float64('inf')]
         for x in all_the_same:
             for y in all_the_same:
                 test_values.append((x, y, EQ))
@@ -1320,8 +1320,8 @@ class TestFloat128(unittest.TestCase):
             yield x, y, relation
 
     def _signaling_nan_pairs(self):
-        snan = Float128('snan')
-        finite = Float128('2.3')
+        snan = float128('snan')
+        finite = float128('2.3')
         yield snan, finite
 
     # Question: how should a quiet comparison involving a signaling NaN behave?

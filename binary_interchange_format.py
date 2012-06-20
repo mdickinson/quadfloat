@@ -896,7 +896,7 @@ class BinaryInterchangeFormat(object):
             )
 
 
-_Float64 = BinaryInterchangeFormat(64)
+_float64 = BinaryInterchangeFormat(64)
 
 
 class _BinaryFloatBase(object):
@@ -1096,7 +1096,7 @@ class _BinaryFloatBase(object):
         )
 
     def __repr__(self):
-        return "{}('{}')".format(type(self).__name__, self._to_short_str())
+        return "{!r}({!r})".format(self._format, self._to_short_str())
 
     def __str__(self):
         return self._to_short_str()
@@ -1358,7 +1358,7 @@ class _BinaryFloatBase(object):
         if isinstance(other, _BinaryFloatBase):
             pass
         elif isinstance(other, float):
-            other = _Float64._from_float(other)
+            other = _float64._from_float(other)
         elif isinstance(other, _INTEGER_TYPES):
             other = self._format._from_int(other)
         else:

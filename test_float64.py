@@ -1,5 +1,5 @@
 """
-Random test for the Float64 type, comparing results with the hardware-generated
+Random test for the float64 type, comparing results with the hardware-generated
 values.
 
 """
@@ -12,13 +12,13 @@ import unittest
 from binary_interchange_format import BinaryInterchangeFormat
 
 
-Float64 = BinaryInterchangeFormat(width=64)
+float64 = BinaryInterchangeFormat(width=64)
 
 
 class TestFloat64(unittest.TestCase):
     def assertInterchangeable(self, quad1, quad2):
         """
-        Assert that two Float128 instances are interchangeable.
+        Assert that two float128 instances are interchangeable.
 
         This means more than just being numerically equal:  for example, -0.0
         and 0.0 are equal, but not interchangeable.
@@ -43,10 +43,10 @@ class TestFloat64(unittest.TestCase):
             x = self.random_float()
             y = self.random_float()
 
-            # Float64 addition.
-            result1 = Float64(x) + Float64(y)
+            # float64 addition.
+            result1 = float64(x) + float64(y)
             # float addition.
-            result2 = Float64(x + y)
+            result2 = float64(x + y)
             self.assertInterchangeable(result1, result2)
 
     def test_random_subtractions(self):
@@ -54,10 +54,10 @@ class TestFloat64(unittest.TestCase):
             x = self.random_float()
             y = self.random_float()
 
-            # Float64 addition.
-            result1 = Float64(x) - Float64(y)
+            # float64 addition.
+            result1 = float64(x) - float64(y)
             # float addition.
-            result2 = Float64(x - y)
+            result2 = float64(x - y)
             self.assertInterchangeable(result1, result2)
 
     def test_random_multiplications(self):
@@ -65,10 +65,10 @@ class TestFloat64(unittest.TestCase):
             x = self.random_float()
             y = self.random_float()
 
-            # Float64 addition.
-            result1 = Float64(x) - Float64(y)
+            # float64 addition.
+            result1 = float64(x) - float64(y)
             # float addition.
-            result2 = Float64(x - y)
+            result2 = float64(x - y)
             self.assertInterchangeable(result1, result2)
 
     def test_random_divisions(self):
@@ -76,21 +76,21 @@ class TestFloat64(unittest.TestCase):
             x = self.random_float()
             y = self.random_float()
 
-            # Float64 addition.
-            result1 = Float64(x) - Float64(y)
+            # float64 addition.
+            result1 = float64(x) - float64(y)
             # float addition.
-            result2 = Float64(x - y)
+            result2 = float64(x - y)
             self.assertInterchangeable(result1, result2)
 
     def test_random_sqrt(self):
         for i in range(10000):
             x = self.random_float()
-            result1 = Float64.square_root(Float64(x))
+            result1 = float64.square_root(float64(x))
             try:
                 sqrtx = math.sqrt(x)
             except ValueError:
                 sqrtx = float('nan')
-            result2 = Float64(sqrtx)
+            result2 = float64(sqrtx)
             self.assertInterchangeable(result1, result2)
 
 
