@@ -15,6 +15,8 @@ Documentation
 Features
 --------
 
+* Rework comparisons to convert to the format of self before comparing.
+
 * Fill out the rest of the IEEE 754 *required* functionality, excluding rounding modes,
   exceptions, signals.
 
@@ -48,6 +50,8 @@ Performance
 
 * Optimize addition / subtraction / fused-multiply-add for cases where
   exponents differ wildly.
+
+* Properties on the BinaryInterchangeFormat should be cached.
 
 
 Tests

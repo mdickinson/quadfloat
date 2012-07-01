@@ -417,7 +417,7 @@ class BinaryInterchangeFormat(object):
                 "value of type {}".format(type(value))
             )
 
-    def _from_binary_float_base(self, b):
+    def _from_binary_float_base(self, b, flags=None):
         """
         Convert another _BinaryFloatBase instance to this format.
 
@@ -433,12 +433,15 @@ class BinaryInterchangeFormat(object):
             converted = self._infinity(
                 sign=b._sign,
             )
+            if flags is not None:
+                flags['error'] = 0
         else:
             # Finite value.
             converted = self._from_triple(
                 sign=b._sign,
                 exponent=b._exponent,
                 significand=b._significand,
+                flags = flags,
             )
         return converted
 
@@ -610,13 +613,15 @@ class BinaryInterchangeFormat(object):
                 significand=q,
             )
 
-    def _from_triple(self, sign, exponent, significand):
+    def _from_triple(self, sign, exponent, significand, flags=None):
         """
         Round the value (-1) ** sign * significand * 2 ** exponent to the
         format 'self'.
 
         """
         if significand == 0:
+            if flags is not None:
+                flags['error'] = 0
             return self._zero(sign)
 
         d = exponent + significand.bit_length()
@@ -625,7 +630,7 @@ class BinaryInterchangeFormat(object):
         # Allow two extra bits for the final round.
         e = max(d - self.precision, self.qmin) - 2
         q = _rshift_to_odd(significand, e - exponent)
-        return self._final_round(sign, e, q)
+        return self._final_round(sign, e, q, flags=flags)
 
     def _handle_nans(self, *sources):
         # Look for signaling NaNs.
@@ -1592,7 +1597,7 @@ class _BinaryFloatBase(object):
             other = self._format._from_float(other, flags)
 
         elif isinstance(other, _BinaryFloatBase):
-            flags['error'] = 0
+            other = self._format._from_binary_float_base(other, flags)
 
         else:
             raise NotImplementedError
