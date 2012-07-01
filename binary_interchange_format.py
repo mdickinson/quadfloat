@@ -290,11 +290,12 @@ class BinaryInterchangeFormat(object):
         valid_width = width in {16, 32, 64} or width >= 128 and width % 32 == 0
         if not valid_width:
             raise ValueError(
+                "Invalid width: {}.  "
                 "For an interchange format, width should be 16, 32, 64, "
-                "or a multiple of 32 that's greater than 128."
+                "or a multiple of 32 that's greater than 128.".format(width)
             )
         self = object.__new__(cls)
-        self.width = width
+        self._width = int(width)
         return self
 
     def __repr__(self):
@@ -313,6 +314,10 @@ class BinaryInterchangeFormat(object):
 
     def __call__(self, *args, **kwargs):
         return self._from_value(*args, **kwargs)
+
+    @property
+    def width(self):
+        return self._width
 
     @property
     def precision(self):

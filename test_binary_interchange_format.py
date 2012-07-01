@@ -12,6 +12,13 @@ class TestBinaryIntegerchangeFormat(unittest.TestCase):
         self.assertEqual(binary128.emax, 16383)
         self.assertEqual(binary128.emin, -16382)
 
+    def test_read_only_width(self):
+        binary64 = BinaryInterchangeFormat(width=128)
+        with self.assertRaises(AttributeError):
+            binary64.width = 64
+        with self.assertRaises(AttributeError):
+            binary64.precision = 53
+
     def test_precision_formula(self):
         binary16 = BinaryInterchangeFormat(width=16)
         self.assertEqual(binary16.precision, 11)
