@@ -113,6 +113,26 @@ def _isqrt(n):
         m = m + q >> 1
 
 
+# Round-to-odd is a useful primitive rounding mode for performing general
+# rounding operations while avoiding problems from double rounding.
+#
+# The general pattern is: we want to compute a correctly rounded output for
+# some mathematical function f, given zero or more inputs x1, x2, ...., and a
+# rounding mode rnd, and a precision p.  Then:
+#
+#   (1) compute the correctly rounded output to precision p + 2 using rounding-mode
+#       round-to-odd.
+#   (2) round the result of step 1 to the desired rounding mode `rnd` with
+#   precision p.
+#
+# The round-to-odd rounding mode has the property that for all the rounding
+# modes we care about, the p + 2-bit result captures all the information
+# necessary to rounding to any other rounding mode with p bits.  See the
+# _divide_nearest function below for a nice example of this in practice.
+#
+# Here are primitives for integer division and shifting using round-to-odd.
+
+
 def _divide_to_odd(a, b):
     """
     Compute a / b.  Round inexact results to the nearest *odd* integer.
@@ -153,6 +173,21 @@ def _divide_nearest(a, b):
     Compute the nearest integer to the quotient a / b, rounding ties to the
     nearest even integer.  a and b should be integers, with b positive.
 
+    >>> _divide_nearest(-14, 4)
+    -4
+    >>> _divide_nearest(-10, 4)
+    -2
+    >>> _divide_nearest(10, 4)
+    2
+    >>> _divide_nearest(14, 4)
+    4
+    >>> [_divide_nearest(i, 3) for i in range(-10, 10)]
+    [-3, -3, -3, -2, -2, -2, -1, -1, -1, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3]
+    >>> [_divide_nearest(i, 4) for i in range(-10, 10)]
+    [-2, -2, -2, -2, -2, -1, -1, -1, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2]
+    >>> [_divide_nearest(i, 6) for i in range(-10, 10)]
+    [-2, -2, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2]
+
     """
     q = _divide_to_odd(4 * a, b)
     return (q + _round_ties_to_even_offsets[q & 7]) >> 2
@@ -165,6 +200,20 @@ def _digits_from_rational(a, b, closed=True):
     If closed is True (the default), the number x created from the generated
     digits is always largest s.t. x <= a / b.  If False, it's the largest
     such that x < a / b.
+
+    a / b should be in the range [0, 1) if closed is True, and should be
+    in (0, 1] if closed is False.
+
+    >>> from itertools import islice
+    >>> digits = _digits_from_rational(1, 7)
+    >>> list(islice(digits, 20))
+    [1, 4, 2, 8, 5, 7, 1, 4, 2, 8, 5, 7, 1, 4, 2, 8, 5, 7, 1, 4]
+    >>> digits = _digits_from_rational(3, 5)
+    >>> list(islice(digits, 10))   #  3 / 5 = 0.600000.....
+    [6, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    >>> digits = _digits_from_rational(3, 5, closed=False)
+    >>> list(islice(digits, 10))   #  3 / 5 = 0.599999.....
+    [5, 9, 9, 9, 9, 9, 9, 9, 9, 9]
 
     """
     if closed:
@@ -190,10 +239,47 @@ _Flags = dict
 
 
 def _handle_invalid_bool(default_bool):
+    """
+    This handler should be called when a function that would normally return a
+    boolean signals invalid operation.  At the moment, the only such functions
+    are comparisons involving a signaling NaN.
+
+    """
     raise ValueError("Comparison involving signaling NaN")
 
 
 class BinaryInterchangeFormat(object):
+    """
+    A BinaryInterchangeFormat instance represents one of the binary interchange
+    formats described by IEEE 754-2008.  For example, the usual
+    double-precision binary floating-point type is given by
+    BinaryInterchangeFormat(width=64):
+
+    >>> float64 = BinaryInterchangeFormat(width=64)
+
+    Objects of this class should be treated as immutable.
+
+    There are various attributes and read-only properties providing information
+    about the format:
+
+    >>> float64.precision  # precision in bits
+    53
+    >>> float64.width  # total width in bits
+    64
+    >>> float64.emax  # maximum exponent
+    1023
+    >>> float64.emin  # minimum exponent for normal numbers
+    -1022
+
+    Objects of this type are callable, and when called act like a class
+    constructor to create floating-point numbers for the given format.
+
+    >>> float64('2.3')
+    BinaryInterchangeFormat(width=64)('2.3')
+    >>> str(float64('2.3'))
+    '2.3'
+
+    """
     _class__cache = {}
 
     def __new__(cls, width):
@@ -266,7 +352,16 @@ class BinaryInterchangeFormat(object):
     @property
     def _decimal_places(self):
         """
-        Minimal number of digits necessary to provide roundtrip conversions.
+        Minimal number of decimal digits necessary to provide roundtrip
+        conversions.
+
+        For example, converting any binary64 finite float to a decimal string
+        using 17 significant digits gives a value that, when converted back to
+        the binary64 type, recovers the original value.
+
+        >>> float64 = BinaryInterchangeFormat(width=64)
+        >>> float64._decimal_places
+        17
 
         """
         # Formula: 1 + ceiling(self.precision * log10(2)) or equivalently, 2 +
