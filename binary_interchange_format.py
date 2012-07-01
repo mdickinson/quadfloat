@@ -1144,9 +1144,6 @@ class _BinaryFloatBase(object):
 
         # General nonzero finite case.
 
-        # XXX Deal with the special case where there's a power of 10 in the
-        # interval.
-
         # Interval of values that round to self is
         # (high / denominator, low / denominator)
 
