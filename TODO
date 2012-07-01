@@ -5,9 +5,6 @@ Bugs
 
 * Missing documentation.
 
-* Formats should be lowercase: float16, not Float16.  (Matches builtin float,
-  and reflects fact that the formats are objects, not classes.)
-
 
 Documentation
 -------------
@@ -45,9 +42,6 @@ Internal refactoring
 * Be consistent about internal uses of is_finite, is_infinite versus ._type
   tests.
 
-* Cache zeros, make use of them (format method for zeros?)
-
-* Move class methods from _BinaryBase to BinaryInterchangeFormat.
 
 Performance
 -----------
