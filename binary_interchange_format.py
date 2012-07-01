@@ -115,8 +115,7 @@ def _isqrt(n):
 
 def _divide_to_odd(a, b):
     """
-    Compute a / b, rounding inexact results to the nearest *odd*
-    integer.
+    Compute a / b.  Round inexact results to the nearest *odd* integer.
 
     >>> _divide_to_odd(-1, 4)
     -1
@@ -140,8 +139,7 @@ def _divide_to_odd(a, b):
 
 def _rshift_to_odd(a, shift):
     """
-    Compute a / 2**shift, rounding inexact results to the nearest *odd*
-    integer.
+    Compute a / 2**shift. Round inexact results to the nearest *odd* integer.
 
     """
     if shift <= 0:
