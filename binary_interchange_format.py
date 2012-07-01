@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division as _division
 
 import decimal as _decimal
 import math as _math
@@ -31,7 +31,7 @@ if _sys.version_info.major == 2:
         return ''.join(chr(n) for n in ns)
 
     # Iterator version of zip.
-    from future_builtins import zip
+    from future_builtins import zip as _zip
 
     # Values used to compute hashes.
     if _sys.maxint == 2 ** 31 - 1:
@@ -49,6 +49,9 @@ else:
     _int_to_bytes = lambda n, length: n.to_bytes(length, byteorder='little')
     _int_from_bytes = lambda bs: int.from_bytes(bs, byteorder='little')
     _bytes_from_iterable = bytes
+
+    _zip = zip
+
     _PyHASH_MODULUS = _sys.hash_info.modulus
     _PyHASH_2INV = pow(2, _PyHASH_MODULUS - 2, _PyHASH_MODULUS)
     _PyHASH_INF = _sys.hash_info.inf
@@ -120,8 +123,9 @@ def _isqrt(n):
 # some mathematical function f, given zero or more inputs x1, x2, ...., and a
 # rounding mode rnd, and a precision p.  Then:
 #
-#   (1) compute the correctly rounded output to precision p + 2 using rounding-mode
-#       round-to-odd.
+#   (1) compute the correctly rounded output to precision p + 2 using
+#       rounding-mode round-to-odd.
+#
 #   (2) round the result of step 1 to the desired rounding mode `rnd` with
 #   precision p.
 #
@@ -1180,7 +1184,7 @@ class _BinaryFloatBase(object):
 
         high_digits = _digits_from_rational(high, denominator, closed=closed)
         low_digits = _digits_from_rational(low, denominator, closed=not closed)
-        pairs = zip(low_digits, high_digits)
+        pairs = _zip(low_digits, high_digits)
 
         digits = []
         for low_digit, high_digit in pairs:
@@ -1518,6 +1522,7 @@ class _BinaryFloatBase(object):
             a, b = self._significand, 1
             a, b = a << max(self._exponent, 0), b << max(0, -self._exponent)
             try:
+                # True division, correctly rounded in Python >= 2.7.
                 q = a / b
             except OverflowError:
                 q = float('inf')
