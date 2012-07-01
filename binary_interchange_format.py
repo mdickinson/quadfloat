@@ -1841,60 +1841,104 @@ def compare_quiet_not_equal(source1, source2):
 
 
 def compare_quiet_greater(source1, source2):
+    """
+    Return True if source1 > source2, else False.
+
+    """
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
     return _compare_ordered(source1, source2) > 0
 
 
 def compare_quiet_greater_equal(source1, source2):
+    """
+    Return True if source1 >= source2, else False.
+
+    """
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
     return _compare_ordered(source1, source2) >= 0
 
 
 def compare_quiet_less(source1, source2):
+    """
+    Return True if source1 < source2, else False.
+
+    """
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
     return _compare_ordered(source1, source2) < 0
 
 
 def compare_quiet_less_equal(source1, source2):
+    """
+    Return True if source1 <= source2, else False.
+
+    """
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
     return _compare_ordered(source1, source2) <= 0
 
 
 def compare_quiet_unordered(source1, source2):
+    """
+    Return True if either source1 or source2 is a NaN, else False.
+
+    """
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
     return False
 
 
 def compare_quiet_not_greater(source1, source2):
+    """
+    Return True if source1 is not greater than source2, else False.
+
+    Note that this function returns True if either source1 or source2 is a NaN.
+
+    """
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
     return _compare_ordered(source1, source2) <= 0
 
 
 def compare_quiet_less_unordered(source1, source2):
+    """
+    Return True if either source1 < source2, or source1 or source2 is a NaN.
+
+    """
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
     return _compare_ordered(source1, source2) < 0
 
 
 def compare_quiet_not_less(source1, source2):
+    """
+    Return True if source1 is not less than source2, else False.
+
+    Note that this function returns True if either source1 or source2 is a NaN.
+
+    """
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
     return _compare_ordered(source1, source2) >= 0
 
 
 def compare_quiet_greater_unordered(source1, source2):
+    """
+    Return True if either source1 > source2, or source1 or source2 is a NaN.
+
+    """
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, True)
     return _compare_ordered(source1, source2) > 0
 
 
 def compare_quiet_ordered(source1, source2):
+    """
+    Return True if neither source1 nor source2 is a NaN.
+
+    """
     if source1._type == _NAN or source2._type == _NAN:
         return _compare_nans(source1, source2, False)
     return True
