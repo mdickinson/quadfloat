@@ -239,9 +239,6 @@ def _digits_from_rational(a, b, closed=True):
         yield digit if closed else 9 - digit
 
 
-_Flags = dict
-
-
 def _handle_invalid_bool(default_bool):
     """
     This handler should be called when a function that would normally return a
@@ -250,6 +247,37 @@ def _handle_invalid_bool(default_bool):
 
     """
     raise ValueError("Comparison involving signaling NaN")
+
+
+# Flags class.
+#
+# The internal routines here expect to be able to write to specific Flags
+# attributes, but won't do any reading from them.
+
+class _Flags(object):
+    pass
+
+
+class _NullFlags(object):
+    """
+    A NullFlags object simply ignores all writes to flag attributes, and
+    raises an AttributeError on read.
+
+    """
+    # Catch writes to other attributes.
+    __slots__ = ()
+
+    def _set_error(self, error):
+        pass
+
+    def _get_error(self):
+        raise AttributeError("'_NullFlags' object has no attribute 'error'")
+
+    error = property(_get_error, _set_error)
+
+
+_null_flags = _NullFlags()
+
 
 
 class BinaryInterchangeFormat(object):
@@ -417,7 +445,7 @@ class BinaryInterchangeFormat(object):
                 "value of type {}".format(type(value))
             )
 
-    def _from_binary_float_base(self, b, flags=None):
+    def _from_binary_float_base(self, b, flags=_null_flags):
         """
         Convert another _BinaryFloatBase instance to this format.
 
@@ -433,8 +461,7 @@ class BinaryInterchangeFormat(object):
             converted = self._infinity(
                 sign=b._sign,
             )
-            if flags is not None:
-                flags['error'] = 0
+            flags.error = 0
         else:
             # Finite value.
             converted = self._from_triple(
@@ -445,15 +472,14 @@ class BinaryInterchangeFormat(object):
             )
         return converted
 
-    def _from_int(self, n, flags=None):
+    def _from_int(self, n, flags=_null_flags):
         """
         Convert the integer `n` to this format.
 
         """
         if n == 0:
             converted = self._zero(False)
-            if flags is not None:
-                flags['error'] = 0
+            flags.error = 0
         else:
             sign, n = n < 0, abs(n)
 
@@ -520,7 +546,7 @@ class BinaryInterchangeFormat(object):
         else:
             assert False, "Shouldn't get here."
 
-    def _from_float(self, value, flags=None):
+    def _from_float(self, value, flags=_null_flags):
         """
         Convert a float to this format.
 
@@ -538,13 +564,11 @@ class BinaryInterchangeFormat(object):
 
         elif _math.isinf(value):
             # Infinities.
-            if flags is not None:
-                flags['error'] = 0
+            flags.error = 0
             converted = self._infinity(sign)
         elif value == 0.0:
             # Zeros
-            if flags is not None:
-                flags['error'] = 0
+            flags.error = 0
             converted = self._zero(sign)
         else:
             # Finite values.
@@ -581,7 +605,7 @@ class BinaryInterchangeFormat(object):
             payload=source._payload,
         )
 
-    def _final_round(self, sign, e, q, flags=None):
+    def _final_round(self, sign, e, q, flags=_null_flags):
         """
         Make final rounding adjustment, using the rounding mode from the
         current context.  For now, only round-ties-to-even is supported.
@@ -596,16 +620,14 @@ class BinaryInterchangeFormat(object):
             q, e = q >> 1, e + 1
 
         if e > self.qmax:
-            if flags is not None:
-                flags['error'] = -1 if sign else 1
+            flags.error = -1 if sign else 1
             return self._handle_overflow(sign)
 
         else:
-            if flags is not None:
-                if sign:
-                    flags['error'] = (adj < 0) - (adj > 0)
-                else:
-                    flags['error'] = (adj > 0) - (adj < 0)
+            if sign:
+                flags.error = (adj < 0) - (adj > 0)
+            else:
+                flags.error = (adj > 0) - (adj < 0)
 
             return self._finite(
                 sign=sign,
@@ -613,15 +635,14 @@ class BinaryInterchangeFormat(object):
                 significand=q,
             )
 
-    def _from_triple(self, sign, exponent, significand, flags=None):
+    def _from_triple(self, sign, exponent, significand, flags=_null_flags):
         """
         Round the value (-1) ** sign * significand * 2 ** exponent to the
         format 'self'.
 
         """
         if significand == 0:
-            if flags is not None:
-                flags['error'] = 0
+            flags.error = 0
             return self._zero(sign)
 
         d = exponent + significand.bit_length()
@@ -1604,7 +1625,7 @@ class _BinaryFloatBase(object):
 
         if self._type == _NAN or other._type == _NAN:
             return _compare_nans(self, other, unordered_result)
-        result = _compare_ordered(self, other) or flags['error']
+        result = _compare_ordered(self, other) or flags.error
         return operator(result, 0)
 
     def __hash__(self):
