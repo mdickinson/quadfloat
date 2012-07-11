@@ -239,16 +239,6 @@ def _digits_from_rational(a, b, closed=True):
         yield digit if closed else 9 - digit
 
 
-def _handle_invalid_bool(default_bool):
-    """
-    This handler should be called when a function that would normally return a
-    boolean signals invalid operation.  At the moment, the only such functions
-    are comparisons involving a signaling NaN.
-
-    """
-    raise ValueError("Comparison involving signaling NaN")
-
-
 # Flags class.
 #
 # The internal routines here expect to be able to write to specific Flags
@@ -277,7 +267,6 @@ class _NullFlags(object):
 
 
 _null_flags = _NullFlags()
-
 
 
 class BinaryInterchangeFormat(object):
@@ -468,7 +457,7 @@ class BinaryInterchangeFormat(object):
                 sign=b._sign,
                 exponent=b._exponent,
                 significand=b._significand,
-                flags = flags,
+                flags=flags,
             )
         return converted
 
@@ -1623,10 +1612,13 @@ class _BinaryFloatBase(object):
         else:
             raise NotImplementedError
 
-        if self._type == _NAN or other._type == _NAN:
-            return _compare_nans(self, other, unordered_result)
-        result = _compare_ordered(self, other) or flags.error
-        return operator(result, 0)
+        if self.is_signaling() or other.is_signaling():
+            return _handle_invalid_bool(unordered_result)
+        elif self._type == _NAN or other._type == _NAN:
+            return unordered_result
+        else:
+            result = _compare_ordered(self, other) or flags.error
+            return operator(result, 0)
 
     def __hash__(self):
         """
@@ -1785,64 +1777,37 @@ def _compare_ordered(source1, source2):
     # instances with the same underlying format.
     assert source1._format == source2._format
 
-    # Zeros.
+    # Zeros:  -0.0 and 0.0 are considered equal; if source1 is a zero,
+    # give it the same sign bit as source2.
     if source1.is_zero():
-        if source2.is_zero():
-            # Two zeros are equal.
-            return 0
-        else:
-            # cmp(0, x):  -1 if x is positive, 1 if x is negative
-            return 1 if source2._sign else -1
-    elif source2.is_zero():
-        # cmp(x, 0)
-        return -1 if source1._sign else 1
+        source1 = source1.copy_sign(source2)
 
-    # Different signs.
+    # Compute result as though source1 is positive;  negate the
+    # eventual result if necessary.
     if source1._sign != source2._sign:
-        return -1 if source1._sign else 1
-
-    # Infinities.
-    if source1._type == _INFINITE:
-        if source2._type == _INFINITE:
-            # Must have the same signs, so they're equal
-            return 0
-        else:
-            # cmp(inf, finite)
-            return -1 if source1._sign else 1
+        cmp = 1
+    elif source1._type == _INFINITE:
+        cmp = 0 if source2._type == _INFINITE else 1
     elif source2._type == _INFINITE:
-        return 1 if source2._sign else -1
-
-    # Compare adjusted exponents.
-    source1_exp = source1._significand.bit_length() + source1._exponent
-    source2_exp = source2._significand.bit_length() + source2._exponent
-    if source1_exp != source2_exp:
-        cmp = -1 if source1_exp < source2_exp else 1
-        return -cmp if source1._sign else cmp
-
-    # Compare significands.
-    exponent_diff = source1._exponent - source2._exponent
-    a = source1._significand << max(exponent_diff, 0)
-    b = source2._significand << max(0, -exponent_diff)
-    if a != b:
-        cmp = -1 if a < b else 1
-        return -cmp if source1._sign else cmp
-
-    # Values are equal.
-    return 0
-
-
-def _compare_nans(source1, source2, quiet_nan_result):
-    """
-    Do a comparison in the case that either source1 or source2 is
-    a NaN (quiet or signaling).
-
-    nan_result is the result to return in nonstop mode.
-
-    """
-    if source1.is_signaling() or source2.is_signaling():
-        return _handle_invalid_bool(quiet_nan_result)
+        cmp = -1
+    elif source1._exponent != source2._exponent:
+        cmp = -1 if source1._exponent < source2._exponent else 1
+    elif source1._significand != source2._significand:
+        cmp = -1 if source1._significand < source2._significand else 1
     else:
-        return quiet_nan_result
+        cmp = 0
+
+    return -cmp if source1._sign else cmp
+
+
+def _handle_invalid_bool(default_bool):
+    """
+    This handler should be called when a function that would normally return a
+    boolean signals invalid operation.  At the moment, the only such functions
+    are comparisons involving a signaling NaN.
+
+    """
+    raise ValueError("Comparison involving signaling NaN")
 
 
 def _compare_quiet_general(source1, source2, operator, unordered_result):
@@ -1853,13 +1818,15 @@ def _compare_quiet_general(source1, source2, operator, unordered_result):
     either source1 or source2 *is* a NaN.
 
     """
-    flags = _Flags()
-    source2 = source1._format._from_binary_float_base(source2, flags)
-
-    if source1._type == _NAN or source2._type == _NAN:
-        return _compare_nans(source1, source2, unordered_result)
-    result = _compare_ordered(source1, source2) or flags.error
-    return operator(result, 0)
+    if source1.is_signaling() or source2.is_signaling():
+        return _handle_invalid_bool(unordered_result)
+    elif source1._type == _NAN or source2._type == _NAN:
+        return unordered_result
+    else:
+        flags = _Flags()
+        source2 = source1._format._from_binary_float_base(source2, flags)
+        result = _compare_ordered(source1, source2) or flags.error
+        return operator(result, 0)
 
 
 def _compare_signaling_general(source1, source2, operator, unordered_result):
@@ -1870,13 +1837,13 @@ def _compare_signaling_general(source1, source2, operator, unordered_result):
     either source1 or source2 *is* a NaN.
 
     """
-    flags = _Flags()
-    source2 = source1._format._from_binary_float_base(source2, flags)
-
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(unordered_result)
-    result = _compare_ordered(source1, source2) or flags.error
-    return operator(result, 0)
+    else:
+        flags = _Flags()
+        source2 = source1._format._from_binary_float_base(source2, flags)
+        result = _compare_ordered(source1, source2) or flags.error
+        return operator(result, 0)
 
 
 def compare_quiet_equal(source1, source2):
@@ -1982,40 +1949,84 @@ def compare_quiet_ordered(source1, source2):
 
 
 def compare_signaling_equal(source1, source2):
+    """
+    Return True if source1 and source2 are numerically equal, else False.
+
+    """
     return _compare_signaling_general(source1, source2, _operator.eq, False)
 
 
 def compare_signaling_greater(source1, source2):
+    """
+    Return True if source1 > source2, else False.
+
+    """
     return _compare_signaling_general(source1, source2, _operator.gt, False)
 
 
 def compare_signaling_greater_equal(source1, source2):
+    """
+    Return True if source1 >= source2, else False.
+
+    """
     return _compare_signaling_general(source1, source2, _operator.ge, False)
 
 
 def compare_signaling_less(source1, source2):
+    """
+    Return True if source1 < source2, else False.
+
+    """
     return _compare_signaling_general(source1, source2, _operator.lt, False)
 
 
 def compare_signaling_less_equal(source1, source2):
+    """
+    Return True if source1 <= source2, else False.
+
+    """
     return _compare_signaling_general(source1, source2, _operator.le, False)
 
 
 def compare_signaling_not_equal(source1, source2):
+    """
+    Return True if source1 and source2 are numerically equal, else False.
+
+    """
     return _compare_signaling_general(source1, source2, _operator.ne, True)
 
 
 def compare_signaling_not_greater(source1, source2):
+    """
+    Return True if source1 is not greater than source2, else False.
+
+    Note that this function returns True if either source1 or source2 is a NaN.
+
+    """
     return _compare_signaling_general(source1, source2, _operator.le, True)
 
 
 def compare_signaling_less_unordered(source1, source2):
+    """
+    Return True if either source1 < source2, or source1 or source2 is a NaN.
+
+    """
     return _compare_signaling_general(source1, source2, _operator.lt, True)
 
 
 def compare_signaling_not_less(source1, source2):
+    """
+    Return True if source1 is not less than source2, else False.
+
+    Note that this function returns True if either source1 or source2 is a NaN.
+
+    """
     return _compare_signaling_general(source1, source2, _operator.ge, True)
 
 
 def compare_signaling_greater_unordered(source1, source2):
+    """
+    Return True if either source1 > source2, or source1 or source2 is a NaN.
+
+    """
     return _compare_signaling_general(source1, source2, _operator.gt, True)
