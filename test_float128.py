@@ -1382,7 +1382,13 @@ class TestFloat128(unittest.TestCase):
             self.assertEqual(
                 actual,
                 expected,
-                msg="Failed comparison: {} {} {}".format(x, y, relation),
+                msg="{}({}, {}):  got {!r}, expected {}.".format(
+                    testfn.__name__,
+                    x,
+                    y,
+                    actual,
+                    expected,
+                )
             )
 
     def test_quiet_comparisons(self):
@@ -1415,7 +1421,17 @@ class TestFloat128(unittest.TestCase):
             else:
                 actual = testfn(x, y)
                 expected = relation in true_relations
-                self.assertEqual(actual, expected)
+                self.assertEqual(
+                    actual,
+                    expected,
+                    msg="{}({}, {}):  got {!r}, expected {}.".format(
+                        testfn.__name__,
+                        x,
+                        y,
+                        actual,
+                        expected,
+                    )
+                )
 
     def test_signaling_comparisons(self):
         functions = [
