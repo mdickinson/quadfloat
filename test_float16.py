@@ -2,6 +2,15 @@ import decimal
 import unittest
 
 from binary_interchange_format import BinaryInterchangeFormat
+from binary_interchange_format import rounding_direction
+from binary_interchange_format import (
+    round_ties_to_even,
+    round_ties_to_away,
+    round_toward_zero,
+    round_toward_positive,
+    round_toward_negative,
+)
+
 from binary_interchange_format import _bytes_from_iterable, _divide_nearest
 
 
@@ -502,6 +511,309 @@ class TestFloat16(unittest.TestCase):
         snan = float16('snan')
         with self.assertRaises(ValueError):
             hash(snan)
+
+    def test_round_to_integral_ties_to_even(self):
+        test_values = [
+            (float16('inf'), float16('inf')),
+            (float16('-inf'), float16('-inf')),
+            (float16('-0.51'), float16('-1.0')),
+            (float16('-0.5'), float16('-0.0')),
+            (float16('-0.49'), float16('-0.0')),
+            (float16(-2.0**-24), float16('-0.0')),
+            (float16('-0.0'), float16('-0.0')),
+            (float16('0.0'), float16('0.0')),
+            (float16(2.0**-24), float16('0.0')),
+            (float16('0.49'), float16('0.0')),
+            (float16('0.5'), float16('0.0')),
+            (float16('0.51'), float16('1.0')),
+            (float16('0.99'), float16('1.0')),
+            (float16('1.0'), float16('1.0')),
+            (float16('1.49'), float16('1.0')),
+            (float16('1.5'), float16('2.0')),
+            (float16(2**9 - 2.0), float16(2**9 - 2)),
+            (float16(2**9 - 1.75), float16(2**9 - 2)),
+            (float16(2**9 - 1.5), float16(2**9 - 2)),
+            (float16(2**9 - 1.25), float16(2**9 - 1)),
+            (float16(2**9 - 1.0), float16(2**9 - 1)),
+            (float16(2**9 - 0.75), float16(2**9 - 1)),
+            (float16(2**9 - 0.5), float16(2**9)),
+            (float16(2**9 - 0.25), float16(2**9)),
+            (float16(2**9), float16(2**9)),
+            (float16(2**9 + 0.5), float16(2**9)),
+            (float16(2**9 + 1), float16(2**9 + 1)),
+            (float16(2**9 + 1.5), float16(2**9 + 2)),
+            (float16(2**9 + 2), float16(2**9 + 2)),
+            (float16(2**9 + 2.5), float16(2**9 + 2)),
+            (float16(2**9 + 3), float16(2**9 + 3)),
+            (float16(2**9 + 3.5), float16(2**9 + 4)),
+            (float16(2**9 + 4), float16(2**9 + 4)),
+            (float16(2**10 - 4), float16(2**10 - 4)),
+            (float16(2**10 - 3.5), float16(2**10 - 4)),
+            (float16(2**10 - 3.0), float16(2**10 - 3)),
+            (float16(2**10 - 2.5), float16(2**10 - 2)),
+            (float16(2**10 - 2.0), float16(2**10 - 2)),
+            (float16(2**10 - 1.5), float16(2**10 - 2)),
+            (float16(2**10 - 1), float16(2**10 - 1)),
+            (float16(2**10 - 0.5), float16(2**10)),
+            (float16(2**10), float16(2**10)),
+            (float16(2**11-1), float16(2**11-1)),
+            (float16(2**11), float16(2**11)),
+            (float16(2**11+2), float16(2**11+2)),
+        ]
+
+        for input, expected in test_values:
+            actual = input.round_to_integral_ties_to_even()
+            self.assertInterchangeable(actual, expected)
+
+    def test_round_to_integral_ties_to_away(self):
+        test_values = [
+            (float16('inf'), float16('inf')),
+            (float16('-inf'), float16('-inf')),
+            (float16('-0.51'), float16('-1.0')),
+            (float16('-0.5'), float16('-1.0')),
+            (float16('-0.49'), float16('-0.0')),
+            (float16(-2.0**-24), float16('-0.0')),
+            (float16('-0.0'), float16('-0.0')),
+            (float16('0.0'), float16('0.0')),
+            (float16(2.0**-24), float16('0.0')),
+            (float16('0.49'), float16('0.0')),
+            (float16('0.5'), float16('1.0')),
+            (float16('0.51'), float16('1.0')),
+            (float16('0.99'), float16('1.0')),
+            (float16('1.0'), float16('1.0')),
+            (float16('1.49'), float16('1.0')),
+            (float16('1.5'), float16('2.0')),
+            (float16(2**9 - 2.0), float16(2**9 - 2)),
+            (float16(2**9 - 1.75), float16(2**9 - 2)),
+            (float16(2**9 - 1.5), float16(2**9 - 1)),
+            (float16(2**9 - 1.25), float16(2**9 - 1)),
+            (float16(2**9 - 1.0), float16(2**9 - 1)),
+            (float16(2**9 - 0.75), float16(2**9 - 1)),
+            (float16(2**9 - 0.5), float16(2**9)),
+            (float16(2**9 - 0.25), float16(2**9)),
+            (float16(2**9), float16(2**9)),
+            (float16(2**9 + 0.5), float16(2**9 + 1)),
+            (float16(2**9 + 1), float16(2**9 + 1)),
+            (float16(2**9 + 1.5), float16(2**9 + 2)),
+            (float16(2**9 + 2), float16(2**9 + 2)),
+            (float16(2**9 + 2.5), float16(2**9 + 3)),
+            (float16(2**9 + 3), float16(2**9 + 3)),
+            (float16(2**9 + 3.5), float16(2**9 + 4)),
+            (float16(2**9 + 4), float16(2**9 + 4)),
+            (float16(2**10 - 4), float16(2**10 - 4)),
+            (float16(2**10 - 3.5), float16(2**10 - 3)),
+            (float16(2**10 - 3.0), float16(2**10 - 3)),
+            (float16(2**10 - 2.5), float16(2**10 - 2)),
+            (float16(2**10 - 2.0), float16(2**10 - 2)),
+            (float16(2**10 - 1.5), float16(2**10 - 1)),
+            (float16(2**10 - 1), float16(2**10 - 1)),
+            (float16(2**10 - 0.5), float16(2**10)),
+            (float16(2**10), float16(2**10)),
+            (float16(2**11-1), float16(2**11-1)),
+            (float16(2**11), float16(2**11)),
+            (float16(2**11+2), float16(2**11+2)),
+        ]
+
+        for input, expected in test_values:
+            actual = input.round_to_integral_ties_to_away()
+            self.assertInterchangeable(actual, expected)
+
+    def test_round_to_integral_toward_zero(self):
+        test_values = [
+            (float16('inf'), float16('inf')),
+            (float16('-inf'), float16('-inf')),
+            (float16('-0.51'), float16('-0.0')),
+            (float16('-0.5'), float16('-0.0')),
+            (float16('-0.49'), float16('-0.0')),
+            (float16(-2.0**-24), float16('-0.0')),
+            (float16('-0.0'), float16('-0.0')),
+            (float16('0.0'), float16('0.0')),
+            (float16(2.0**-24), float16('0.0')),
+            (float16('0.49'), float16('0.0')),
+            (float16('0.5'), float16('0.0')),
+            (float16('0.51'), float16('0.0')),
+            (float16('0.99'), float16('0.0')),
+            (float16('1.0'), float16('1.0')),
+            (float16('1.49'), float16('1.0')),
+            (float16('1.5'), float16('1.0')),
+            (float16(2**9 - 2.0), float16(2**9 - 2)),
+            (float16(2**9 - 1.75), float16(2**9 - 2)),
+            (float16(2**9 - 1.5), float16(2**9 - 2)),
+            (float16(2**9 - 1.25), float16(2**9 - 2)),
+            (float16(2**9 - 1.0), float16(2**9 - 1)),
+            (float16(2**9 - 0.75), float16(2**9 - 1)),
+            (float16(2**9 - 0.5), float16(2**9 - 1)),
+            (float16(2**9 - 0.25), float16(2**9 - 1)),
+            (float16(2**9), float16(2**9)),
+            (float16(2**9 + 0.5), float16(2**9)),
+            (float16(2**9 + 1), float16(2**9 + 1)),
+            (float16(2**9 + 1.5), float16(2**9 + 1)),
+            (float16(2**9 + 2), float16(2**9 + 2)),
+            (float16(2**9 + 2.5), float16(2**9 + 2)),
+            (float16(2**9 + 3), float16(2**9 + 3)),
+            (float16(2**9 + 3.5), float16(2**9 + 3)),
+            (float16(2**9 + 4), float16(2**9 + 4)),
+            (float16(2**10 - 4), float16(2**10 - 4)),
+            (float16(2**10 - 3.5), float16(2**10 - 4)),
+            (float16(2**10 - 3.0), float16(2**10 - 3)),
+            (float16(2**10 - 2.5), float16(2**10 - 3)),
+            (float16(2**10 - 2.0), float16(2**10 - 2)),
+            (float16(2**10 - 1.5), float16(2**10 - 2)),
+            (float16(2**10 - 1), float16(2**10 - 1)),
+            (float16(2**10 - 0.5), float16(2**10 - 1)),
+            (float16(2**10), float16(2**10)),
+            (float16(2**11-1), float16(2**11-1)),
+            (float16(2**11), float16(2**11)),
+            (float16(2**11+2), float16(2**11+2)),
+        ]
+
+        for input, expected in test_values:
+            actual = input.round_to_integral_toward_zero()
+            self.assertInterchangeable(actual, expected)
+
+    def test_round_to_integral_toward_positive(self):
+        test_values = [
+            (float16('inf'), float16('inf')),
+            (float16('-inf'), float16('-inf')),
+            (float16('-0.51'), float16('-0.0')),
+            (float16('-0.5'), float16('-0.0')),
+            (float16('-0.49'), float16('-0.0')),
+            (float16(-2.0**-24), float16('-0.0')),
+            (float16('-0.0'), float16('-0.0')),
+            (float16('0.0'), float16('0.0')),
+            (float16(2.0**-24), float16('1.0')),
+            (float16('0.49'), float16('1.0')),
+            (float16('0.5'), float16('1.0')),
+            (float16('0.51'), float16('1.0')),
+            (float16('0.99'), float16('1.0')),
+            (float16('1.0'), float16('1.0')),
+            (float16('1.49'), float16('2.0')),
+            (float16('1.5'), float16('2.0')),
+            (float16(2**9 - 2.0), float16(2**9 - 2)),
+            (float16(2**9 - 1.75), float16(2**9 - 1)),
+            (float16(2**9 - 1.5), float16(2**9 - 1)),
+            (float16(2**9 - 1.25), float16(2**9 - 1)),
+            (float16(2**9 - 1.0), float16(2**9 - 1)),
+            (float16(2**9 - 0.75), float16(2**9 - 0)),
+            (float16(2**9 - 0.5), float16(2**9 - 0)),
+            (float16(2**9 - 0.25), float16(2**9 - 0)),
+            (float16(2**9), float16(2**9)),
+            (float16(2**9 + 0.5), float16(2**9 + 1)),
+            (float16(2**9 + 1), float16(2**9 + 1)),
+            (float16(2**9 + 1.5), float16(2**9 + 2)),
+            (float16(2**9 + 2), float16(2**9 + 2)),
+            (float16(2**9 + 2.5), float16(2**9 + 3)),
+            (float16(2**9 + 3), float16(2**9 + 3)),
+            (float16(2**9 + 3.5), float16(2**9 + 4)),
+            (float16(2**9 + 4), float16(2**9 + 4)),
+            (float16(2**10 - 4), float16(2**10 - 4)),
+            (float16(2**10 - 3.5), float16(2**10 - 3)),
+            (float16(2**10 - 3.0), float16(2**10 - 3)),
+            (float16(2**10 - 2.5), float16(2**10 - 2)),
+            (float16(2**10 - 2.0), float16(2**10 - 2)),
+            (float16(2**10 - 1.5), float16(2**10 - 1)),
+            (float16(2**10 - 1), float16(2**10 - 1)),
+            (float16(2**10 - 0.5), float16(2**10)),
+            (float16(2**10), float16(2**10)),
+            (float16(2**11-1), float16(2**11-1)),
+            (float16(2**11), float16(2**11)),
+            (float16(2**11+2), float16(2**11+2)),
+        ]
+
+        for input, expected in test_values:
+            actual = input.round_to_integral_toward_positive()
+            self.assertInterchangeable(actual, expected)
+
+    def test_round_to_integral_toward_negative(self):
+        test_values = [
+            (float16('inf'), float16('inf')),
+            (float16('-inf'), float16('-inf')),
+            (float16('-0.51'), float16('-1.0')),
+            (float16('-0.5'), float16('-1.0')),
+            (float16('-0.49'), float16('-1.0')),
+            (float16(-2.0**-24), float16('-1.0')),
+            (float16('-0.0'), float16('-0.0')),
+            (float16('0.0'), float16('0.0')),
+            (float16(2.0**-24), float16('0.0')),
+            (float16('0.49'), float16('0.0')),
+            (float16('0.5'), float16('0.0')),
+            (float16('0.51'), float16('0.0')),
+            (float16('0.99'), float16('0.0')),
+            (float16('1.0'), float16('1.0')),
+            (float16('1.49'), float16('1.0')),
+            (float16('1.5'), float16('1.0')),
+            (float16(2**9 - 2.0), float16(2**9 - 2)),
+            (float16(2**9 - 1.75), float16(2**9 - 2)),
+            (float16(2**9 - 1.5), float16(2**9 - 2)),
+            (float16(2**9 - 1.25), float16(2**9 - 2)),
+            (float16(2**9 - 1.0), float16(2**9 - 1)),
+            (float16(2**9 - 0.75), float16(2**9 - 1)),
+            (float16(2**9 - 0.5), float16(2**9 - 1)),
+            (float16(2**9 - 0.25), float16(2**9 - 1)),
+            (float16(2**9), float16(2**9)),
+            (float16(2**9 + 0.5), float16(2**9)),
+            (float16(2**9 + 1), float16(2**9 + 1)),
+            (float16(2**9 + 1.5), float16(2**9 + 1)),
+            (float16(2**9 + 2), float16(2**9 + 2)),
+            (float16(2**9 + 2.5), float16(2**9 + 2)),
+            (float16(2**9 + 3), float16(2**9 + 3)),
+            (float16(2**9 + 3.5), float16(2**9 + 3)),
+            (float16(2**9 + 4), float16(2**9 + 4)),
+            (float16(2**10 - 4), float16(2**10 - 4)),
+            (float16(2**10 - 3.5), float16(2**10 - 4)),
+            (float16(2**10 - 3.0), float16(2**10 - 3)),
+            (float16(2**10 - 2.5), float16(2**10 - 3)),
+            (float16(2**10 - 2.0), float16(2**10 - 2)),
+            (float16(2**10 - 1.5), float16(2**10 - 2)),
+            (float16(2**10 - 1), float16(2**10 - 1)),
+            (float16(2**10 - 0.5), float16(2**10 - 1)),
+            (float16(2**10), float16(2**10)),
+            (float16(2**11-1), float16(2**11-1)),
+            (float16(2**11), float16(2**11)),
+            (float16(2**11+2), float16(2**11+2)),
+        ]
+
+        for input, expected in test_values:
+            actual = input.round_to_integral_toward_negative()
+            self.assertInterchangeable(actual, expected)
+
+    def test_round_to_integral_exact(self):
+        # Round to integral exact is supposed to round according to the
+        # 'applicable rounding-direction' attribute.
+
+        test_values = [float16(n / 4.0) for n in range(100)]
+        test_values.extend([-x for x in test_values])
+
+        for x in test_values:
+            with rounding_direction(round_ties_to_even):
+                actual = x.round_to_integral_exact()
+            expected = x.round_to_integral_ties_to_even()
+            self.assertInterchangeable(actual, expected)
+
+        for x in test_values:
+            with rounding_direction(round_ties_to_away):
+                actual = x.round_to_integral_exact()
+            expected = x.round_to_integral_ties_to_away()
+            self.assertInterchangeable(actual, expected)
+
+        for x in test_values:
+            with rounding_direction(round_toward_positive):
+                actual = x.round_to_integral_exact()
+            expected = x.round_to_integral_toward_positive()
+            self.assertInterchangeable(actual, expected)
+
+        for x in test_values:
+            with rounding_direction(round_toward_negative):
+                actual = x.round_to_integral_exact()
+            expected = x.round_to_integral_toward_negative()
+            self.assertInterchangeable(actual, expected)
+
+        for x in test_values:
+            with rounding_direction(round_toward_zero):
+                actual = x.round_to_integral_exact()
+            expected = x.round_to_integral_toward_zero()
+            self.assertInterchangeable(actual, expected)
+
 
 
 if __name__ == '__main__':

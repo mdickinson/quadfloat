@@ -1,5 +1,6 @@
 from __future__ import division as _division
 
+import contextlib as _contextlib
 import decimal as _decimal
 import math as _math
 import operator as _operator
@@ -97,8 +98,6 @@ _number_parser = _re.compile(r"""        # A numeric string consists of:
 
 
 _round_ties_to_even_offsets = [0, -1, -2, 1, 0, -1, 2, 1]
-_round_toward_zero_offsets = [0, -1, -2, -3, 0, -1, -2, -3]
-_round_ties_to_away_offsets = [0, -1, 2, 1, 0, -1, 2, 1]
 
 
 def _isqrt(n):
@@ -237,6 +236,50 @@ def _digits_from_rational(a, b, closed=True):
     while True:
         digit, a = divmod(10 * a, b)
         yield digit if closed else 9 - digit
+
+
+# Global attributes for rounding direction.
+# XXX Replace with a suitable class.
+
+_attributes = {}
+
+
+def _current_rounding_direction():
+    return _attributes['rounding_direction']
+
+
+@_contextlib.contextmanager
+def rounding_direction(new_rounding_direction):
+    old_rounding_direction = _attributes.get('rounding_direction')
+    _attributes['rounding_direction'] = new_rounding_direction
+    try:
+        yield
+    finally:
+        _attributes['rounding_direction'] = old_rounding_direction
+
+
+# Rounding directions.
+
+class RoundingDirection(object):
+    def __init__(self, _rounder):
+        self._rounder = _rounder
+
+
+round_ties_to_even = RoundingDirection(
+    _rounder=lambda q, sign: q + _round_ties_to_even_offsets[q & 7] >> 2
+)
+
+round_ties_to_away = RoundingDirection(_rounder=lambda q, sign: (q + 2) >> 2)
+
+round_toward_positive = RoundingDirection(
+    _rounder=lambda q, sign: q >> 2 if sign else -(-q >> 2)
+)
+
+round_toward_negative = RoundingDirection(
+    _rounder = lambda q, sign: -(-q >> 2) if sign else q >> 2
+)
+
+round_toward_zero = RoundingDirection(_rounder = lambda q, sign: q >> 2)
 
 
 # Flags class.
@@ -1251,7 +1294,92 @@ class _BinaryFloatBase(object):
     def __str__(self):
         return self._to_short_str()
 
-    # IEEE 5.7.2: General operations.
+    # IEEE 754-2008 5.3.1: General operations.
+    def _round_to_integral_general(self, rounding_direction):
+        """
+        General round_to_integral implementation used
+        by the round_to_integral_* functions.
+
+        """
+        # NaNs.
+        if self._type == _NAN:
+            return self._format._handle_nans(self)
+
+        # Infinities, zeros, and integral values are returned unchanged.
+        if self._type == _INFINITE or self.is_zero() or self._exponent >= 0:
+            return self
+
+        # Round to the nearest integer, using the prescribed rounding mode.
+        q = _rshift_to_odd(self._significand, -self._exponent - 2)
+        q = rounding_direction._rounder(q, self._sign)
+
+        # Normalize.
+        if q == 0:
+            return self._format._zero(self._sign)
+        else:
+            shift = self._format.precision - q.bit_length()
+            return self._format._finite(self._sign, -shift, q << shift)
+
+    def round_to_integral_ties_to_even(self):
+        """
+        Round self to an integral value in the same format,
+        with halfway cases rounding to even.
+
+        """
+        return self._round_to_integral_general(
+            rounding_direction=round_ties_to_even
+        )
+
+    def round_to_integral_ties_to_away(self):
+        """
+        Round self to an integral value in the same format,
+        with halfway cases rounding away from zero.
+
+        """
+        return self._round_to_integral_general(
+            rounding_direction=round_ties_to_away
+        )
+
+    def round_to_integral_toward_zero(self):
+        """
+        Round self to an integral value in the same format,
+        truncating any fractional part.
+
+        """
+        return self._round_to_integral_general(
+            rounding_direction=round_toward_zero
+        )
+
+    def round_to_integral_toward_positive(self):
+        """
+        Round self to an integral value in the same format,
+        rounding non-exact integers to the next higher integer.
+
+        In other words, this is the ceiling operation.
+
+        """
+        return self._round_to_integral_general(
+            rounding_direction=round_toward_positive
+        )
+
+    def round_to_integral_toward_negative(self):
+        """
+        Round self to an integral value in the same format,
+        rounding non-exact integers to the next lower integer.
+
+        In other words, this is the floor operation.
+
+        """
+        return self._round_to_integral_general(
+            rounding_direction=round_toward_negative
+        )
+
+    def round_to_integral_exact(self):
+        return self._round_to_integral_general(
+            rounding_direction=_current_rounding_direction()
+        )
+
+    # IEEE 754 5.7.2: General operations.
 
     def is_sign_minus(self):
         """
@@ -1676,7 +1804,7 @@ class _BinaryFloatBase(object):
         return self._rich_compare_general(other, _operator.ge, False)
 
     # 5.4.1 Arithmetic operations (conversions to integer).
-    def convert_to_integer_ties_to_even(self):
+    def _convert_to_integer_general(self, rounding_direction):
         if self._type == _NAN:
             # XXX Signaling nans should also raise the invalid operation
             # exception.
@@ -1689,80 +1817,61 @@ class _BinaryFloatBase(object):
 
         # Round to odd, with 2 extra bits.
         q = _rshift_to_odd(self._significand, -self._exponent - 2)
-        q = (q + _round_ties_to_even_offsets[q & 7]) >> 2
+        q = rounding_direction._rounder(q, self._sign)
+
         # Use int() to convert from long if necessary
         return int(-q if self._sign else q)
+
+    def convert_to_integer_ties_to_even(self):
+        """
+        Round 'self' to the nearest Python integer, with halfway cases rounded
+        to even.
+
+        """
+        return self._convert_to_integer_general(
+            rounding_direction=round_ties_to_even
+        )
 
     def convert_to_integer_toward_zero(self):
-        if self._type == _NAN:
-            # XXX Signaling nans should also raise the invalid operation
-            # exception.
-            raise ValueError("Cannot convert a NaN to an integer.")
+        """
+        Round 'self' to a Python integer, truncating the fractional part.
 
-        if self._type == _INFINITE:
-            # NB. Python raises OverflowError here, which doesn't really
-            # seem right.
-            raise ValueError("Cannot convert an infinity to an integer.")
-
-        # Round to odd, with 2 extra bits.
-        q = _rshift_to_odd(self._significand, -self._exponent - 2)
-        q = (q + _round_toward_zero_offsets[q & 7]) >> 2
-        # Use int() to convert from long if necessary
-        return int(-q if self._sign else q)
+        """
+        return self._convert_to_integer_general(
+            rounding_direction=round_toward_zero
+        )
 
     def convert_to_integer_toward_positive(self):
-        if self._type == _NAN:
-            # XXX Signaling nans should also raise the invalid operation
-            # exception.
-            raise ValueError("Cannot convert a NaN to an integer.")
+        """
+        Round 'self' to a Python integer, rounding toward positive infinity.
 
-        if self._type == _INFINITE:
-            # NB. Python raises OverflowError here, which doesn't really
-            # seem right.
-            raise ValueError("Cannot convert an infinity to an integer.")
+        In other words, return the 'ceiling' of 'self' as a Python integer.
 
-        # Round to odd, with 2 extra bits.
-        q = _rshift_to_odd(self._significand, -self._exponent - 2)
-        # int() to convert from long if necessary
-        return int(-((q if self._sign else -q) >> 2))
+        """
+        return self._convert_to_integer_general(
+            rounding_direction=round_toward_positive
+        )
 
     def convert_to_integer_toward_negative(self):
-        if self._type == _NAN:
-            # XXX Signaling nans should also raise the invalid operation
-            # exception.
-            raise ValueError("Cannot convert a NaN to an integer.")
+        """
+        Round 'self' to a Python integer, rounding toward negative infinity.
 
-        if self._type == _INFINITE:
-            # NB. Python raises OverflowError here, which doesn't really
-            # seem right.
-            raise ValueError("Cannot convert an infinity to an integer.")
+        In other words, return the 'floor' of 'self' as a Python integer.
 
-        # (-1) ** sign * significand * 2 ** exponent
-
-        # Round to odd, with 2 extra bits.
-        q = _rshift_to_odd(self._significand, -self._exponent - 2)
-        # int() to convert from long if necessary
-        return int((-q if self._sign else q) >> 2)
+        """
+        return self._convert_to_integer_general(
+            rounding_direction=round_toward_negative
+        )
 
     def convert_to_integer_ties_to_away(self):
-        if self._type == _NAN:
-            # XXX Signaling nans should also raise the invalid operation
-            # exception.
-            raise ValueError("Cannot convert a NaN to an integer.")
+        """
+        Round 'self' to the nearest Python integer, with halfway cases rounded
+        away from zero.
 
-        if self._type == _INFINITE:
-            # NB. Python raises OverflowError here, which doesn't really
-            # seem right.
-            raise ValueError("Cannot convert an infinity to an integer.")
-
-        # (-1) ** sign * significand * 2 ** exponent
-
-        # Compute significand * 2 ** (exponent + 2), rounded to the nearest
-        # integer using round-to-odd.  Extra bits will be used for rounding.
-        q = _rshift_to_odd(self._significand, -self._exponent - 2)
-        q = (q + _round_ties_to_away_offsets[q & 7]) >> 2
-        # int() to convert from long if necessary
-        return int(-q if self._sign else q)
+        """
+        return self._convert_to_integer_general(
+            rounding_direction=round_ties_to_away
+        )
 
 
 # Section 5.6.1: Comparisons.
