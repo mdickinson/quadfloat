@@ -566,8 +566,11 @@ class TestFloat16(unittest.TestCase):
         ]
 
         for input, expected in test_values:
-            actual = input.round_to_integral_ties_to_even()
+            signal_list = []
+            with inexact_handler(signal_list.append):
+                actual = input.round_to_integral_ties_to_even()
             self.assertInterchangeable(actual, expected)
+            self.assertEqual(len(signal_list), 0)
 
     def test_round_to_integral_ties_to_away(self):
         test_values = [
@@ -619,8 +622,11 @@ class TestFloat16(unittest.TestCase):
         ]
 
         for input, expected in test_values:
-            actual = input.round_to_integral_ties_to_away()
+            signal_list = []
+            with inexact_handler(signal_list.append):
+                actual = input.round_to_integral_ties_to_away()
             self.assertInterchangeable(actual, expected)
+            self.assertEqual(len(signal_list), 0)
 
     def test_round_to_integral_toward_zero(self):
         test_values = [
@@ -672,8 +678,11 @@ class TestFloat16(unittest.TestCase):
         ]
 
         for input, expected in test_values:
-            actual = input.round_to_integral_toward_zero()
+            signal_list = []
+            with inexact_handler(signal_list.append):
+                actual = input.round_to_integral_toward_zero()
             self.assertInterchangeable(actual, expected)
+            self.assertEqual(len(signal_list), 0)
 
     def test_round_to_integral_toward_positive(self):
         test_values = [
@@ -725,8 +734,11 @@ class TestFloat16(unittest.TestCase):
         ]
 
         for input, expected in test_values:
-            actual = input.round_to_integral_toward_positive()
+            signal_list = []
+            with inexact_handler(signal_list.append):
+                actual = input.round_to_integral_toward_positive()
             self.assertInterchangeable(actual, expected)
+            self.assertEqual(len(signal_list), 0)
 
     def test_round_to_integral_toward_negative(self):
         test_values = [
@@ -778,8 +790,11 @@ class TestFloat16(unittest.TestCase):
         ]
 
         for input, expected in test_values:
-            actual = input.round_to_integral_toward_negative()
+            signal_list = []
+            with inexact_handler(signal_list.append):
+                actual = input.round_to_integral_toward_negative()
             self.assertInterchangeable(actual, expected)
+            self.assertEqual(len(signal_list), 0)
 
     def test_round_to_integral_exact(self):
         # Round to integral exact is supposed to round according to the

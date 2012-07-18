@@ -1317,10 +1317,7 @@ class _BinaryFloatBase(object):
         return self._to_short_str()
 
     # IEEE 754-2008 5.3.1: General operations.
-    def _round_to_integral_general(
-        self,
-        rounding_direction,
-        signal_inexact=False):
+    def _round_to_integral_general(self, rounding_direction, quiet):
         """
         General round_to_integral implementation used
         by the round_to_integral_* functions.
@@ -1342,8 +1339,7 @@ class _BinaryFloatBase(object):
         q = rounding_direction._rounder(to_quarter, self._sign)
 
         # Signal inexact if necessary.
-        if signal_inexact and q << 2 != to_quarter:
-            # XXX Need to check that the result really *is* inexact in tests!
+        if not quiet and q << 2 != to_quarter:
             _signal_inexact()
 
         # Normalize.
@@ -1360,7 +1356,8 @@ class _BinaryFloatBase(object):
 
         """
         return self._round_to_integral_general(
-            rounding_direction=round_ties_to_even
+            rounding_direction=round_ties_to_even,
+            quiet=True,
         )
 
     def round_to_integral_ties_to_away(self):
@@ -1370,7 +1367,8 @@ class _BinaryFloatBase(object):
 
         """
         return self._round_to_integral_general(
-            rounding_direction=round_ties_to_away
+            rounding_direction=round_ties_to_away,
+            quiet=True,
         )
 
     def round_to_integral_toward_zero(self):
@@ -1380,7 +1378,8 @@ class _BinaryFloatBase(object):
 
         """
         return self._round_to_integral_general(
-            rounding_direction=round_toward_zero
+            rounding_direction=round_toward_zero,
+            quiet=True,
         )
 
     def round_to_integral_toward_positive(self):
@@ -1392,7 +1391,8 @@ class _BinaryFloatBase(object):
 
         """
         return self._round_to_integral_general(
-            rounding_direction=round_toward_positive
+            rounding_direction=round_toward_positive,
+            quiet=True,
         )
 
     def round_to_integral_toward_negative(self):
@@ -1404,7 +1404,8 @@ class _BinaryFloatBase(object):
 
         """
         return self._round_to_integral_general(
-            rounding_direction=round_toward_negative
+            rounding_direction=round_toward_negative,
+            quiet=True,
         )
 
     def round_to_integral_exact(self):
@@ -1415,7 +1416,7 @@ class _BinaryFloatBase(object):
         """
         return self._round_to_integral_general(
             rounding_direction=_current_rounding_direction(),
-            signal_inexact=True,
+            quiet=False,
         )
 
     # IEEE 754 5.7.2: General operations.
