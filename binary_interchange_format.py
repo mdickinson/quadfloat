@@ -238,26 +238,6 @@ def _digits_from_rational(a, b, closed=True):
         yield digit if closed else 9 - digit
 
 
-# Global attributes for rounding direction.
-# XXX Replace with a suitable class.
-
-_attributes = {}
-
-
-def _current_rounding_direction():
-    return _attributes['rounding_direction']
-
-
-@_contextlib.contextmanager
-def rounding_direction(new_rounding_direction):
-    old_rounding_direction = _attributes.get('rounding_direction')
-    _attributes['rounding_direction'] = new_rounding_direction
-    try:
-        yield
-    finally:
-        _attributes['rounding_direction'] = old_rounding_direction
-
-
 # Rounding directions.
 
 class RoundingDirection(object):
@@ -276,10 +256,52 @@ round_toward_positive = RoundingDirection(
 )
 
 round_toward_negative = RoundingDirection(
-    _rounder = lambda q, sign: -(-q >> 2) if sign else q >> 2
+    _rounder=lambda q, sign: -(-q >> 2) if sign else q >> 2
 )
 
-round_toward_zero = RoundingDirection(_rounder = lambda q, sign: q >> 2)
+round_toward_zero = RoundingDirection(_rounder=lambda q, sign: q >> 2)
+
+
+# Attributes.
+
+# XXX Default handler should set flag.
+_attributes = {
+    'rounding_direction': round_ties_to_even,
+    'inexact_handler': lambda x: None,
+}
+
+
+def _current_rounding_direction():
+    return _attributes['rounding_direction']
+
+
+# Context managers to set and restore particular attributes.
+
+@_contextlib.contextmanager
+def rounding_direction(new_rounding_direction):
+    old_rounding_direction = _attributes.get('rounding_direction')
+    _attributes['rounding_direction'] = new_rounding_direction
+    try:
+        yield
+    finally:
+        _attributes['rounding_direction'] = old_rounding_direction
+
+
+@_contextlib.contextmanager
+def inexact_handler(new_inexact_handler):
+    old_inexact_handler = _attributes.get('inexact_handler')
+    _attributes['inexact_handler'] = new_inexact_handler
+    try:
+        yield
+    finally:
+        _attributes['inexact_handler'] = old_inexact_handler
+
+
+# Functions to signal various exceptions.  (Private for now, since only the
+# core code needs to be able to signal exceptions.)
+
+def _signal_inexact():
+    _attributes['inexact_handler'](None)
 
 
 # Flags class.
@@ -1295,7 +1317,10 @@ class _BinaryFloatBase(object):
         return self._to_short_str()
 
     # IEEE 754-2008 5.3.1: General operations.
-    def _round_to_integral_general(self, rounding_direction):
+    def _round_to_integral_general(
+        self,
+        rounding_direction,
+        signal_inexact=False):
         """
         General round_to_integral implementation used
         by the round_to_integral_* functions.
@@ -1309,9 +1334,17 @@ class _BinaryFloatBase(object):
         if self._type == _INFINITE or self.is_zero() or self._exponent >= 0:
             return self
 
-        # Round to the nearest integer, using the prescribed rounding mode.
-        q = _rshift_to_odd(self._significand, -self._exponent - 2)
-        q = rounding_direction._rounder(q, self._sign)
+        # Round to a number of the form n / 4 using round-to-odd.
+        to_quarter = _rshift_to_odd(self._significand, -self._exponent - 2)
+
+        # Then round to the nearest integer, using the prescribed rounding
+        # direction.
+        q = rounding_direction._rounder(to_quarter, self._sign)
+
+        # Signal inexact if necessary.
+        if signal_inexact and q << 2 != to_quarter:
+            # XXX Need to check that the result really *is* inexact in tests!
+            _signal_inexact()
 
         # Normalize.
         if q == 0:
@@ -1375,8 +1408,14 @@ class _BinaryFloatBase(object):
         )
 
     def round_to_integral_exact(self):
+        """
+        Round self to an integral value using the current rounding-direction
+        attribute.  Signal the 'inexact' exception if this changes the value.
+
+        """
         return self._round_to_integral_general(
-            rounding_direction=_current_rounding_direction()
+            rounding_direction=_current_rounding_direction(),
+            signal_inexact=True,
         )
 
     # IEEE 754 5.7.2: General operations.

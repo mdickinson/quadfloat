@@ -1,6 +1,9 @@
 Bugs
 ----
 
+* Behaviour of __eq__ with objects of other non-compatible types should
+  be examined.  Same with __lt__, etc.
+
 * Lots of public methods are missing docstrings.
 
 * Missing documentation.
@@ -14,8 +17,6 @@ Documentation
 
 Features
 --------
-
-* Rework comparisons to convert to the format of self before comparing.
 
 * Fill out the rest of the IEEE 754 *required* functionality, excluding rounding modes,
   exceptions, signals.
@@ -36,6 +37,8 @@ Features
 
 Internal refactoring
 --------------------
+
+* Remove useless _round_toward_zero_offsets
 
 * Better name for class_?  Should be private?
 

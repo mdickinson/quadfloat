@@ -11,6 +11,10 @@ from binary_interchange_format import (
     round_toward_negative,
 )
 
+from binary_interchange_format import (
+    inexact_handler,
+)
+
 from binary_interchange_format import _bytes_from_iterable, _divide_nearest
 
 
@@ -814,6 +818,20 @@ class TestFloat16(unittest.TestCase):
             expected = x.round_to_integral_toward_zero()
             self.assertInterchangeable(actual, expected)
 
+    def test_round_to_integral_exact_signals(self):
+        # Should signal the 'inexact' exception for inexact results.
+        signal_list = []
+        x = float16('1.5')
+        with inexact_handler(signal_list.append):
+            x.round_to_integral_exact()
+        self.assertEqual(len(signal_list), 1)
+
+        # But not for exact results.
+        signal_list = []
+        x = float16('1.0')
+        with inexact_handler(signal_list.append):
+            x.round_to_integral_exact()
+        self.assertEqual(len(signal_list), 0)
 
 
 if __name__ == '__main__':
