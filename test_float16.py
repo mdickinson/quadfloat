@@ -13,6 +13,7 @@ from binary_interchange_format import (
 
 from binary_interchange_format import (
     inexact_handler,
+    invalid_operation_handler,
 )
 
 from binary_interchange_format import _bytes_from_iterable, _divide_nearest
@@ -571,6 +572,22 @@ class TestFloat16(unittest.TestCase):
                 actual = input.round_to_integral_ties_to_even()
             self.assertInterchangeable(actual, expected)
             self.assertEqual(len(signal_list), 0)
+
+        # Signaling nans should signal the invalid operation exception.
+        # (And return... what?)
+        signal_list = []
+        input = float16('snan')
+        with invalid_operation_handler(signal_list.append):
+            input.round_to_integral_ties_to_even()
+        self.assertEqual(len(signal_list), 1)
+
+        # Quiet nans should *not* signal.
+        signal_list = []
+        input = float16('-nan(234)')
+        with invalid_operation_handler(signal_list.append):
+            actual = input.round_to_integral_ties_to_even()
+        self.assertInterchangeable(actual, input)
+        self.assertEqual(len(signal_list), 0)
 
     def test_round_to_integral_ties_to_away(self):
         test_values = [

@@ -268,6 +268,7 @@ round_toward_zero = RoundingDirection(_rounder=lambda q, sign: q >> 2)
 _attributes = {
     'rounding_direction': round_ties_to_even,
     'inexact_handler': lambda x: None,
+    'invalid_operation_handler': lambda x: None,
 }
 
 
@@ -296,12 +297,25 @@ def inexact_handler(new_inexact_handler):
     finally:
         _attributes['inexact_handler'] = old_inexact_handler
 
+@_contextlib.contextmanager
+def invalid_operation_handler(new_invalid_operation_handler):
+    old_invalid_operation_handler = _attributes.get('invalid_operation_handler')
+    _attributes['invalid_operation_handler'] = new_invalid_operation_handler
+    try:
+        yield
+    finally:
+        _attributes['invalid_operation_handler'] = old_invalid_operation_handler
+
 
 # Functions to signal various exceptions.  (Private for now, since only the
 # core code needs to be able to signal exceptions.)
 
 def _signal_inexact():
     _attributes['inexact_handler'](None)
+
+def _signal_invalid_operation():
+    _attributes['invalid_operation_handler'](None)
+
 
 
 # Flags class.
@@ -711,6 +725,7 @@ class BinaryInterchangeFormat(object):
         # Look for signaling NaNs.
         for source in sources:
             if source._type == _NAN and source._signaling:
+                _signal_invalid_operation()
                 return self._from_nan(source)
 
         # All operands are quiet NaNs; return a result based on the first of
