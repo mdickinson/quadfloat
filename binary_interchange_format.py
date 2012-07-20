@@ -443,16 +443,24 @@ class BinaryInterchangeFormat(object):
         return self.emax - self.precision + 1
 
     @property
-    def qbias(self):
-        return 1 - self.qmin
+    def _sign_bit(self):
+        return 1 << self.width - 1
 
     @property
-    def _exponent_field_width(self):
-        """
-        Number of bits used to encode exponent for an interchange format.
+    def _exponent_bitmask(self):
+        return (1 << self.width - 1) - (1 << self.precision - 1)
 
-        """
-        return self.width - self.precision
+    @property
+    def _significand_bitmask(self):
+        return (1 << self.precision - 1) - 1
+
+    @property
+    def _quiet_bit(self):
+        return 1 << self.precision - 2
+
+    @property
+    def _payload_bitmask(self):
+        return (1 << self.precision - 2) - 1
 
     @property
     def _decimal_places(self):
@@ -1072,6 +1080,60 @@ class BinaryInterchangeFormat(object):
             signaling=False,
         )
 
+    def _encode_as_int(self, source):
+        """
+        Encode 'source', which should have format 'self', as an unsigned int.
+
+        """
+        # Should only be used when 'source' has format 'self'.
+        if not source._format == self:
+            raise ValueError("Bad format.")
+
+        if source._type == _NAN:
+            result = source._payload + self._exponent_bitmask
+            if not source._signaling:
+                result += self._quiet_bit
+        elif source._type == _INFINITE:
+            result = self._exponent_bitmask
+        else:
+            # Note that this works for both normals and subnormals / zeros.
+            exponent_field = source._exponent - self.qmin << self.precision - 1
+            result = exponent_field + source._significand
+
+        if source._sign:
+            result += self._sign_bit
+
+        return result
+
+    def _decode_from_int(self, n):
+        """
+        Decode an unsigned int as encoded with _encode_as_int.
+
+        """
+        # Extract fields.
+        significand = n & self._significand_bitmask
+        exponent_field = n & self._exponent_bitmask
+        sign = bool(n & self._sign_bit)
+
+        # Construct value.
+        if exponent_field == self._exponent_bitmask:
+            # Infinity or NaN.
+            if significand:
+                # NaN.
+                payload = significand & self._payload_bitmask
+                signaling = not significand & self._quiet_bit
+                return self._nan(sign, signaling, payload)
+            else:
+                # Infinity.
+                return self._infinity(sign=sign)
+        else:
+            if exponent_field:
+                # Normal number.
+                exponent_field -= 1 << self.precision - 1
+                significand += 1 << self.precision - 1
+            exponent = (exponent_field >> self.precision - 1) + self.qmin
+            return self._finite(sign, exponent, significand)
+
     def decode(self, encoded_value):
         """
         Decode a string of bytes to the corresponding Float<nnn> instance.
@@ -1080,53 +1142,8 @@ class BinaryInterchangeFormat(object):
         if len(encoded_value) != self.width // 8:
             raise ValueError("Wrong number of bytes for format.")
 
-        exponent_field_width = self._exponent_field_width
-        significand_field_width = self.precision - 1
-
-        # Extract fields.
-        equivalent_int = _int_from_bytes(encoded_value)
-        significand_field = (
-            equivalent_int &
-            ((1 << significand_field_width) - 1)
-        )
-        equivalent_int >>= significand_field_width
-        exponent_field = equivalent_int & ((1 << exponent_field_width) - 1)
-        equivalent_int >>= exponent_field_width
-        sign = bool(equivalent_int)
-
-        assert 0 <= exponent_field < (1 << exponent_field_width)
-        assert 0 <= significand_field < (1 << significand_field_width)
-
-        # Construct value.
-        if exponent_field == (1 << exponent_field_width) - 1:
-            # Infinities, Nans.
-            if significand_field == 0:
-                # Infinities.
-                return self._infinity(sign=sign)
-            else:
-                # Nan.
-                payload_width = significand_field_width - 1
-                payload = significand_field & ((1 << payload_width) - 1)
-                significand_field >>= payload_width
-                # Top bit of significand field indicates whether this Nan is
-                # quiet (1) or signaling (0).
-                assert 0 <= significand_field <= 1
-                signaling = not significand_field
-                return self._nan(sign, signaling, payload)
-        elif exponent_field == 0:
-            # Subnormals, Zeros.
-            return self._finite(
-                sign=sign,
-                exponent=self.qmin,
-                significand=significand_field,
-            )
-        else:
-            # Normal number.
-            return self._finite(
-                sign=sign,
-                exponent=exponent_field - self.qbias,
-                significand=significand_field + (1 << self.precision - 1),
-            )
+        n = _int_from_bytes(encoded_value)
+        return self._decode_from_int(n)
 
 
 _float64 = BinaryInterchangeFormat(64)
@@ -1515,39 +1532,10 @@ class _BinaryFloatBase(object):
 
     def encode(self):
         """
-        Encode a Float<nnn> instance as a 16-character bytestring.
+        Encode a Float<nnn> instance as a bytestring.
 
         """
-        exponent_field_width = self._format._exponent_field_width
-        significand_field_width = self._format.precision - 1
-
-        if self._type == _FINITE:
-            if self.is_subnormal() or self.is_zero():
-                exponent_field = 0
-                significand_field = self._significand
-            else:
-                exponent_field = self._exponent + self._format.qbias
-                significand_field = (
-                    self._significand - (1 << self._format.precision - 1)
-                )
-        elif self._type == _INFINITE:
-            exponent_field = (1 << exponent_field_width) - 1
-            significand_field = 0
-        elif self._type == _NAN:
-            exponent_field = (1 << exponent_field_width) - 1
-            significand_field = (
-                ((not self._signaling) << significand_field_width - 1) +
-                self._payload
-            )
-        else:
-            raise ValueError("invalid _type attribute: {}".format(self._type))
-
-        equivalent_int = (
-            (self._sign << (exponent_field_width + significand_field_width)) +
-            (exponent_field << significand_field_width) +
-            significand_field
-        )
-
+        equivalent_int = self._format._encode_as_int(self)
         return _int_to_bytes(equivalent_int, self._format.width // 8)
 
     def copy(self):
