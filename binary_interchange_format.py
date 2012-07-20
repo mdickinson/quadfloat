@@ -1929,18 +1929,19 @@ def _compare_ordered(source1, source2):
     # instances with the same underlying format.
     assert source1._format == source2._format
 
-    # Zeros:  -0.0 and 0.0 are considered equal; if source1 is a zero,
-    # give it the same sign bit as source2.
-    if source1.is_zero():
-        source1 = source1.copy_sign(source2)
-
-    # Compute result as though source1 is positive;  negate the
-    # eventual result if necessary.
-    if source1._sign != source2._sign:
+    # Compare as though we've inverted the signs of both source1 and source2 if
+    # necessary so that source1._sign is False.
+    if source1.is_zero() and source2.is_zero():
+        # Zeros are considered equal, regardless of sign.
+        cmp = 0
+    elif source1._sign != source2._sign:
+        # Positive > negative.
         cmp = 1
     elif source1._type == _INFINITE:
+        # inf > finite;  inf == inf
         cmp = 0 if source2._type == _INFINITE else 1
     elif source2._type == _INFINITE:
+        # finite < inf
         cmp = -1
     elif source1._exponent != source2._exponent:
         cmp = -1 if source1._exponent < source2._exponent else 1
