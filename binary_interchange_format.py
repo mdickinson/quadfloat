@@ -1451,6 +1451,54 @@ class _BinaryFloatBase(object):
             quiet=False,
         )
 
+    def next_up(self):
+        """
+        Return the least floating-point number in the format of 'self'
+        that compares greater than 'self'.
+
+        """
+        # NaNs follow the usual rules.
+        if self._type == _NAN:
+            return self._format._handle_nans(self)
+
+        # Positive infinity maps to itself.
+        if self._type == _INFINITE and not self._sign:
+            return self
+
+        # Negative zero is treated in the same way as positive zero.
+        if self.is_zero() and self._sign:
+            self = self._format._zero(sign=False)
+
+        # Now we can cheat: encode as an integer, and then simply
+        # increment or decrement the integer representation.
+        n = self._format._encode_as_int(self)
+        n += -1 if self._sign else 1
+        return self._format._decode_from_int(n)
+
+    def next_down(self):
+        """
+        Return the greatest floating-point number in the format of 'self'
+        that compares less than 'self'.
+
+        """
+        # NaNs follow the usual rules.
+        if self._type == _NAN:
+            return self._format._handle_nans(self)
+
+        # Negative infinity maps to itself.
+        if self._type == _INFINITE and self._sign:
+            return self
+
+        # Positive zero is treated in the same way as negative zero.
+        if self.is_zero() and not self._sign:
+            self = self._format._zero(sign=True)
+
+        # Now we can cheat: encode as an integer, and then simply
+        # increment or decrement the integer representation.
+        n = self._format._encode_as_int(self)
+        n += 1 if self._sign else -1
+        return self._format._decode_from_int(n)
+
     # IEEE 754 5.7.2: General operations.
 
     def is_sign_minus(self):

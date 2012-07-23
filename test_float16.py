@@ -865,6 +865,37 @@ class TestFloat16(unittest.TestCase):
             x.round_to_integral_exact()
         self.assertEqual(len(signal_list), 0)
 
+    def test_next_up_and_next_down(self):
+        tiny = 2.0**-24
+        test_values = [
+            (float16('-inf'), float16(2**5 - 2**16)),
+            (float16(-1.0-2**-10), float16('-1.0')),
+            (float16('-1.0'), float16(2**-11 - 1.0)),
+            (float16(-2 * tiny), float16(-tiny)),
+            (float16(-tiny), float16('-0.0')),
+            (float16('-0.0'), float16(tiny)),
+            (float16('0.0'), float16(tiny)),
+            (float16(tiny), float16(2 * tiny)),
+            (float16(2 * tiny), float16(3 * tiny)),
+            (float16(2**-14 - 2**-24), float16(2**-14)),
+            (float16(2**-14), float16(2**-14 + 2**-24)),
+            (float16(2**-13 - 2**-24), float16(2**-13)),
+            (float16(2**-13), float16(2**-13 + 2**-23)),
+            (float16(2**16 - 2**5), float16('inf')),
+            (float16(1.0 - 2**-11), float16('1.0')),
+            (float16('1.0'), float16(1.0 + 2**-10)),
+            (float16('inf'), float16('inf')),
+            (float16('nan'), float16('nan')),
+            (float16('-nan(123)'), float16('-nan(123)')),
+        ]
+        for input, expected in test_values:
+            actual = input.next_up()
+            self.assertInterchangeable(actual, expected)
+
+            input, expected = -input, -expected
+            actual = input.next_down()
+            self.assertInterchangeable(actual, expected)
+
 
 if __name__ == '__main__':
     unittest.main()
