@@ -564,6 +564,8 @@ class TestFloat16(unittest.TestCase):
             (float16(2**11-1), float16(2**11-1)),
             (float16(2**11), float16(2**11)),
             (float16(2**11+2), float16(2**11+2)),
+            (float16('nan'), float16('nan')),
+            (float16('-nan(123)'), float16('-nan(123)')),
         ]
 
         for input, expected in test_values:
@@ -636,6 +638,8 @@ class TestFloat16(unittest.TestCase):
             (float16(2**11-1), float16(2**11-1)),
             (float16(2**11), float16(2**11)),
             (float16(2**11+2), float16(2**11+2)),
+            (float16('nan'), float16('nan')),
+            (float16('-nan(123)'), float16('-nan(123)')),
         ]
 
         for input, expected in test_values:
@@ -692,6 +696,8 @@ class TestFloat16(unittest.TestCase):
             (float16(2**11-1), float16(2**11-1)),
             (float16(2**11), float16(2**11)),
             (float16(2**11+2), float16(2**11+2)),
+            (float16('nan'), float16('nan')),
+            (float16('-nan(123)'), float16('-nan(123)')),
         ]
 
         for input, expected in test_values:
@@ -748,6 +754,8 @@ class TestFloat16(unittest.TestCase):
             (float16(2**11-1), float16(2**11-1)),
             (float16(2**11), float16(2**11)),
             (float16(2**11+2), float16(2**11+2)),
+            (float16('nan'), float16('nan')),
+            (float16('-nan(123)'), float16('-nan(123)')),
         ]
 
         for input, expected in test_values:
@@ -804,6 +812,8 @@ class TestFloat16(unittest.TestCase):
             (float16(2**11-1), float16(2**11-1)),
             (float16(2**11), float16(2**11)),
             (float16(2**11+2), float16(2**11+2)),
+            (float16('nan'), float16('nan')),
+            (float16('-nan(123)'), float16('-nan(123)')),
         ]
 
         for input, expected in test_values:
