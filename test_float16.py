@@ -906,6 +906,131 @@ class TestFloat16(unittest.TestCase):
             actual = input.next_down()
             self.assertInterchangeable(actual, expected)
 
+    def test_remainder(self):
+        # The two arguments to 'remainder' should have the same type.
+        x = float16('2.3')
+        y = float32('1.0')
+        with self.assertRaises(ValueError):
+            x.remainder(y)
+
+        test_triples = [
+            # Positive second argument.
+            ('-26', '13', '-0'),
+            ('-20', '13', '6'),
+            ('-19.5', '13', '6.5'),
+            ('-19', '13', '-6'),
+            ('-13', '13', '-0'),
+            ('-7', '13', '6'),
+            ('-6.5', '13', '-6.5'),
+            ('-6', '13', '-6'),
+            ('-0', '13', '-0'),
+            ('0', '13', '0'),
+            ('6', '13', '6'),
+            ('6.5', '13', '6.5'),
+            ('7', '13', '-6'),
+            ('13', '13', '0'),
+            ('19', '13', '6'),
+            ('19.5', '13', '-6.5'),
+            ('20', '13', '-6'),
+            ('26', '13', '0'),
+
+            # Negative second argument.
+            ('-26', '-13', '-0'),
+            ('-20', '-13', '6'),
+            ('-19.5', '-13', '6.5'),
+            ('-19', '-13', '-6'),
+            ('-13', '-13', '-0'),
+            ('-7', '-13', '6'),
+            ('-6.5', '-13', '-6.5'),
+            ('-6', '-13', '-6'),
+            ('-0', '-13', '-0'),
+            ('0', '-13', '0'),
+            ('6', '-13', '6'),
+            ('6.5', '-13', '6.5'),
+            ('7', '-13', '-6'),
+            ('13', '-13', '0'),
+            ('19', '-13', '6'),
+            ('19.5', '-13', '-6.5'),
+            ('20', '-13', '-6'),
+            ('26', '-13', '0'),
+
+            # Additional tests.
+            ('2.25', '1.0', '0.25'),
+            ('2.25', '1.5', '-0.75'),
+            ('65504', '7', '-2'),
+            ('0.01000213623046875', '2345', '0.01000213623046875'),
+
+            # Case where both are subnormal.
+            ('-3e-7', '1e-7', '-6e-8'),   # (5 * tiny, 2 * tiny, tiny)
+            ('-2.4e-7', '1e-7', '-0'),    # (4 * tiny, 2 * tiny, 0)
+            ('-2e-7', '1e-7', '6e-8'),  # (3 * tiny, 2 * tiny, -tiny)
+            ('-1e-7', '1e-7', '-0'),      # (2 * tiny, 2 * tiny, 0)
+            ('-6e-8', '1e-7', '-6e-8'),   # (tiny, 2 * tiny, tiny)
+            ('-0', '1e-7', '-0'),         # (0, 2 * tiny, 0)
+            ('0', '1e-7', '0'),         # (0, 2 * tiny, 0)
+            ('6e-8', '1e-7', '6e-8'),   # (tiny, 2 * tiny, tiny)
+            ('1e-7', '1e-7', '0'),      # (2 * tiny, 2 * tiny, 0)
+            ('2e-7', '1e-7', '-6e-8'),  # (3 * tiny, 2 * tiny, -tiny)
+            ('2.4e-7', '1e-7', '0'),    # (4 * tiny, 2 * tiny, 0)
+            ('3e-7', '1e-7', '6e-8'),   # (5 * tiny, 2 * tiny, tiny)
+
+            ('0', '2e-7', '0'),         # (0, 3 * tiny, 0)
+            ('6e-8', '2e-7', '6e-8'),   # (tiny, 3 * tiny, tiny)
+            ('1e-7', '2e-7', '-6e-8'),  # (2 * tiny, 3 * tiny, -tiny)
+            ('2e-7', '2e-7', '0'),      # (3 * tiny, 3 * tiny, 0)
+            ('2.4e-7', '2e-7', '6e-8'), # (4 * tiny, 3 * tiny, tiny)
+            ('3e-7', '2e-7', '-6e-8'),  # (5 * tiny, 3 * tiny, -tiny)
+
+            # Special case: second argument is infinite.
+            ('3.5', 'inf', '3.5'),
+            ('-0.01', 'inf', '-0.01'),
+            ('3.5', '-inf', '3.5'),
+            ('-0.2', '-inf', '-0.2'),
+            ('-0.0', 'inf', '-0.0'),
+            ('0.0', 'inf', '0.0'),
+            ('-0.0', '-inf', '-0.0'),
+            ('0.0', '-inf', '0.0'),
+        ]
+
+        for source1, source2, expected in test_triples:
+            source1 = float16(source1)
+            source2 = float16(source2)
+            expected = float16(expected)
+            actual = source1.remainder(source2)
+            self.assertInterchangeable(actual, expected)
+
+        # Pairs x, y such that x.remainder(y) is invalid.
+        invalid_pairs = [
+            # Second argument 0.
+            ('3.4', '0.0'),
+            ('1.2', '-0.0'),
+            ('0.0', '0.0'),
+            ('0.0', '-0.0'),
+            ('-0.0', '0.0'),
+            ('-0.0', '-0.0'),
+
+            # First argument infinite.
+            ('inf', '2.0'),
+            ('-inf', '0.5'),
+            ('inf', 'inf'),
+            ('inf', '-inf'),
+            ('-inf', 'inf'),
+            ('-inf', '-inf'),
+            ('inf', '0'),
+            ('inf', '-0'),
+            ('-inf', '0'),
+            ('-inf', '-0'),
+        ]
+
+        for source1, source2 in invalid_pairs:
+            source1 = float16(source1)
+            source2 = float16(source2)
+            signal_list = []
+            with invalid_operation_handler(signal_list.append):
+                source1.remainder(source2)
+            self.assertEqual(len(signal_list), 1)
+
+
 
 if __name__ == '__main__':
     unittest.main()

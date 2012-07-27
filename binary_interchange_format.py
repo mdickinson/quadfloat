@@ -196,6 +196,17 @@ def _divide_nearest(a, b):
     return (q + _round_ties_to_even_offsets[q & 7]) >> 2
 
 
+def _remainder_nearest(a, b):
+    """
+    Compute a - q * b where q is the nearest integer to the quotient a / b,
+    rounding ties to the nearest even integer.  a and b should be integers,
+    with b positive.
+
+    Counterpart to divide_nearest.
+    """
+    return a - _divide_nearest(a, b) * b
+
+
 def _digits_from_rational(a, b, closed=True):
     """
     Generate successive decimal digits for a fraction a / b in [0, 1].
@@ -1498,6 +1509,58 @@ class _BinaryFloatBase(object):
         n = self._format._encode_as_int(self)
         n += 1 if self._sign else -1
         return self._format._decode_from_int(n)
+
+    def remainder(self, other):
+        """
+        Defined as self - n * other, where n is the closest integer
+        to the exact quotient self / other (with ties rounded to even).
+
+        """
+        if not other._format == self._format:
+            raise ValueError("remainder args should be of the same format")
+
+        # NaNs follow the usual rules.
+        if self._type == _NAN or other._type == _NAN:
+            return self._handle_nans(self, other)
+
+        # remainder(infinity, y) and remainder(x, 0) are invalid
+        if self._type == _INFINITE or other.is_zero():
+            _signal_invalid_operation()
+            # Return the standard NaN.
+            return self._format._nan(False, False, 0)
+
+        # remainder(x, +/-infinity) is x.
+        if other._type == _INFINITE:
+            return self
+
+        # We can simply ignore the sign of 'other': if q is the closest integer
+        # to self / other, then -q is the closest integer to self / -other, and
+        # r = self - (-q) * (-other) is the same as r = self - q * other.
+
+        # Optimization: if self is much smaller than other, then the closest
+        # integer to self / other is 0, and so the remainder is simply self.
+        if self._exponent <= other._exponent - 2:
+            return self
+
+        # self * 2**-shift and other * 2**-shift are integral.  Note that
+        # (other._exponent - shift) is either 0 or 1, thanks to the
+        # optimization above.
+        shift = min(self._exponent, other._exponent)
+        b = other._significand << (other._exponent - shift)
+
+        r = _remainder_nearest(
+            self._significand * pow(2, self._exponent - shift, 2 * b),
+            b
+        )
+
+        # XXX To do: Normalize directly, rather than using _from_triple.  (See
+        # also the round_to_integral_* methods; maybe we can reuse the
+        # normalize-in-exact-case code.)
+        return self._format._from_triple(
+            sign=self._sign ^ (r < 0),
+            exponent=shift,
+            significand=abs(r),
+        )
 
     # IEEE 754 5.7.2: General operations.
 
