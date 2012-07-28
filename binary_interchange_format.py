@@ -1516,6 +1516,7 @@ class _BinaryFloatBase(object):
         to the exact quotient self / other (with ties rounded to even).
 
         """
+        # This is a homogeneous operation: both operands have the same format.
         if not other._format == self._format:
             raise ValueError("remainder args should be of the same format")
 
@@ -1529,27 +1530,17 @@ class _BinaryFloatBase(object):
             # Return the standard NaN.
             return self._format._nan(False, False, 0)
 
-        # remainder(x, +/-infinity) is x.
-        if other._type == _INFINITE:
+        # remainder(x, +/-infinity) is x for any finite x.  Similarly, if x is
+        # much smaller than y, remainder(x, y) is x.
+        if other._type == _INFINITE or self._exponent <= other._exponent - 2:
             return self
 
-        # We can simply ignore the sign of 'other': if q is the closest integer
-        # to self / other, then -q is the closest integer to self / -other, and
-        # r = self - (-q) * (-other) is the same as r = self - q * other.
-
-        # Optimization: if self is much smaller than other, then the closest
-        # integer to self / other is 0, and so the remainder is simply self.
-        if self._exponent <= other._exponent - 2:
-            return self
-
-        # self * 2**-shift and other * 2**-shift are integral.  Note that
-        # (other._exponent - shift) is either 0 or 1, thanks to the
+        # Now (other._exponent - exponent) is either 0 or 1, thanks to the
         # optimization above.
-        shift = min(self._exponent, other._exponent)
-        b = other._significand << (other._exponent - shift)
-
+        exponent = min(self._exponent, other._exponent)
+        b = other._significand << (other._exponent - exponent)
         r = _remainder_nearest(
-            self._significand * pow(2, self._exponent - shift, 2 * b),
+            self._significand * pow(2, self._exponent - exponent, 2 * b),
             b
         )
 
