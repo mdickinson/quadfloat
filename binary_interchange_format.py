@@ -1501,11 +1501,15 @@ class _BinaryFloatBase(object):
         # Normalize result.
         if significand == 0:
             return self._format._zero(sign)
-        e = max(
-            exponent + significand.bit_length() - self._format.precision,
-            self._format.qmin,
+        adjust = min(
+            self._format.precision - significand.bit_length(),
+            exponent - self._format.qmin,
         )
-        return self._format._finite(sign, e, significand << exponent - e)
+        return self._format._finite(
+            sign,
+            exponent - adjust,
+            significand << adjust,
+        )
 
     def min_num(self, other):
         """
