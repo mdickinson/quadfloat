@@ -1,3 +1,4 @@
+import contextlib
 import decimal
 import unittest
 
@@ -49,6 +50,13 @@ class TestFloat16(unittest.TestCase):
         """
         self.assertTrue(quad1._equivalent(quad2),
                         msg = msg + '{!r} not equivalent to {!r}'.format(quad1, quad2))
+
+    @contextlib.contextmanager
+    def assertSignalsInvalidOperation(self):
+        signal_list = []
+        with invalid_operation_handler(signal_list.append):
+            yield
+        self.assertEqual(len(signal_list), 1)
 
     def test_construction_from_int(self):
         # Test round-half-to-even
@@ -913,7 +921,24 @@ class TestFloat16(unittest.TestCase):
         with self.assertRaises(ValueError):
             x.remainder(y)
 
+        # Signaling NaNs.
+        snan_triples = [
+            ('snan(123)', 'snan(456)', 'nan(123)'),
+            ('nan(234)', '-snan(567)', '-nan(567)'),
+            ('snan(789)', '-nan(123)', 'nan(789)'),
+        ]
+        for source1, source2, expected in snan_triples:
+            source1 = float16(source1)
+            source2 = float16(source2)
+            with self.assertSignalsInvalidOperation():
+                source1.remainder(source2)
+
         test_triples = [
+            # Quiet NaNs
+            ('nan(123)', 'nan(456)', 'nan(123)'),
+            ('nan(345)', '23.4', 'nan(345)'),
+            ('16.4', '-nan(789)', '-nan(789)'),
+
             # Positive second argument.
             ('-26', '13', '-0'),
             ('-20', '13', '6'),
@@ -1031,6 +1056,11 @@ class TestFloat16(unittest.TestCase):
             self.assertEqual(len(signal_list), 1)
 
     def test_min_num(self):
+        x = float16('2.3')
+        y = float32('1.0')
+        with self.assertRaises(ValueError):
+            x.min_num(y)
+
         test_triples = [
             # In case of equal numbers, first one wins.
             ('-0.0', '0.0', '-0.0'),
@@ -1065,6 +1095,11 @@ class TestFloat16(unittest.TestCase):
             self.assertInterchangeable(actual, expected)
 
     def test_max_num(self):
+        x = float16('2.3')
+        y = float32('1.0')
+        with self.assertRaises(ValueError):
+            x.max_num(y)
+
         test_triples = [
             # In case of equal numbers, second one wins.
             ('-0.0', '0.0', '0.0'),
@@ -1099,6 +1134,11 @@ class TestFloat16(unittest.TestCase):
             self.assertInterchangeable(actual, expected)
 
     def test_min_num_mag(self):
+        x = float16('2.3')
+        y = float32('1.0')
+        with self.assertRaises(ValueError):
+            x.min_num_mag(y)
+
         test_triples = [
             # In case of equal numbers, first one wins.
             ('-0.0', '0.0', '-0.0'),
@@ -1133,6 +1173,11 @@ class TestFloat16(unittest.TestCase):
             self.assertInterchangeable(actual, expected, 'min_num_mag({}, {})'.format(source1, source2))
 
     def test_max_num_mag(self):
+        x = float16('2.3')
+        y = float32('1.0')
+        with self.assertRaises(ValueError):
+            x.max_num_mag(y)
+
         test_triples = [
             # In case of equal numbers, second one wins.
             ('-0.0', '0.0', '0.0'),
