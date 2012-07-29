@@ -230,17 +230,6 @@ def _digits_from_rational(a, b, closed=True):
     [5, 9, 9, 9, 9, 9, 9, 9, 9, 9]
 
     """
-    if closed:
-        if not 0 <= a < b:
-            raise ValueError(
-                "a and b should satisfy 0 <= a < b in _digits_from_rational"
-            )
-    else:
-        if not 0 < a <= b:
-            raise ValueError(
-                "a and b should satisfy 0 < a <= b in _digits_from_rational"
-            )
-
     if not closed:
         a = b - a
 
@@ -472,26 +461,6 @@ class BinaryInterchangeFormat(object):
     @property
     def _payload_bitmask(self):
         return (1 << self.precision - 2) - 1
-
-    @property
-    def _decimal_places(self):
-        """
-        Minimal number of decimal digits necessary to provide roundtrip
-        conversions.
-
-        For example, converting any binary64 finite float to a decimal string
-        using 17 significant digits gives a value that, when converted back to
-        the binary64 type, recovers the original value.
-
-        >>> float64 = BinaryInterchangeFormat(width=64)
-        >>> float64._decimal_places
-        17
-
-        """
-        # Formula: 1 + ceiling(self.precision * log10(2)) or equivalently, 2 +
-        #  floor(self.precision * log10(2)), (since precision >= 1 and log10(2)
-        #  is irrational).
-        return len(str(1 << self.precision)) + 1
 
     @property
     def class_(self):
