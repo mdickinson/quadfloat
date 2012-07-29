@@ -19,6 +19,8 @@ from binary_interchange_format import (
 
 from binary_interchange_format import _bytes_from_iterable, _divide_nearest
 
+from binary_interchange_format import _FINITE, _INFINITE, _NAN
+
 
 float16 = BinaryInterchangeFormat(width=16)
 float32 = BinaryInterchangeFormat(width=32)
@@ -48,8 +50,28 @@ class TestFloat16(unittest.TestCase):
         and 0.0 are equal, but not interchangeable.
 
         """
-        self.assertTrue(quad1._equivalent(quad2),
-                        msg = msg + '{!r} not equivalent to {!r}'.format(quad1, quad2))
+        # XXX Digs into private details, which isn't ideal.
+        if quad1._type != quad2._type:
+            interchangeable = False
+        elif quad1._type == _FINITE:
+            interchangeable = (
+                quad1._sign == quad2._sign and
+                quad1._exponent == quad2._exponent and
+                quad1._significand == quad2._significand
+            )
+        elif quad1._type == _INFINITE:
+            interchangeable = quad1._sign == quad2._sign
+        elif quad1._type == _NAN:
+            interchangeable = (
+                quad1._sign == quad2._sign and
+                quad1._signaling == quad2._signaling and
+                quad1._payload == quad2._payload
+            )
+        else:
+            assert False, "never get here"
+
+        self.assertTrue(interchangeable,
+                        msg = msg + '{!r} not interchangeable with {!r}'.format(quad1, quad2))
 
     @contextlib.contextmanager
     def assertSignalsInvalidOperation(self):

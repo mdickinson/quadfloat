@@ -7,6 +7,8 @@ import unittest
 
 from binary_interchange_format import BinaryInterchangeFormat
 
+from binary_interchange_format import _FINITE, _INFINITE, _NAN
+
 
 float16 = BinaryInterchangeFormat(width=16)
 float32 = BinaryInterchangeFormat(width=32)
@@ -15,16 +17,36 @@ float128 = BinaryInterchangeFormat(width=128)
 
 
 class TestMixed(unittest.TestCase):
-    def assertInterchangeable(self, quad1, quad2):
+    def assertInterchangeable(self, quad1, quad2, msg = ''):
         """
-        Assert that two float128 instances are interchangeable.
+        Assert that two float16 instances are interchangeable.
 
         This means more than just being numerically equal:  for example, -0.0
         and 0.0 are equal, but not interchangeable.
 
         """
-        self.assertTrue(quad1._equivalent(quad2),
-                        msg = '{!r} not equivalent to {!r}'.format(quad1, quad2))
+        # XXX Digs into private details, which isn't ideal.
+        if quad1._type != quad2._type:
+            interchangeable = False
+        elif quad1._type == _FINITE:
+            interchangeable = (
+                quad1._sign == quad2._sign and
+                quad1._exponent == quad2._exponent and
+                quad1._significand == quad2._significand
+            )
+        elif quad1._type == _INFINITE:
+            interchangeable = quad1._sign == quad2._sign
+        elif quad1._type == _NAN:
+            interchangeable = (
+                quad1._sign == quad2._sign and
+                quad1._signaling == quad2._signaling and
+                quad1._payload == quad2._payload
+            )
+        else:
+            assert False, "never get here"
+
+        self.assertTrue(interchangeable,
+                        msg = msg + '{!r} not interchangeable with {!r}'.format(quad1, quad2))
 
     def test_nan_payload(self):
         # a float32 NaN has 22 bits devoted to payload; float16 has only 9.

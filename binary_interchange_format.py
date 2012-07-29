@@ -959,16 +959,6 @@ class BinaryInterchangeFormat(object):
             significand=0,
         )
 
-    def _infinite(self, sign):
-        """
-        Return a suitably-signed infinity for this format.
-
-        """
-        return self.class_(
-            type=_INFINITE,
-            sign=sign,
-        )
-
     def _from_nan_triple(self, sign, signaling, payload):
         """
         Return a NaN for this format, clipping the payload as appropriate.
@@ -986,29 +976,58 @@ class BinaryInterchangeFormat(object):
             payload=payload,
         )
 
+    def _infinite(self, sign):
+        """
+        Return a suitably-signed infinity for this format.
+
+        """
+        num = object.__new__(self.class_)
+        num._type = _INFINITE
+        num._sign = bool(sign)
+        return num
+
     def _nan(self, sign, signaling, payload):
         """
         Return a NaN for this format.
 
         """
-        return self.class_(
-            type=_NAN,
-            sign=sign,
-            signaling=signaling,
-            payload=payload,
-        )
+        min_payload = 1 if signaling else 0
+        if not min_payload <= payload < 1 << (self.precision - 2):
+            assert False, "NaN payload out of range"  # pragma no cover
+
+        num = object.__new__(self.class_)
+        num._type = _NAN
+        num._sign = bool(sign)
+        num._signaling = bool(signaling)
+        num._payload = int(payload)
+        return num
 
     def _finite(self, sign, exponent, significand):
         """
         Return a finite number in this format.
 
         """
-        return self.class_(
-            type=_FINITE,
-            sign=sign,
-            exponent=exponent,
-            significand=significand,
+        # Check ranges of inputs.  Since this isn't (currently) part of the
+        # public API, any error here is mine.  Hence the assert.
+        if not self.qmin <= exponent <= self.qmax:
+            assert False, "exponent out of range"  # pragma no cover
+        if not 0 <= significand < 1 << self.precision:
+            assert False, "significand out of range"  # pragma no cover
+
+        # Check normalization.
+        normalized = (
+            significand >= 1 << self.precision - 1 or
+            exponent == self.qmin
         )
+        if not normalized:
+            assert False, "non-normalized input to _finite"  # pragma no cover
+
+        num = object.__new__(self.class_)
+        num._type = _FINITE
+        num._sign = bool(sign)
+        num._exponent = int(exponent)
+        num._significand = int(significand)
+        return num
 
     def _common_format(fmt1, fmt2):
         """
@@ -1049,8 +1068,8 @@ class BinaryInterchangeFormat(object):
 
         """
         # Should only be used when 'source' has format 'self'.
-        if not source._format == self:  # pragma no cover
-            assert False, "shouldn't get here"
+        if not source._format == self:
+            assert False, "shouldn't get here"  # pragma no cover
 
         if source._type == _NAN:
             result = source._payload + self._exponent_bitmask
@@ -1113,90 +1132,6 @@ _float64 = BinaryInterchangeFormat(64)
 
 
 class _BinaryFloatBase(object):
-    def __new__(cls, **kwargs):
-        self = object.__new__(cls)
-        self._type = kwargs.pop('type')
-        self._sign = bool(kwargs.pop('sign'))
-
-        if self._type == _FINITE:
-            exponent = kwargs.pop('exponent')
-            significand = kwargs.pop('significand')
-
-            if not cls._format.qmin <= exponent <= cls._format.qmax:
-                raise ValueError("exponent {} out of range".format(exponent))
-            if not 0 <= significand < 1 << cls._format.precision:
-                raise ValueError("significand out of range")
-
-            # Check normalization.
-            normalized = (
-                significand >= 1 << cls._format.precision - 1 or
-                exponent == cls._format.qmin
-            )
-            if not normalized:
-                raise ValueError(
-                    "Unnormalized significand ({}) or exponent ({}) "
-                    "for {}.".format(
-                        significand,
-                        exponent,
-                        cls._format,
-                    )
-                )
-
-            self._exponent = int(exponent)
-            self._significand = int(significand)
-        elif self._type == _INFINITE:
-            pass
-        elif self._type == _NAN:
-            payload = kwargs.pop('payload')
-            signaling = kwargs.pop('signaling')
-
-            # Payload must be at least 1 for a signaling nan, to avoid
-            # confusion with the bit pattern for an infinity.
-            min_payload = 1 if signaling else 0
-            if not min_payload <= payload < 1 << (cls._format.precision - 2):
-                raise ValueError("NaN payload out of range.")
-
-            self._payload = int(payload)
-            self._signaling = bool(signaling)
-
-        else:
-            raise ValueError("Unrecognized type: {}".format(self._type))
-
-        return self
-
-    def _equivalent(self, other):
-        """
-        Private method to determine whether self and other have the same
-        structure.  Note that this is a much stronger check than equality: for
-        example, -0.0 and 0.0 do not have the same structure; NaNs with
-        different payloads are considered inequivalent (but those with the same
-        payload are considered equivalent).
-
-        Used only in testing.
-
-        XXX: could replace this with a comparison of corresponding byte
-        strings.
-
-        """
-        if self._type == other._type == _FINITE:
-            return (
-                self._sign == other._sign and
-                self._exponent == other._exponent and
-                self._significand == other._significand
-            )
-        elif self._type == other._type == _INFINITE:
-            return (
-                self._sign == other._sign
-            )
-        elif self._type == other._type == _NAN:
-            return (
-                self._sign == other._sign and
-                self._payload == other._payload and
-                self._signaling == other._signaling
-            )
-        else:
-            return False
-
     def _to_short_str(self):
         """
         Convert to a shortest Decimal string that rounds back to the given
