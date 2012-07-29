@@ -1259,6 +1259,12 @@ class TestFloat128(unittest.TestCase):
         self.assertInterchangeable(float128('snan(123)').abs(), float128('snan(123)'))
 
     def test_copy_sign(self):
+        x, y = float128('2.3'), float64('-3.5')
+        with self.assertRaises(ValueError):
+            x.copy_sign(y)
+        with self.assertRaises(ValueError):
+            y.copy_sign(x)
+
         self.assertInterchangeable(float128('-2.0').copy_sign(float128('1.0')), float128('2.0'))
         self.assertInterchangeable(float128('2.0').copy_sign(float128('1.0')), float128('2.0'))
         self.assertInterchangeable(float128('-0.0').copy_sign(float128('1.0')), float128('0.0'))
