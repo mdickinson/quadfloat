@@ -19,6 +19,10 @@ class TestBinaryIntegerchangeFormat(unittest.TestCase):
         with self.assertRaises(AttributeError):
             binary64.precision = 53
 
+    def test_bad_width(self):
+        with self.assertRaises(ValueError):
+            binary_bad = BinaryInterchangeFormat(width=96)
+
     def test_precision_formula(self):
         binary16 = BinaryInterchangeFormat(width=16)
         self.assertEqual(binary16.precision, 11)
