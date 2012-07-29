@@ -1802,7 +1802,7 @@ class _BinaryFloatBase(object):
             assert False, "shouldn't get here"
 
     def __pos__(self):
-        return self.negate()
+        return self.copy()
 
     def __neg__(self):
         return self.negate()
