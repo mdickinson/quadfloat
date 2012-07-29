@@ -714,7 +714,7 @@ class BinaryInterchangeFormat(object):
 
         # If we get here, then _handle_nans has been called with all arguments
         # non-NaN.  This shouldn't happen.
-        raise ValueError("_handle_nans didn't receive any NaNs.")
+        assert False, "never get here"  # pragma no cover
 
     # Section 5.4.1: Arithmetic operations
 
@@ -1048,8 +1048,8 @@ class BinaryInterchangeFormat(object):
 
         """
         # Should only be used when 'source' has format 'self'.
-        if not source._format == self:
-            raise ValueError("Bad format.")
+        if not source._format == self:  # pragma no cover
+            assert False, "shouldn't get here"
 
         if source._type == _NAN:
             result = source._payload + self._exponent_bitmask
