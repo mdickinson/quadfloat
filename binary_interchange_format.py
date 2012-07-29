@@ -1558,6 +1558,27 @@ class _BinaryFloatBase(object):
         cmp = _compare_ordered(self.abs(), other.abs())
         return other if cmp <= 0 else self
 
+    # IEEE 754 5.3.3: logBFormat operations
+    def scale_b(self, n):
+        """
+        self * 2**n
+
+        """
+        # NaNs follow the usual rules.
+        if self._type == _NAN:
+            return self._format._handle_nans(self)
+
+        # Infinities and zeros are unchanged.
+        if self._type == _INFINITE or self.is_zero():
+            return self
+
+        # Finite case.
+        return self._format._from_triple(
+            sign=self._sign,
+            exponent=self._exponent + n,
+            significand=self._significand,
+        )
+
     # IEEE 754 5.7.2: General operations.
 
     def is_sign_minus(self):

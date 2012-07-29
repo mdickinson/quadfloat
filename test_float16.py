@@ -1233,6 +1233,63 @@ class TestFloat16(unittest.TestCase):
             actual = source1.max_num_mag(source2)
             self.assertInterchangeable(actual, expected, 'max_num_mag({}, {})'.format(source1, source2))
 
+    def test_scale_b(self):
+        test_triples = [
+            # NaNs behave as usual.
+            ('nan', '0', 'nan'),
+            ('-nan(123)', '54', '-nan(123)'),
+
+            # Infinities are unchanged.
+            ('inf', '0', 'inf'),
+            ('inf', '1', 'inf'),
+            ('inf', '-1', 'inf'),
+            ('-inf', '0', '-inf'),
+            ('-inf', '1', '-inf'),
+            ('-inf', '-1', '-inf'),
+
+            # So are zeros.
+            ('0', '0', '0'),
+            ('0', '1', '0'),
+            ('0', '-1', '0'),
+            ('-0', '0', '-0'),
+            ('-0', '1', '-0'),
+            ('-0', '-1', '-0'),
+            
+            # General case.
+            ('1', '-25', '0.0'),
+            ('1', '-24', '6e-8'),
+            ('1', '-3', '0.125'),
+            ('1', '-2', '0.25'),
+            ('1', '-1', '0.5'),
+            ('1', '0', '1'),
+            ('1', '1', '2'),
+            ('1', '2', '4'),
+            ('1', '3', '8'),
+            ('1', '15', '32768'),
+            ('1', '16', 'inf'),
+
+            ('-1', '-25', '-0.0'),
+            ('-1', '-24', '-6e-8'),
+            ('-1', '-3', '-0.125'),
+            ('-1', '-2', '-0.25'),
+            ('-1', '-1', '-0.5'),
+            ('-1', '0', '-1'),
+            ('-1', '1', '-2'),
+            ('-1', '2', '-4'),
+            ('-1', '3', '-8'),
+            ('-1', '15', '-32768'),
+            ('-1', '16', '-inf'),
+
+
+        ]
+
+        for source1, n, expected in test_triples:
+            source1 = float16(source1)
+            n = int(n)
+            expected = float16(expected)
+            actual = source1.scale_b(n)
+            self.assertInterchangeable(actual, expected, 'max_num_mag({}, {})'.format(source1, n))
+
 
 if __name__ == '__main__':
     unittest.main()
