@@ -1704,29 +1704,23 @@ class _BinaryFloatBase(object):
 
         """
         if self._type == _FINITE:
-            return type(self)(
-                type=_FINITE,
+            return self._format._finite(
                 sign=self._sign,
                 exponent=self._exponent,
                 significand=self._significand,
             )
-
         elif self._type == _INFINITE:
-            return type(self)(
-                type=_INFINITE,
+            return self._format._infinity(
                 sign=self._sign,
             )
-
         elif self._type == _NAN:
-            return type(self)(
-                type=_NAN,
+            return self._format._nan(
                 sign=self._sign,
-                payload=self._payload,
                 signaling=self._signaling,
+                payload=self._payload,
             )
-
-        else:
-            raise ValueError("invalid _type attribute: {}".format(self._type))
+        else:  # pragma: no cover
+            assert False, "shouldn't get here"
 
     def negate(self):
         """
@@ -1734,29 +1728,24 @@ class _BinaryFloatBase(object):
 
         """
         if self._type == _FINITE:
-            return type(self)(
-                type=_FINITE,
+            return self._format._finite(
                 sign=not self._sign,
                 exponent=self._exponent,
                 significand=self._significand,
             )
-
         elif self._type == _INFINITE:
-            return type(self)(
-                type=_INFINITE,
+            return self._format._infinity(
                 sign=not self._sign,
             )
 
         elif self._type == _NAN:
-            return type(self)(
-                type=_NAN,
+            return self._format._nan(
                 sign=not self._sign,
-                payload=self._payload,
                 signaling=self._signaling,
+                payload=self._payload,
             )
-
-        else:
-            raise ValueError("invalid _type attribute: {}".format(self._type))
+        else:  # pragma: no cover
+            assert False, "shouldn't get here"
 
     def abs(self):
         """
@@ -1764,26 +1753,23 @@ class _BinaryFloatBase(object):
 
         """
         if self._type == _FINITE:
-            return type(self)(
-                type=_FINITE,
+            return self._format._finite(
                 sign=False,
                 exponent=self._exponent,
                 significand=self._significand,
             )
         elif self._type == _INFINITE:
-            return type(self)(
-                type=_INFINITE,
+            return self._format._infinity(
                 sign=False,
             )
         elif self._type == _NAN:
-            return type(self)(
-                type=_NAN,
+            return self._format._nan(
                 sign=False,
-                payload=self._payload,
                 signaling=self._signaling,
+                payload=self._payload,
             )
-        else:
-            raise ValueError("invalid _type attribute: {}".format(self._type))
+        else:  # pragma: no cover
+            assert False, "shouldn't get here"
 
     def copy_sign(self, other):
         """
@@ -1795,27 +1781,25 @@ class _BinaryFloatBase(object):
             raise ValueError(
                 "copy_sign operation not implemented for mixed formats."
             )
+
         if self._type == _FINITE:
-            return type(self)(
-                type=_FINITE,
+            return self._format._finite(
                 sign=other._sign,
                 exponent=self._exponent,
                 significand=self._significand,
             )
         elif self._type == _INFINITE:
-            return type(self)(
-                type=_INFINITE,
+            return self._format._infinity(
                 sign=other._sign,
             )
         elif self._type == _NAN:
-            return type(self)(
-                type=_NAN,
+            return self._format._nan(
                 sign=other._sign,
-                payload=self._payload,
                 signaling=self._signaling,
+                payload=self._payload,
             )
-        else:
-            raise ValueError("invalid _type attribute: {}".format(self._type))
+        else:  # pragma: no cover
+            assert False, "shouldn't get here"
 
     def __pos__(self):
         return self.negate()
