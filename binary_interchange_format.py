@@ -1923,7 +1923,13 @@ class _BinaryFloatBase(object):
             other = self._format._from_binary_float_base(other, flags)
 
         else:
-            raise NotImplementedError
+            raise TypeError(
+                "Can't convert operand {} of type {} to "
+                "_BinaryFloatBase.".format(
+                    other,
+                    type(other),
+                )
+            )
 
         if self.is_signaling() or other.is_signaling():
             return _handle_invalid_bool(unordered_result)
