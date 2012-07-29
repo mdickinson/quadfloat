@@ -1948,42 +1948,57 @@ class _BinaryFloatBase(object):
             result = _compare_ordered(self, other) or flags.error
             return operator(result, 0)
 
-    def __hash__(self):
-        """
-        Return hash value compatible with ints and floats.
+    if _sys.version_info.major == 2:
+        def __hash__(self):
+            """
+            Return hash value compatible with ints and floats.
 
-        Raise TypeError for signaling NaNs.
+            Raise TypeError for signaling NaNs.
 
-        """
-        if self._type == _NAN:
-            if self._signaling:
-                raise ValueError('Signaling NaNs are unhashable.')
-            return _PyHASH_NAN
-        elif self._type == _INFINITE:
-            return _PyHASH_NINF if self._sign else _PyHASH_INF
-        elif _sys.version_info.major == 2:
-            # For Python 2, check whether the value matches that of
-            # a Python int or float;  if so, use the hash of that.
-            # We don't even try to get the hashes to match those
-            # of Fraction or Decimal instances.
-
-            # XXX. This is needlessly inefficient for huge values.
-            if self == int(self):
-                return hash(int(self))
-            elif self == float(self):
-                return hash(float(self))
-        else:
-            # Assuming Python >= 3.2, compatibility with floats and ints
-            # (not to mention Fraction and Decimal instances) follows if
-            # we use the formulas described in the Python docs.
-            if self._exponent >= 0:
-                exp_hash = pow(2, self._exponent, _PyHASH_MODULUS)
+            """
+            if self._type == _NAN:
+                if self._signaling:
+                    raise ValueError('Signaling NaNs are unhashable.')
+                return _PyHASH_NAN
+            elif self._type == _INFINITE:
+                return _PyHASH_NINF if self._sign else _PyHASH_INF
             else:
-                exp_hash = pow(_PyHASH_2INV, -self._exponent, _PyHASH_MODULUS)
-            hash_ = self._significand * exp_hash % _PyHASH_MODULUS
-            ans = -hash_ if self._sign else hash_
+                # For Python 2, check whether the value matches that of
+                # a Python int or float;  if so, use the hash of that.
+                # We don't even try to get the hashes to match those
+                # of Fraction or Decimal instances.
 
-            return -2 if ans == -1 else ans
+                # XXX. This is needlessly inefficient for huge values.
+                if self == int(self):
+                    return hash(int(self))
+                elif self == float(self):
+                    return hash(float(self))
+    else:
+        def __hash__(self):
+            """
+            Return hash value compatible with ints and floats.
+
+            Raise TypeError for signaling NaNs.
+
+            """
+            if self._type == _NAN:
+                if self._signaling:
+                    raise ValueError('Signaling NaNs are unhashable.')
+                return _PyHASH_NAN
+            elif self._type == _INFINITE:
+                return _PyHASH_NINF if self._sign else _PyHASH_INF
+            else:
+                # Assuming Python >= 3.2, compatibility with floats and ints
+                # (not to mention Fraction and Decimal instances) follows if
+                # we use the formulas described in the Python docs.
+                if self._exponent >= 0:
+                    exp_hash = pow(2, self._exponent, _PyHASH_MODULUS)
+                else:
+                    exp_hash = pow(_PyHASH_2INV, -self._exponent, _PyHASH_MODULUS)
+                hash_ = self._significand * exp_hash % _PyHASH_MODULUS
+                ans = -hash_ if self._sign else hash_
+
+                return -2 if ans == -1 else ans
 
     def __eq__(self, other):
         return self._rich_compare_general(other, _operator.eq, False)
