@@ -1280,7 +1280,18 @@ class TestFloat16(unittest.TestCase):
             ('-1', '15', '-32768'),
             ('-1', '16', '-inf'),
 
-
+            # Check rounding cases with subnormal result.
+            ('0.25', '-24', '0.0'),
+            ('0.5', '-24', '0.0'),
+            ('0.75', '-24', '6e-8'),
+            ('1', '-24', '6e-8'),
+            ('1.25', '-24', '6e-8'),
+            ('1.5', '-24', '1e-7'),
+            ('1.75', '-24', '1e-7'),
+            ('2', '-24', '1e-7'),
+            ('2.25', '-24', '1e-7'),
+            ('2.5', '-24', '1e-7'),
+            ('2.75', '-24', '2e-7'),
         ]
 
         for source1, n, expected in test_triples:
@@ -1288,8 +1299,55 @@ class TestFloat16(unittest.TestCase):
             n = int(n)
             expected = float16(expected)
             actual = source1.scale_b(n)
-            self.assertInterchangeable(actual, expected, 'max_num_mag({}, {})'.format(source1, n))
+            self.assertInterchangeable(actual, expected, 'scale_b({}, {})'.format(source1, n))
 
+    def test_log_b(self):
+        # NaNs
+        for x in float16('nan'), float16('-snan'):
+            with self.assertSignalsInvalidOperation():
+                try:
+                    x.log_b()
+                except ValueError:
+                    pass
+
+        # Infinities
+        for x in float16('inf'), float16('-inf'):
+            with self.assertSignalsInvalidOperation():
+                try:
+                    x.log_b()
+                except ValueError:
+                    pass
+
+        # Zeros
+        for x in float16('0'), float16('-0'):
+            with self.assertSignalsInvalidOperation():
+                try:
+                    x.log_b()
+                except ValueError:
+                    pass
+
+
+        test_pairs = [
+            ('0.9', '-1'),
+            ('1', '0'),
+            ('1.5', '0'),
+            ('2.0', '1'),
+
+            # Subnormals.
+            ('6e-8', '-24'),
+            ('1e-7', '-23'),
+            ('2e-7', '-23'),
+        ]
+        for str_source1, expected in test_pairs:
+            source1 = float16(str_source1)
+            expected = int(expected)
+            actual = source1.log_b()
+            self.assertEqual(actual, expected, 'log_b({}): expected {}, got {}'.format(source1, expected, actual))
+
+            # Same test with negative values.
+            source1 = float16('-' + str_source1)
+            actual = source1.log_b()
+            self.assertEqual(actual, expected, 'log_b({}): expected {}, got {}'.format(source1, expected, actual))
 
 if __name__ == '__main__':
     unittest.main()

@@ -1579,6 +1579,24 @@ class _BinaryFloatBase(object):
             significand=self._significand,
         )
 
+    def log_b(self):
+        """
+        exponent of self.
+
+        """
+        if self._type == _NAN:
+            if self.is_signaling():
+                return _handle_invalid_int('signaling nan')
+            else:
+                return _handle_invalid_int('log_b(nan)')
+        elif self._type == _INFINITE:
+            return _handle_invalid_int('log_b(infinity)')
+        elif self.is_zero():
+            return _handle_invalid_int('log_b(zero)')
+
+        # Finite nonzero case.
+        return self._exponent + self._significand.bit_length() - 1
+
     # IEEE 754 5.7.2: General operations.
 
     def is_sign_minus(self):
@@ -2090,6 +2108,16 @@ def _handle_invalid_bool(default_bool):
 
     """
     raise ValueError("Comparison involving signaling NaN")
+
+
+def _handle_invalid_int(message):
+    """
+    This handler should be called when a function that would normally return an
+    int signals invalid operation.
+
+    """
+    _signal_invalid_operation()
+    raise ValueError(message)
 
 
 def _compare_quiet_general(source1, source2, operator, unordered_result):
