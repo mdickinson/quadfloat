@@ -1041,10 +1041,11 @@ class BinaryInterchangeFormat(object):
         """
         # For now, just return a quiet NaN.  Someday this should be more
         # sophisticated.
+        _signal_invalid_operation()
         return self._nan(
             sign=False,
-            payload=0,
             signaling=False,
+            payload=0,
         )
 
     def _encode_as_int(self, source):
@@ -1482,9 +1483,7 @@ class _BinaryFloatBase(object):
 
         # remainder(infinity, y) and remainder(x, 0) are invalid
         if self._type == _INFINITE or other.is_zero():
-            _signal_invalid_operation()
-            # Return the standard NaN.
-            return self._format._nan(False, False, 0)
+            return self._format._handle_invalid()
 
         # remainder(x, +/-infinity) is x for any finite x.  Similarly, if x is
         # much smaller than y, remainder(x, y) is x.
