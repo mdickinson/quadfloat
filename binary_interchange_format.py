@@ -35,11 +35,6 @@ if _sys.version_info.major == 2:
     from future_builtins import zip as _zip
 
     # Values used to compute hashes.
-    if _sys.maxint == 2 ** 31 - 1:
-        _PyHASH_MODULUS = 2 ** 31 - 1
-    elif _sys.maxint == 2 ** 63 - 1:
-        _PyHASH_MODULUS = 2 ** 61 - 1
-    _PyHASH_2INV = pow(2, _PyHASH_MODULUS - 2, _PyHASH_MODULUS)
     _PyHASH_INF = hash(float('inf'))
     _PyHASH_NINF = hash(float('-inf'))
     _PyHASH_NAN = hash(float('nan'))
