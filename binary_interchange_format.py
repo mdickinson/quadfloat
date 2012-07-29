@@ -83,7 +83,7 @@ _number_parser = _re.compile(r"""        # A numeric string consists of:
             (?:E(?P<exp>[-+]?\d+))?     # and an optional exponent, or ...
         )
     |
-        (?P<infinite>                   # ... an infinity, or ...
+        (?P<infinite>                   # ... an infinite number, or ...
             Inf(?:inity)?
         )
     |
@@ -511,7 +511,7 @@ class BinaryInterchangeFormat(object):
             )
         elif b._type == _INFINITE:
             # Infinities convert with no loss of information.
-            converted = self._infinity(
+            converted = self._infinite(
                 sign=b._sign,
             )
             flags.error = 0
@@ -583,8 +583,8 @@ class BinaryInterchangeFormat(object):
             return self._final_round(sign, exponent, significand)
 
         elif m.group('infinite'):
-            # Infinity.
-            return self._infinity(sign)
+            # Infinite number.
+            return self._infinite(sign)
 
         else:
             # NaN.
@@ -616,7 +616,7 @@ class BinaryInterchangeFormat(object):
         elif _math.isinf(value):
             # Infinities.
             flags.error = 0
-            converted = self._infinity(sign)
+            converted = self._infinite(sign)
         elif value == 0.0:
             # Zeros
             flags.error = 0
@@ -735,10 +735,10 @@ class BinaryInterchangeFormat(object):
             if source2._type == _INFINITE and source1._sign != source2._sign:
                 return self._handle_invalid()
             else:
-                return self._infinity(source1._sign)
+                return self._infinite(source1._sign)
 
         if source2._type == _INFINITE:
-            return self._infinity(source2._sign)
+            return self._infinite(source2._sign)
 
         exponent = min(source1._exponent, source2._exponent)
         significand = (
@@ -781,13 +781,13 @@ class BinaryInterchangeFormat(object):
             if source2.is_zero():
                 return self._handle_invalid()
             else:
-                return self._infinity(sign=sign)
+                return self._infinite(sign=sign)
 
         if source2._type == _INFINITE:
             if source1.is_zero():
                 return self._handle_invalid()
             else:
-                return self._infinity(sign=sign)
+                return self._infinite(sign=sign)
 
         # finite * finite case.
         significand = source1._significand * source2._significand
@@ -811,7 +811,7 @@ class BinaryInterchangeFormat(object):
             if source2._type == _INFINITE:
                 return self._handle_invalid()
             else:
-                return self._infinity(sign=sign)
+                return self._infinite(sign=sign)
 
         if source2._type == _INFINITE:
             # Already handled the case where source1 is infinite.
@@ -824,7 +824,7 @@ class BinaryInterchangeFormat(object):
                 return self._zero(sign=sign)
 
         if source2.is_zero():
-            return self._infinity(sign=sign)
+            return self._infinite(sign=sign)
 
         # Finite / finite case.
 
@@ -869,9 +869,9 @@ class BinaryInterchangeFormat(object):
         if source1._sign:
             return self._handle_invalid()
 
-        # sqrt(infinity) -> infinity.
+        # sqrt(+inf) -> +inf.
         if source1._type == _INFINITE and not source1._sign:
-            return self._infinity(sign=False)
+            return self._infinite(sign=False)
 
         sig = source1._significand
         exponent = source1._exponent
@@ -910,13 +910,13 @@ class BinaryInterchangeFormat(object):
             if source2.is_zero():
                 return self._handle_invalid()
             else:
-                return self.addition(self._infinity(sign12), source3)
+                return self.addition(self._infinite(sign12), source3)
 
         if source2._type == _INFINITE:
             if source1.is_zero():
                 return self._handle_invalid()
             else:
-                return self.addition(self._infinity(sign12), source3)
+                return self.addition(self._infinite(sign12), source3)
 
         # Deal with zeros in the first two arguments.
         if source1.is_zero() or source2.is_zero():
@@ -924,7 +924,7 @@ class BinaryInterchangeFormat(object):
 
         # Infinite 3rd argument.
         if source3._type == _INFINITE:
-            return self._infinity(source3._sign)
+            return self._infinite(source3._sign)
 
         # Multiply the first two arguments (both now finite and nonzero).
         significand12 = source1._significand * source2._significand
@@ -963,7 +963,7 @@ class BinaryInterchangeFormat(object):
             significand=0,
         )
 
-    def _infinity(self, sign):
+    def _infinite(self, sign):
         """
         Return a suitably-signed infinity for this format.
 
@@ -1031,7 +1031,7 @@ class BinaryInterchangeFormat(object):
         """
         # For now, just returns the appropriate infinity.  Someday this should
         # handle rounding modes, flags, etc.
-        return self._infinity(sign)
+        return self._infinite(sign)
 
     def _handle_invalid(self):
         """
@@ -1092,7 +1092,7 @@ class BinaryInterchangeFormat(object):
                 return self._nan(sign, signaling, payload)
             else:
                 # Infinity.
-                return self._infinity(sign=sign)
+                return self._infinite(sign=sign)
         else:
             if exponent_field:
                 # Normal number.
@@ -1480,11 +1480,11 @@ class _BinaryFloatBase(object):
         if self._type == _NAN or other._type == _NAN:
             return self._format._handle_nans(self, other)
 
-        # remainder(infinity, y) and remainder(x, 0) are invalid
+        # remainder(+/-inf, y) and remainder(x, 0) are invalid
         if self._type == _INFINITE or other.is_zero():
             return self._format._handle_invalid()
 
-        # remainder(x, +/-infinity) is x for any finite x.  Similarly, if x is
+        # remainder(x, +/-inf) is x for any finite x.  Similarly, if x is
         # much smaller than y, remainder(x, y) is x.
         if other._type == _INFINITE or self._exponent <= other._exponent - 2:
             return self
@@ -1709,7 +1709,7 @@ class _BinaryFloatBase(object):
                 significand=self._significand,
             )
         elif self._type == _INFINITE:
-            return self._format._infinity(
+            return self._format._infinite(
                 sign=self._sign,
             )
         elif self._type == _NAN:
@@ -1733,7 +1733,7 @@ class _BinaryFloatBase(object):
                 significand=self._significand,
             )
         elif self._type == _INFINITE:
-            return self._format._infinity(
+            return self._format._infinite(
                 sign=not self._sign,
             )
 
@@ -1758,7 +1758,7 @@ class _BinaryFloatBase(object):
                 significand=self._significand,
             )
         elif self._type == _INFINITE:
-            return self._format._infinity(
+            return self._format._infinite(
                 sign=False,
             )
         elif self._type == _NAN:
@@ -1788,7 +1788,7 @@ class _BinaryFloatBase(object):
                 significand=self._significand,
             )
         elif self._type == _INFINITE:
-            return self._format._infinity(
+            return self._format._infinite(
                 sign=other._sign,
             )
         elif self._type == _NAN:
