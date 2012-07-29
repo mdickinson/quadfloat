@@ -1814,9 +1814,7 @@ class _BinaryFloatBase(object):
         """
         Given numeric operands self and other, with self an instance of
         _BinaryFloatBase, convert other to an operand of type _BinaryFloatBase
-        if necessary, and return the common format for the output.
-
-        Return a pair converted_other, common_format
+        if necessary, and return the converted value.
 
         """
         # Convert other.
