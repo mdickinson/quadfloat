@@ -39,7 +39,7 @@ float64 = BinaryInterchangeFormat(width=64)
 
 
 class TestFloat16(unittest.TestCase):
-    def assertInterchangeable(self, quad1, quad2):
+    def assertInterchangeable(self, quad1, quad2, msg = ''):
         """
         Assert that two float16 instances are interchangeable.
 
@@ -48,7 +48,7 @@ class TestFloat16(unittest.TestCase):
 
         """
         self.assertTrue(quad1._equivalent(quad2),
-                        msg = '{!r} not equivalent to {!r}'.format(quad1, quad2))
+                        msg = msg + '{!r} not equivalent to {!r}'.format(quad1, quad2))
 
     def test_construction_from_int(self):
         # Test round-half-to-even
@@ -1098,6 +1098,73 @@ class TestFloat16(unittest.TestCase):
             actual = source1.max_num(source2)
             self.assertInterchangeable(actual, expected)
 
+    def test_min_num_mag(self):
+        test_triples = [
+            # In case of equal numbers, first one wins.
+            ('-0.0', '0.0', '-0.0'),
+            ('0.0', '-0.0', '0.0'),
+            # Infinities.
+            ('-inf', '-inf', '-inf'),
+            ('-inf', 'inf', '-inf'),
+            ('inf', '-inf', 'inf'),
+            ('inf', 'inf', 'inf'),
+            ('inf', '2.3', '2.3'),
+            ('-inf', '2.3', '2.3'),
+            ('2.3', 'inf', '2.3'),
+            ('2.3', '-inf', '2.3'),
+            ('-1', '1', '-1'),
+            ('1', '-1', '1'),
+            ('1.2', '1.3', '1.2'),
+            ('-1.2', '-1.3', '-1.2'),
+            ('0.1', '10.0', '0.1'),
+            ('-10.0', '-0.1', '-0.1'),
+            # Quiet NaNs
+            ('1.2', 'nan(123)', '1.2'),
+            ('nan(123)', '1.2', '1.2'),
+            ('nan(123)', 'nan(456)', 'nan(123)'),
+            ('nan(456)', 'nan(123)', 'nan(456)'),
+        ]
+
+        for source1, source2, expected in test_triples:
+            source1 = float16(source1)
+            source2 = float16(source2)
+            expected = float16(expected)
+            actual = source1.min_num_mag(source2)
+            self.assertInterchangeable(actual, expected, 'min_num_mag({}, {})'.format(source1, source2))
+
+    def test_max_num_mag(self):
+        test_triples = [
+            # In case of equal numbers, second one wins.
+            ('-0.0', '0.0', '0.0'),
+            ('0.0', '-0.0', '-0.0'),
+            # Infinities.
+            ('-inf', '-inf', '-inf'),
+            ('-inf', 'inf', 'inf'),
+            ('inf', '-inf', '-inf'),
+            ('inf', 'inf', 'inf'),
+            ('inf', '2.3', 'inf'),
+            ('-inf', '2.3', '-inf'),
+            ('2.3', 'inf', 'inf'),
+            ('2.3', '-inf', '-inf'),
+            ('-1', '1', '1'),
+            ('1', '-1', '-1'),
+            ('1.2', '1.3', '1.3'),
+            ('-1.2', '-1.3', '-1.3'),
+            ('0.1', '10.0', '10.0'),
+            ('-10.0', '-0.1', '-10.0'),
+            # Quiet NaNs
+            ('1.2', 'nan(123)', '1.2'),
+            ('nan(123)', '1.2', '1.2'),
+            ('nan(123)', 'nan(456)', 'nan(123)'),
+            ('nan(456)', 'nan(123)', 'nan(456)'),
+        ]
+
+        for source1, source2, expected in test_triples:
+            source1 = float16(source1)
+            source2 = float16(source2)
+            expected = float16(expected)
+            actual = source1.max_num_mag(source2)
+            self.assertInterchangeable(actual, expected, 'max_num_mag({}, {})'.format(source1, source2))
 
 
 if __name__ == '__main__':
