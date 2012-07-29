@@ -1522,7 +1522,7 @@ class _BinaryFloatBase(object):
 
         # NaNs follow the usual rules.
         if self._type == _NAN or other._type == _NAN:
-            return self._handle_nans(self, other)
+            return self._format._handle_nans(self, other)
 
         # remainder(infinity, y) and remainder(x, 0) are invalid
         if self._type == _INFINITE or other.is_zero():
