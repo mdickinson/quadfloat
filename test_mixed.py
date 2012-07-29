@@ -77,6 +77,27 @@ class TestMixed(unittest.TestCase):
             self.assertEqual(result._payload, 2**9 - 1)
             self.assertEqual(result._sign, True)
 
+    def test___pos__(self):
+        a = float16('3.5')
+        self.assertInterchangeable(+a, a)
+
+        a = float16('-2.3')
+        self.assertInterchangeable(+a, a)
+
+    def test___neg__(self):
+        a = float16('3.5')
+        self.assertInterchangeable(-a, float16('-3.5'))
+
+        a = float16('-2.3')
+        self.assertInterchangeable(-a, float16('2.3'))
+
+    def test___abs__(self):
+        a = float16('3.5')
+        self.assertInterchangeable(abs(a), a)
+
+        a = float16('-2.3')
+        self.assertInterchangeable(abs(a), -a)
+
     def test_addition(self):
         # Different _BinaryInterchangeFormat subtypes.
         a = float16('3.5')
