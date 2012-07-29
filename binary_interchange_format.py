@@ -1517,7 +1517,7 @@ class _BinaryFloatBase(object):
         """
         # This is a homogeneous operation: both operands have the same format.
         if not other._format == self._format:
-            raise ValueError("remainder args should be of the same format")
+            raise ValueError("min_num args should be of the same format")
 
         # Special behaviour for NaNs: if one operand is NaN and the other is not
         # return the non-NaN operand.
@@ -1543,7 +1543,7 @@ class _BinaryFloatBase(object):
         """
         # This is a homogeneous operation: both operands have the same format.
         if not other._format == self._format:
-            raise ValueError("remainder args should be of the same format")
+            raise ValueError("max_num args should be of the same format")
 
         # Special behaviour for NaNs: if one operand is NaN and the other is not
         # return the non-NaN operand.
@@ -1569,7 +1569,7 @@ class _BinaryFloatBase(object):
         """
         # This is a homogeneous operation: both operands have the same format.
         if not other._format == self._format:
-            raise ValueError("remainder args should be of the same format")
+            raise ValueError("min_num_mag args should be of the same format")
 
         # Special behaviour for NaNs: if one operand is NaN and the other is not
         # return the non-NaN operand.
@@ -1595,7 +1595,7 @@ class _BinaryFloatBase(object):
         """
         # This is a homogeneous operation: both operands have the same format.
         if not other._format == self._format:
-            raise ValueError("remainder args should be of the same format")
+            raise ValueError("max_num_mag args should be of the same format")
 
         # Special behaviour for NaNs: if one operand is NaN and the other is not
         # return the non-NaN operand.
