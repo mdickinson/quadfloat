@@ -98,7 +98,13 @@ class TestMixed(unittest.TestCase):
         a = float16('-2.3')
         self.assertInterchangeable(abs(a), -a)
 
-    def test_addition(self):
+    def test___add__(self):
+        # Bad types.
+        a = float16('3.5')
+        b = '5.7'
+        with self.assertRaises(TypeError):
+            a + b
+
         # Different _BinaryInterchangeFormat subtypes.
         a = float16('3.5')
         b = float32('1.5')
@@ -177,7 +183,13 @@ class TestMixed(unittest.TestCase):
         self.assertEqual(c._format, float64)
         self.assertInterchangeable(c, float64('inf'))
 
-    def test_subtraction(self):
+    def test___sub__(self):
+        # Bad types.
+        a = float16('3.5')
+        b = '5.7'
+        with self.assertRaises(TypeError):
+            a - b
+
         # Different _BinaryInterchangeFormat subtypes.
         a = float16('3.5')
         b = float32('1.5')
@@ -201,7 +213,13 @@ class TestMixed(unittest.TestCase):
         self.assertEqual(c._format, float64)
         self.assertInterchangeable(c, float64('-2.0'))
 
-    def test_multiplication(self):
+    def test___mul__(self):
+        # Bad types.
+        a = float16('3.5')
+        b = '5.7'
+        with self.assertRaises(TypeError):
+            a * b
+
         # Different _BinaryInterchangeFormat subtypes.
         a = float16('3.5')
         b = float32('1.5')
@@ -225,7 +243,13 @@ class TestMixed(unittest.TestCase):
         self.assertEqual(c._format, float64)
         self.assertInterchangeable(c, float64('5.25'))
 
-    def test_division(self):
+    def test___div__(self):
+        # Bad types.
+        a = float16('3.5')
+        b = '5.7'
+        with self.assertRaises(TypeError):
+            a / b
+
         a = float16('35.0')
         b = float32('5.0')
         c = a / b
