@@ -957,10 +957,9 @@ class BinaryInterchangeFormat(object):
         Return a suitably-signed zero for this format.
 
         """
-        return self.class_(
-            type=_FINITE,
+        return self._finite(
             sign=sign,
-            exponent=self.qmin,
+            exponent=self.qmin
             significand=0,
         )
 
