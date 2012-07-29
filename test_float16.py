@@ -1030,6 +1030,74 @@ class TestFloat16(unittest.TestCase):
                 source1.remainder(source2)
             self.assertEqual(len(signal_list), 1)
 
+    def test_min_num(self):
+        test_triples = [
+            # In case of equal numbers, first one wins.
+            ('-0.0', '0.0', '-0.0'),
+            ('0.0', '-0.0', '0.0'),
+            # Infinities.
+            ('-inf', '-inf', '-inf'),
+            ('-inf', 'inf', '-inf'),
+            ('inf', '-inf', '-inf'),
+            ('inf', 'inf', 'inf'),
+            ('inf', '2.3', '2.3'),
+            ('-inf', '2.3', '-inf'),
+            ('2.3', 'inf', '2.3'),
+            ('2.3', '-inf', '-inf'),
+            ('-1', '1', '-1'),
+            ('1', '-1', '-1'),
+            ('1.2', '1.3', '1.2'),
+            ('-1.2', '-1.3', '-1.3'),
+            ('0.1', '10.0', '0.1'),
+            ('-10.0', '-0.1', '-10.0'),
+            # Quiet NaNs
+            ('1.2', 'nan(123)', '1.2'),
+            ('nan(123)', '1.2', '1.2'),
+            ('nan(123)', 'nan(456)', 'nan(123)'),
+            ('nan(456)', 'nan(123)', 'nan(456)'),
+        ]
+
+        for source1, source2, expected in test_triples:
+            source1 = float16(source1)
+            source2 = float16(source2)
+            expected = float16(expected)
+            actual = source1.min_num(source2)
+            self.assertInterchangeable(actual, expected)
+
+    def test_max_num(self):
+        test_triples = [
+            # In case of equal numbers, second one wins.
+            ('-0.0', '0.0', '0.0'),
+            ('0.0', '-0.0', '-0.0'),
+            # Infinities.
+            ('-inf', '-inf', '-inf'),
+            ('-inf', 'inf', 'inf'),
+            ('inf', '-inf', 'inf'),
+            ('inf', 'inf', 'inf'),
+            ('inf', '2.3', 'inf'),
+            ('-inf', '2.3', '2.3'),
+            ('2.3', 'inf', 'inf'),
+            ('2.3', '-inf', '2.3'),
+            ('-1', '1', '1'),
+            ('1', '-1', '1'),
+            ('1.2', '1.3', '1.3'),
+            ('-1.2', '-1.3', '-1.2'),
+            ('0.1', '10.0', '10.0'),
+            ('-10.0', '-0.1', '-0.1'),
+            # Quiet NaNs
+            ('1.2', 'nan(123)', '1.2'),
+            ('nan(123)', '1.2', '1.2'),
+            ('nan(123)', 'nan(456)', 'nan(123)'),
+            ('nan(456)', 'nan(123)', 'nan(456)'),
+        ]
+
+        for source1, source2, expected in test_triples:
+            source1 = float16(source1)
+            source2 = float16(source2)
+            expected = float16(expected)
+            actual = source1.max_num(source2)
+            self.assertInterchangeable(actual, expected)
+
 
 
 if __name__ == '__main__':

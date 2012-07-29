@@ -1543,15 +1543,66 @@ class _BinaryFloatBase(object):
             self._significand * pow(2, self._exponent - exponent, 2 * b),
             b
         )
+        sign = self._sign ^ (r < 0)
+        significand = abs(r)
 
-        # XXX To do: Normalize directly, rather than using _from_triple.  (See
-        # also the round_to_integral_* methods; maybe we can reuse the
-        # normalize-in-exact-case code.)
-        return self._format._from_triple(
-            sign=self._sign ^ (r < 0),
-            exponent=shift,
-            significand=abs(r),
-        )
+        # Normalize result.
+        if significand == 0:
+            return self._format._zero(sign)
+        e = max(exponent + significand.bit_length() - self._format.precision, self._format.qmin)
+        return self._format._finite(sign, e, significand << exponent - e)
+
+    def min_num(self, other):
+        """
+        Minimum of self and other.
+
+        If self and other are numerically equal (for example in the case of
+        differently-signed zeros), self is returned.
+
+        """
+        # This is a homogeneous operation: both operands have the same format.
+        if not other._format == self._format:
+            raise ValueError("remainder args should be of the same format")
+
+        # Special behaviour for NaNs: if one operand is NaN and the other is not
+        # return the non-NaN operand.
+        if self.is_nan() and not self.is_signaling() and not other.is_nan():
+            return other
+        if other.is_nan() and not other.is_signaling() and not self.is_nan():
+            return self
+
+        # Apart from the above special case, treat NaNs as normal.
+        if self._type == _NAN or other._type == _NAN:
+            return self._format._handle_nans(self, other)
+
+        cmp = _compare_ordered(self, other)
+        return self if cmp <= 0 else other
+
+    def max_num(self, other):
+        """
+        Maximum of self and other.
+
+        If self and other are numerically equal (for example in the case of
+        differently-signed zeros), other is returned.
+
+        """
+        # This is a homogeneous operation: both operands have the same format.
+        if not other._format == self._format:
+            raise ValueError("remainder args should be of the same format")
+
+        # Special behaviour for NaNs: if one operand is NaN and the other is not
+        # return the non-NaN operand.
+        if self.is_nan() and not self.is_signaling() and not other.is_nan():
+            return other
+        if other.is_nan() and not other.is_signaling() and not self.is_nan():
+            return self
+
+        # Apart from the above special case, treat NaNs as normal.
+        if self._type == _NAN or other._type == _NAN:
+            return self._format._handle_nans(self, other)
+
+        cmp = _compare_ordered(self, other)
+        return other if cmp <= 0 else self
 
     # IEEE 754 5.7.2: General operations.
 
