@@ -284,22 +284,23 @@ def rounding_direction(new_rounding_direction):
 
 
 @_contextlib.contextmanager
-def inexact_handler(new_inexact_handler):
-    old_inexact_handler = _attributes.get('inexact_handler')
-    _attributes['inexact_handler'] = new_inexact_handler
+def inexact_handler(new_handler):
+    old_handler = _attributes.get('inexact_handler')
+    _attributes['inexact_handler'] = new_handler
     try:
         yield
     finally:
-        _attributes['inexact_handler'] = old_inexact_handler
+        _attributes['inexact_handler'] = old_handler
+
 
 @_contextlib.contextmanager
-def invalid_operation_handler(new_invalid_operation_handler):
-    old_invalid_operation_handler = _attributes.get('invalid_operation_handler')
-    _attributes['invalid_operation_handler'] = new_invalid_operation_handler
+def invalid_operation_handler(new_handler):
+    old_handler = _attributes.get('invalid_operation_handler')
+    _attributes['invalid_operation_handler'] = new_handler
     try:
         yield
     finally:
-        _attributes['invalid_operation_handler'] = old_invalid_operation_handler
+        _attributes['invalid_operation_handler'] = old_handler
 
 
 # Functions to signal various exceptions.  (Private for now, since only the
@@ -308,9 +309,9 @@ def invalid_operation_handler(new_invalid_operation_handler):
 def _signal_inexact():
     _attributes['inexact_handler'](None)
 
+
 def _signal_invalid_operation():
     _attributes['invalid_operation_handler'](None)
-
 
 
 # Flags class.
@@ -1500,7 +1501,10 @@ class _BinaryFloatBase(object):
         # Normalize result.
         if significand == 0:
             return self._format._zero(sign)
-        e = max(exponent + significand.bit_length() - self._format.precision, self._format.qmin)
+        e = max(
+            exponent + significand.bit_length() - self._format.precision,
+            self._format.qmin,
+        )
         return self._format._finite(sign, e, significand << exponent - e)
 
     def min_num(self, other):
@@ -1517,8 +1521,8 @@ class _BinaryFloatBase(object):
                 "min_num operation not implemented for mixed formats."
             )
 
-        # Special behaviour for NaNs: if one operand is NaN and the other is not
-        # return the non-NaN operand.
+        # Special behaviour for NaNs: if one operand is NaN and the other is
+        # not then return the non-NaN operand.
         if self.is_nan() and not self.is_signaling() and not other.is_nan():
             return other
         if other.is_nan() and not other.is_signaling() and not self.is_nan():
@@ -1545,8 +1549,8 @@ class _BinaryFloatBase(object):
                 "max_num operation not implemented for mixed formats."
             )
 
-        # Special behaviour for NaNs: if one operand is NaN and the other is not
-        # return the non-NaN operand.
+        # Special behaviour for NaNs: if one operand is NaN and the other is
+        # not then return the non-NaN operand.
         if self.is_nan() and not self.is_signaling() and not other.is_nan():
             return other
         if other.is_nan() and not other.is_signaling() and not self.is_nan():
@@ -1573,8 +1577,8 @@ class _BinaryFloatBase(object):
                 "min_num_mag operation not implemented for mixed formats."
             )
 
-        # Special behaviour for NaNs: if one operand is NaN and the other is not
-        # return the non-NaN operand.
+        # Special behaviour for NaNs: if one operand is NaN and the other is
+        # not then return the non-NaN operand.
         if self.is_nan() and not self.is_signaling() and not other.is_nan():
             return other
         if other.is_nan() and not other.is_signaling() and not self.is_nan():
@@ -1601,8 +1605,8 @@ class _BinaryFloatBase(object):
                 "max_num_mag operation not implemented for mixed formats."
             )
 
-        # Special behaviour for NaNs: if one operand is NaN and the other is not
-        # return the non-NaN operand.
+        # Special behaviour for NaNs: if one operand is NaN and the other is
+        # not then return the non-NaN operand.
         if self.is_nan() and not self.is_signaling() and not other.is_nan():
             return other
         if other.is_nan() and not other.is_signaling() and not self.is_nan():
@@ -1986,10 +1990,8 @@ class _BinaryFloatBase(object):
                 # Assuming Python >= 3.2, compatibility with floats and ints
                 # (not to mention Fraction and Decimal instances) follows if
                 # we use the formulas described in the Python docs.
-                if self._exponent >= 0:
-                    exp_hash = pow(2, self._exponent, _PyHASH_MODULUS)
-                else:
-                    exp_hash = pow(_PyHASH_2INV, -self._exponent, _PyHASH_MODULUS)
+                base = 2 if self._exponent >= 0 else _PyHASH_2INV
+                exp_hash = pow(base, abs(self._exponent), _PyHASH_MODULUS)
                 hash_ = self._significand * exp_hash % _PyHASH_MODULUS
                 ans = -hash_ if self._sign else hash_
 
