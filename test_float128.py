@@ -118,6 +118,12 @@ class TestFloat128(unittest.TestCase):
         self.assertInterchangeable(q, float128(1))
         q = float128(-13.0)
         self.assertInterchangeable(q, float128(-13))
+        q = float128(float('inf'))
+        self.assertInterchangeable(q, float128('inf'))
+        self.assertTrue(q.is_infinite())
+        q = float128(float('-inf'))
+        self.assertInterchangeable(q, float128('-inf'))
+        self.assertTrue(q.is_infinite())
 
     def test_construction_from_str(self):
         q = float128('0.0')
@@ -197,6 +203,13 @@ class TestFloat128(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             float128('+snan(1')
+
+    def test_bad_constructor(self):
+        with self.assertRaises(TypeError):
+            float128(3.2j)
+
+        with self.assertRaises(TypeError):
+            float128([1, 2, 3])
 
     def test_is_canonical(self):
         self.assertTrue(float128('0.0').is_canonical())
