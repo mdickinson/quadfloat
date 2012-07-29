@@ -339,10 +339,7 @@ class _NullFlags(object):
     def _set_error(self, error):
         pass
 
-    def _get_error(self):
-        raise AttributeError("'_NullFlags' object has no attribute 'error'")
-
-    error = property(_get_error, _set_error)
+    error = property(None, _set_error)
 
 
 _null_flags = _NullFlags()
@@ -589,8 +586,9 @@ class BinaryInterchangeFormat(object):
             # Infinity.
             return self._infinity(sign)
 
-        elif m.group('nan'):
+        else:
             # NaN.
+            assert m.group('nan')
             signaling = bool(m.group('signaling'))
             payload = int(m.group('payload') or 0)
             return self._from_nan_triple(
@@ -598,9 +596,6 @@ class BinaryInterchangeFormat(object):
                 signaling=signaling,
                 payload=payload,
             )
-
-        else:
-            assert False, "Shouldn't get here."
 
     def _from_float(self, value, flags=_null_flags):
         """
@@ -1039,19 +1034,11 @@ class BinaryInterchangeFormat(object):
         # handle rounding modes, flags, etc.
         return self._infinity(sign)
 
-    def _handle_invalid(self, snan=None):
+    def _handle_invalid(self):
         """
         Handle an invalid operation.
 
         """
-        if snan is not None:
-            # Invalid operation from an snan: quiet the sNaN.
-            return self._nan(
-                sign=snan._sign,
-                payload=snan._payload,
-                signaling=False,
-            )
-
         # For now, just return a quiet NaN.  Someday this should be more
         # sophisticated.
         return self._nan(
