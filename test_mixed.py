@@ -260,6 +260,18 @@ class TestMixed(unittest.TestCase):
         self.assertEqual(c._format, float32)
         self.assertInterchangeable(c, float32('0.142857142857142857142857'))
 
+        # Python's float treated as interchangeable with float64.
+        a = 3.5
+        b = float32('1.5')
+
+        c = a / b
+        self.assertEqual(c._format, float64)
+        self.assertInterchangeable(c, float64(3.5 / 1.5))
+
+        c = b / a
+        self.assertEqual(c._format, float64)
+        self.assertInterchangeable(c, float64(1.5 / 3.5))
+
     def test_mixed_arithmetic(self):
         # Check that large integers work.
         a = float32(0)
@@ -275,6 +287,9 @@ class TestMixed(unittest.TestCase):
         # Check that we're not simply converting the integer to a float.
         self.assertFalse(float64(2**64) == 2 ** 64 + 1)
         self.assertTrue(float64(2**64) == 2 ** 64)
+
+        with self.assertRaises(TypeError):
+            float64(3.2) == '3.2'
 
 
 if __name__ == '__main__':
