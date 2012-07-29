@@ -959,7 +959,7 @@ class BinaryInterchangeFormat(object):
         """
         return self._finite(
             sign=sign,
-            exponent=self.qmin
+            exponent=self.qmin,
             significand=0,
         )
 
