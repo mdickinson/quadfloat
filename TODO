@@ -40,10 +40,6 @@ Features
 Internal refactoring
 --------------------
 
-* Remove useless _round_toward_zero_offsets
-
-* Better name for class_?  Should be private?
-
 * Remove dependence on decimal.
 
 * Be consistent about internal uses of is_finite, is_infinite versus ._type
