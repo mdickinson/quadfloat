@@ -373,8 +373,6 @@ class BinaryInterchangeFormat(object):
     '2.3'
 
     """
-    _class__cache = {}
-
     def __new__(cls, width):
         valid_width = width in {16, 32, 64} or width >= 128 and width % 32 == 0
         if not valid_width:
@@ -455,16 +453,6 @@ class BinaryInterchangeFormat(object):
     def _payload_bitmask(self):
         return (1 << self.precision - 2) - 1
 
-    @property
-    def class_(self):
-        if self not in BinaryInterchangeFormat._class__cache:
-            class BinaryFormat(_BinaryFloatBase):
-                _format = self
-            BinaryFormat.__name__ = 'Float{}'.format(self.width)
-            BinaryInterchangeFormat._class__cache[self] = BinaryFormat
-
-        return BinaryInterchangeFormat._class__cache[self]
-
     def _from_value(self, value=0):
         """
         Float<nnn>([value])
@@ -472,8 +460,8 @@ class BinaryInterchangeFormat(object):
         Create a new Float<nnn> instance from the given input.
 
         """
-        if isinstance(value, _BinaryFloatBase):
-            # Initialize from another _BinaryFloatBase instance.
+        if isinstance(value, _BinaryFloat):
+            # Initialize from another _BinaryFloat instance.
             return self._from_binary_float_base(value)
 
         elif isinstance(value, float):
@@ -496,7 +484,7 @@ class BinaryInterchangeFormat(object):
 
     def _from_binary_float_base(self, b, flags=_null_flags):
         """
-        Convert another _BinaryFloatBase instance to this format.
+        Convert another _BinaryFloat instance to this format.
 
         """
         if b._type == _NAN:
@@ -981,7 +969,8 @@ class BinaryInterchangeFormat(object):
         Return a suitably-signed infinity for this format.
 
         """
-        num = object.__new__(self.class_)
+        num = object.__new__(_BinaryFloat)
+        num._format = self
         num._type = _INFINITE
         num._sign = bool(sign)
         return num
@@ -995,7 +984,8 @@ class BinaryInterchangeFormat(object):
         if not min_payload <= payload < 1 << (self.precision - 2):
             assert False, "NaN payload out of range"  # pragma no cover
 
-        num = object.__new__(self.class_)
+        num = object.__new__(_BinaryFloat)
+        num._format = self
         num._type = _NAN
         num._sign = bool(sign)
         num._signaling = bool(signaling)
@@ -1022,7 +1012,8 @@ class BinaryInterchangeFormat(object):
         if not normalized:
             assert False, "non-normalized input to _finite"  # pragma no cover
 
-        num = object.__new__(self.class_)
+        num = object.__new__(_BinaryFloat)
+        num._format = self
         num._type = _FINITE
         num._sign = bool(sign)
         num._exponent = int(exponent)
@@ -1131,7 +1122,7 @@ class BinaryInterchangeFormat(object):
 _float64 = BinaryInterchangeFormat(64)
 
 
-class _BinaryFloatBase(object):
+class _BinaryFloat(object):
     def _to_short_str(self):
         """
         Convert to a shortest Decimal string that rounds back to the given
@@ -1799,12 +1790,12 @@ class _BinaryFloatBase(object):
     def _convert_other(self, other):
         """
         Given numeric operands self and other, with self an instance of
-        _BinaryFloatBase, convert other to an operand of type _BinaryFloatBase
+        _BinaryFloat, convert other to an operand of type _BinaryFloat
         if necessary, and return the converted value.
 
         """
         # Convert other.
-        if isinstance(other, _BinaryFloatBase):
+        if isinstance(other, _BinaryFloat):
             pass
         elif isinstance(other, float):
             other = _float64._from_float(other)
@@ -1813,7 +1804,7 @@ class _BinaryFloatBase(object):
         else:
             raise TypeError(
                 "Can't convert operand {} of type {} to "
-                "_BinaryFloatBase.".format(
+                "_BinaryFloat.".format(
                     other,
                     type(other),
                 )
@@ -1905,13 +1896,13 @@ class _BinaryFloatBase(object):
         elif isinstance(other, float):
             other = self._format._from_float(other, flags)
 
-        elif isinstance(other, _BinaryFloatBase):
+        elif isinstance(other, _BinaryFloat):
             other = self._format._from_binary_float_base(other, flags)
 
         else:
             raise TypeError(
                 "Can't convert operand {} of type {} to "
-                "_BinaryFloatBase.".format(
+                "_BinaryFloat.".format(
                     other,
                     type(other),
                 )

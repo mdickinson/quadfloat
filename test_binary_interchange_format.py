@@ -58,24 +58,6 @@ class TestBinaryIntegerchangeFormat(unittest.TestCase):
         self.assertFalse(binary128 != binary128_copy)
         self.assertTrue(binary128 != binary256)
 
-    def test_class_generator(self):
-        # Given an actual BinaryInterchangeFormat object, it should be possible
-        # to generate the corresponding class, and that class should have a way
-        # to recover the object.
-
-        binary128 = BinaryInterchangeFormat(width=128)
-        binary256 = BinaryInterchangeFormat(width=256)
-
-        Binary128 = binary128.class_
-        self.assertEqual(Binary128._format, binary128)
-
-        # Result should be a singleton.
-        AnotherBinary128 = binary128.class_
-        self.assertIs(Binary128, AnotherBinary128)
-
-        Binary256 = binary256.class_
-        self.assertEqual(Binary256._format, binary256)
-
 
 if __name__ == '__main__':
     unittest.main()
