@@ -1,7 +1,6 @@
 from __future__ import division as _division
 
 import contextlib as _contextlib
-import decimal as _decimal
 import math as _math
 import operator as _operator
 import re as _re
@@ -33,6 +32,7 @@ if _sys.version_info.major == 2:
 
     # Iterator version of zip.
     from future_builtins import zip as _zip
+    from future_builtins import map as _map
 
     # Values used to compute hashes.
     _PyHASH_INF = hash(float('inf'))
@@ -47,6 +47,7 @@ else:
     _bytes_from_iterable = bytes
 
     _zip = zip
+    _map = map
 
     _PyHASH_MODULUS = _sys.hash_info.modulus
     _PyHASH_2INV = pow(2, _PyHASH_MODULUS - 2, _PyHASH_MODULUS)
@@ -67,6 +68,8 @@ _FINITE = 'finite_type'
 _INFINITE = 'infinite_type'
 _NAN = 'nan_type'
 
+
+# Conversions of Decimal numbers to and from strings.
 
 _number_parser = _re.compile(r"""        # A numeric string consists of:
     (?P<sign>[-+])?                     # an optional sign, then either ...
@@ -90,6 +93,23 @@ _number_parser = _re.compile(r"""        # A numeric string consists of:
     )
     \Z
 """, _re.VERBOSE | _re.IGNORECASE).match
+
+def _decimal_format(sign, exponent, digits):
+    # (-1)**sign * int(digits) * 10**exponent
+    # Format in non-scientific form.
+
+    assert not digits.startswith('0')
+    assert not digits.endswith('0')
+
+    if not digits:
+        coefficient = '0'
+    elif exponent >= 0:
+        coefficient = digits + '0'*exponent
+    elif exponent + len(digits) > 0:
+        coefficient = digits[:exponent] + '.' + digits[exponent:]
+    else:
+        coefficient = '0.' + '0' * -(exponent + len(digits)) + digits
+    return ('-' if sign else '') + coefficient
 
 
 _round_ties_to_even_offsets = [0, -1, -2, 1, 0, -1, 2, 1]
@@ -200,37 +220,6 @@ def _remainder_nearest(a, b):
     Counterpart to divide_nearest.
     """
     return a - _divide_nearest(a, b) * b
-
-
-def _digits_from_rational(a, b, closed=True):
-    """
-    Generate successive decimal digits for a fraction a / b in [0, 1].
-
-    If closed is True (the default), the number x created from the generated
-    digits is always largest s.t. x <= a / b.  If False, it's the largest
-    such that x < a / b.
-
-    a / b should be in the range [0, 1) if closed is True, and should be
-    in (0, 1] if closed is False.
-
-    >>> from itertools import islice
-    >>> digits = _digits_from_rational(1, 7)
-    >>> list(islice(digits, 20))
-    [1, 4, 2, 8, 5, 7, 1, 4, 2, 8, 5, 7, 1, 4, 2, 8, 5, 7, 1, 4]
-    >>> digits = _digits_from_rational(3, 5)
-    >>> list(islice(digits, 10))   #  3 / 5 = 0.600000.....
-    [6, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    >>> digits = _digits_from_rational(3, 5, closed=False)
-    >>> list(islice(digits, 10))   #  3 / 5 = 0.599999.....
-    [5, 9, 9, 9, 9, 9, 9, 9, 9, 9]
-
-    """
-    if not closed:
-        a = b - a
-
-    while True:
-        digit, a = divmod(10 * a, b)
-        yield digit if closed else 9 - digit
 
 
 # Rounding directions.
@@ -1122,17 +1111,295 @@ class BinaryInterchangeFormat(object):
 _float64 = BinaryInterchangeFormat(64)
 
 
+class _Interval(object):
+    """
+    Open or closed finite subinterval of the positive reals, with marked point.
+
+    An instance of _Interval represents an open or closed nonempty finite
+    subinterval of the positive real numbers, with rational endpoints, along
+    with a marked point inside that interval.
+
+    """
+    def __new__(cls, low, high, target, denominator, closed):
+        """
+        _Interval(low, high, target, denominator, closed) -> _Interval object
+        representing the open interval
+
+            (low/denominator, high/denominator)
+
+        if closed is False, and
+
+            [low/denominator, high/denominator]
+
+        if closed is True.  target/denominator gives the marked point inside
+        the interval.
+
+        """
+        if not low < target < high:
+            raise ValueError(
+                "low, target and high should satisfy low < target < high"
+            )
+        if not denominator > 0:
+            raise ValueError("denominator should be positive")
+
+        self = object.__new__(cls)
+        self.low = low
+        self.high = high
+        self.target = target
+        self.denominator = denominator
+        self.closed = closed
+        return self
+
+    @classmethod
+    def from_binary_float(cls, x):
+        """
+        Given a nonzero finite binary float x, return the interval consisting
+        of all values that round to the float x under round-ties-to-even.
+
+        """
+        is_boundary_case = (
+            x._significand == 1 << (x._format.precision - 1) and
+            x._exponent > x._format.qmin
+            )
+
+        if is_boundary_case:
+            shift = x._exponent - 2
+            high = (4 * x._significand + 2) << max(shift, 0)
+            target = (4 * x._significand) << max(shift, 0)
+            low = (4 * x._significand - 1) << max(shift, 0)
+            denominator = 1 << max(0, -shift)
+        else:
+            shift = x._exponent - 1
+            high = (2 * x._significand + 1) << max(shift, 0)
+            target = (2 * x._significand) << max(shift, 0)
+            low = (2 * x._significand - 1) << max(shift, 0)
+            denominator = 1 << max(0, -shift)
+
+        # The interval of values that will round back to self is closed if
+        # the significand is even, and open otherwise.
+        closed = x._significand % 2 == 0
+        return cls(
+            low=low,
+            high=high,
+            target=target,
+            denominator=denominator,
+            closed=closed,
+        )
+
+    def __mul__(self, n):
+        """
+        Scale this interval by a positive integer n.
+
+        """
+        if not n > 0:
+            raise ValueError("n should be positive")
+
+        return _Interval(
+            low=self.low * n,
+            high=self.high * n,
+            target=self.target * n,
+            denominator=self.denominator,
+            closed=self.closed,
+        )
+
+    def __truediv__(self, n):
+        """
+        Divide by a positive integer n.
+
+        """
+        if not n > 0:
+            raise ValueError("n should be positive")
+
+        return _Interval(
+            low=self.low,
+            high=self.high,
+            target=self.target,
+            denominator=self.denominator * n,
+            closed=self.closed,
+        )
+
+
+    def __sub__(self, n):
+        """
+        Subtract an integer from this interval.
+
+        """
+        nd = n * self.denominator
+        return _Interval(
+            low=self.low - nd,
+            high=self.high - nd,
+            target=self.target - nd,
+            denominator=self.denominator,
+            closed=self.closed,
+        )
+
+    def contains_zero(self):
+        """
+        Return True if this interval contains zero, else False.
+
+        """
+        if self.closed:
+            return self.low <= 0 <= self.high
+        else:
+            return self.low < 0 < self.high
+
+    def __contains__(self, n):
+        """
+        Return True if this interval contains the given integer, else False.
+
+        """
+        return (self - n).contains_zero()
+
+    def high_integer(self):
+        """
+        Return greatest integer lying inside the upper bound of this interval.
+
+        For a closed interval [low, high] this method returns the greatest
+        integer n such that n <= high (that is, the floor of high).  For an
+        open interval (low, high) it returns the greatest integer n such that
+        n < high.
+
+        Note that the returned integer is not necessarily inside the interval,
+        since it may lie outside the lower bound.
+
+        """
+        if self.closed:
+            return self.high // self.denominator
+        else:
+            return -(-self.high // self.denominator) - 1
+
+    def low_integer(self):
+        """
+        Return least integer lying inside the lower bound of this interval.
+
+        For a closed interval [low, high] this method returns the least integer
+        n such that n >= low.  For an open interval (low, high) it returns the
+        least integer n such that n > low.
+
+        Note that the returned integer is not necessarily inside the interval,
+        since it may lie outside the upper bound.
+
+        """
+        if self.closed:
+            return -(-self.low // self.denominator)
+        else:
+            return self.low // self.denominator + 1
+
+    def closest_integer_to_target(self):
+        """
+        Return closest integer to the target value inside the interval.
+
+        """
+        max_digit = self.high_integer()
+        min_digit = self.low_integer()
+        if min_digit > max_digit:
+            raise ValueError("This interval contains no integers.")
+
+        closest_digit = _divide_nearest(self.target, self.denominator)
+        if closest_digit < min_digit:
+            return min_digit
+        elif closest_digit > max_digit:
+            return max_digit
+        else:
+            return closest_digit
+
+    def shortest_digit_string_fixed(self):
+        """
+        Given a subinterval of (0, 1), return the shortest string of digits
+        such that 0.digits represents a point in this interval.
+
+        In the case that there is more than one shortest string, return the one
+        that's closest to the target value.
+
+        """
+        digits = []
+        while True:
+            self *= 10
+            digit = self.high_integer()
+            if digit in self:
+                digits.append(self.closest_integer_to_target())
+                break
+            self -= digit
+            digits.append(digit)
+
+        return ''.join(_map(str, digits))
+
+    def rescale_to_unit_interval(self):
+        """
+        Rescale this interval by a power of 10 so that it fits within (0, 1).
+
+        self should lie entirely within the positive reals.
+
+        Return an integer n and a new interval I such that self = 10**n * I.
+
+        """
+        n = len(str(self.high)) - len(str(self.denominator))
+        I = self / 10 ** n if n >= 0 else self * 10 ** -n
+
+        if I.high_integer() > 0:
+            I /= 10
+            n += 1
+
+        # Check invariants.
+        assert I.high_integer() == 0
+        assert (I * 10).high_integer() > 0
+        return n, I
+
+    def shortest_digit_string_floating(self):
+        """
+        Generate the shortest string of digits representing a point
+        in this interval.
+
+        Return a pair (n, digits) such that int(digits) * 10**n gives the
+        required point.
+
+        """
+        n, I = self.rescale_to_unit_interval()
+
+        if 1 in I * 10:
+            # Corner case: I contains 0.1, and possibly other powers of 10.
+            # Rescale until the target value is in [1.0, 10.0).
+            while I.target < I.denominator:
+                n, I = n - 1, I * 10
+
+            # Now target value is in [1.0, 10.0), so the two closest 1-digit
+            # decimals to the target are both integers.
+            digits = str(I.closest_integer_to_target())
+            if digits.endswith('0'):
+                n, digits = n + 1, digits[:-1]
+        else:
+            # Usual case: 0.1 not in I; use the fixed-point algorithm.
+            digits = I.shortest_digit_string_fixed()
+            n -= len(digits)
+        return n, digits
+
+
 class _BinaryFloat(object):
+    def _shortest_decimal(self):
+        """
+        Convert to shortest Decimal instance that rounds back to the correct
+        value.
+
+        self should be finite.
+
+        """
+        assert self._type == _FINITE
+
+        if self._significand == 0:
+            return self._sign, 0, ''
+
+        # General nonzero finite case.
+        I = _Interval.from_binary_float(self)
+        exponent, digits = I.shortest_digit_string_floating()
+        return self._sign, exponent, digits
+
     def _to_short_str(self):
         """
         Convert to a shortest Decimal string that rounds back to the given
         value.
 
         """
-        # Quick returns for zeros, infinities, NaNs.
-        if self._type == _FINITE and self._significand == 0:
-            return '-0.0' if self._sign else '0.0'
-
+        # Quick returns for infinities and NaNs.
         if self._type == _INFINITE:
             return '-Infinity' if self._sign else 'Infinity'
 
@@ -1143,93 +1410,9 @@ class _BinaryFloat(object):
                 payload=self._payload,
             )
 
-        # General nonzero finite case.
-
-        # Interval of values that round to self is
-        # (high / denominator, low / denominator)
-
-        # Is this a power of 2 that falls between two *normal* binades (so
-        # that the ulp function has a discontinuity at this point)?
-        is_boundary_case = (
-            self._significand == 1 << (self._format.precision - 1) and
-            self._exponent > self._format.qmin
-            )
-
-        if is_boundary_case:
-            shift = self._exponent - 2
-            high = (4 * self._significand + 2) << max(shift, 0)
-            target = (4 * self._significand) << max(shift, 0)
-            low = (4 * self._significand - 1) << max(shift, 0)
-            denominator = 1 << max(0, -shift)
-        else:
-            shift = self._exponent - 1
-            high = (2 * self._significand + 1) << max(shift, 0)
-            target = (2 * self._significand) << max(shift, 0)
-            low = (2 * self._significand - 1) << max(shift, 0)
-            denominator = 1 << max(0, -shift)
-
-        # Find appropriate power of 10.
-        # Invariant: 10 ** (n-1) <= high / denominator < 10 ** n.
-        n = len(str(high)) - len(str(denominator))
-        n += (high // 10 ** n if n >= 0 else high * 10 ** -n) >= denominator
-
-        # So now we want to compute digits of high / denominator * 10 ** -n.
-        high *= 10 ** max(-n, 0)
-        target *= 10 ** max(-n, 0)
-        low *= 10 ** max(-n, 0)
-        denominator *= 10 ** max(0, n)
-
-        assert 0 < low < target < high < denominator
-
-        # The interval of values that will round back to self is closed if
-        # the significand is even, and open otherwise.
-        closed = self._significand % 2 == 0
-
-        high_digits = _digits_from_rational(high, denominator, closed=closed)
-        low_digits = _digits_from_rational(low, denominator, closed=not closed)
-        pairs = _zip(low_digits, high_digits)
-
-        digits = []
-        for low_digit, high_digit in pairs:
-            if low_digit != high_digit:
-                break
-            digits.append(high_digit)
-            target = 10 * target - high_digit * denominator
-
-        # The best final digit is the digit giving the closest decimal string
-        # to the target value amongst all digits in (low_digit, high_digit].
-        # In most cases this just means the closest digit; the exception occurs
-        # when self is a power of 2, so that the interval of values rounding to
-        # self isn't centered on self; in that case, the nearest digit may lie
-        # below the interval (low_digit, high_digit].
-        best_final_digit = _divide_nearest(10 * target, denominator)
-        best_final_digit = max(best_final_digit, low_digit + 1)
-
-        assert low_digit < best_final_digit <= high_digit
-        digits.append(best_final_digit)
-
-        if digits == [1]:
-            # Special corner case: it's possible in this case that the
-            # actual closest short string to the target starts with 0.
-            # Recompute.
-            best_final_digit2 = _divide_nearest(100 * target, denominator)
-            if best_final_digit2 < 10:
-                # No need to check that this is in range, since this special
-                # case can only occur for subnormals, and there the original
-                # interval is always symmetric.
-                digits = [0, best_final_digit2]
-
-        # Cheat by getting the decimal module to do the string formatting
-        # (insertion of decimal point, etc.) for us.
-        return str(
-            _decimal.Decimal(
-                '{0}0.{1}e{2}'.format(
-                    '-' if self._sign else '',
-                    ''.join(map(str, digits)),
-                    n,
-                 )
-            )
-        )
+        # Finite case.
+        sign, exponent, digits = self._shortest_decimal()
+        return _decimal_format(sign, exponent, digits)
 
     def __repr__(self):
         return "{!r}({!r})".format(self._format, self._to_short_str())
