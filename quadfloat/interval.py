@@ -51,42 +51,6 @@ class Interval(object):
         self.closed = closed
         return self
 
-    @classmethod
-    def from_binary_float(cls, x):
-        """
-        Given a nonzero finite binary float x, return the interval consisting
-        of all values that round to the float x under round-ties-to-even.
-
-        """
-        is_boundary_case = (
-            x._significand == 1 << (x._format.precision - 1) and
-            x._exponent > x._format.qmin
-            )
-
-        if is_boundary_case:
-            shift = x._exponent - 2
-            high = (4 * x._significand + 2) << max(shift, 0)
-            target = (4 * x._significand) << max(shift, 0)
-            low = (4 * x._significand - 1) << max(shift, 0)
-            denominator = 1 << max(0, -shift)
-        else:
-            shift = x._exponent - 1
-            high = (2 * x._significand + 1) << max(shift, 0)
-            target = (2 * x._significand) << max(shift, 0)
-            low = (2 * x._significand - 1) << max(shift, 0)
-            denominator = 1 << max(0, -shift)
-
-        # The interval of values that will round back to self is closed if
-        # the significand is even, and open otherwise.
-        closed = x._significand % 2 == 0
-        return cls(
-            low=low,
-            high=high,
-            target=target,
-            denominator=denominator,
-            closed=closed,
-        )
-
     def __mul__(self, n):
         """
         Scale this interval by a positive integer n.

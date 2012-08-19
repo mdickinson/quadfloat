@@ -1043,9 +1043,44 @@ class _BinaryFloat(object):
             return self._sign, 0, ''
 
         # General nonzero finite case.
-        I = _Interval.from_binary_float(self)
+        I = self._bounding_interval()
         exponent, digits = I.shortest_digit_string_floating()
         return self._sign, exponent, digits
+
+    def _bounding_interval(self):
+        """
+        Interval of values rounding to self.
+
+        Return the interval of real numbers that round to a nonzero finite self
+        under 'round ties to even'.  This is used when computing decimal string
+        representations of self.
+
+        """
+        is_boundary_case = (
+            self._significand == 1 << (self._format.precision - 1) and
+            self._exponent > self._format.qmin
+            )
+
+        if is_boundary_case:
+            shift = self._exponent - 2
+            high = (4 * self._significand + 2) << max(shift, 0)
+            target = (4 * self._significand) << max(shift, 0)
+            low = (4 * self._significand - 1) << max(shift, 0)
+            denominator = 1 << max(0, -shift)
+        else:
+            shift = self._exponent - 1
+            high = (2 * self._significand + 1) << max(shift, 0)
+            target = (2 * self._significand) << max(shift, 0)
+            low = (2 * self._significand - 1) << max(shift, 0)
+            denominator = 1 << max(0, -shift)
+
+        return _Interval(
+            low=low,
+            high=high,
+            target=target,
+            denominator=denominator,
+            closed=self._significand % 2 == 0,
+        )
 
     def _to_short_str(self):
         """
