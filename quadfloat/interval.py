@@ -18,7 +18,7 @@ class Interval(object):
 
     An instance of Interval represents an open or closed nonempty finite
     subinterval of the positive real numbers, with rational endpoints, along
-    with a marked point inside that interval.
+    with a marked point on the real line.
 
     """
     def __new__(cls, low, high, target, denominator, closed):
@@ -36,10 +36,8 @@ class Interval(object):
         the interval.
 
         """
-        if not low < target < high:
-            raise ValueError(
-                "low, target and high should satisfy low < target < high"
-            )
+        if not low < high:
+            raise ValueError("low should be strictly less than high")
         if not denominator > 0:
             raise ValueError("denominator should be positive")
 
