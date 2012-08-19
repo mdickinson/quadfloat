@@ -42,8 +42,7 @@ class SignalingNaNException(object):
         self.snan = snan
 
     def default_handler(self):
-        # XXX Find better name for this method.
-        return self.format._from_nan(self.snan)
+        return self.format(self.snan._quieten_nan())
 
 
 class InexactException(object):

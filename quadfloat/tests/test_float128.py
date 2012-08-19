@@ -40,14 +40,7 @@ float256 = BinaryInterchangeFormat(width=256)
 
 
 class TestFloat128(unittest.TestCase):
-    def assertInterchangeable(self, quad1, quad2, msg = ''):
-        """
-        Assert that two float16 instances are interchangeable.
-
-        This means more than just being numerically equal:  for example, -0.0
-        and 0.0 are equal, but not interchangeable.
-
-        """
+    def _interchangeable(self, quad1, quad2):
         # XXX Digs into private details, which isn't ideal.
         if quad1._type != quad2._type:
             interchangeable = False
@@ -67,9 +60,31 @@ class TestFloat128(unittest.TestCase):
             )
         else:
             assert False, "never get here"
+        return interchangeable
 
+    def assertInterchangeable(self, quad1, quad2, msg = ''):
+        """
+        Assert that two float16 instances are interchangeable.
+
+        This means more than just being numerically equal:  for example, -0.0
+        and 0.0 are equal, but not interchangeable.
+
+        """
+        interchangeable = self._interchangeable(quad1, quad2)
         self.assertTrue(interchangeable,
                         msg = msg + '{!r} not interchangeable with {!r}'.format(quad1, quad2))
+
+    def assertNotInterchangeable(self, quad1, quad2, msg = ''):
+        """
+        Assert that two float16 instances are interchangeable.
+
+        This means more than just being numerically equal:  for example, -0.0
+        and 0.0 are equal, but not interchangeable.
+
+        """
+        interchangeable = self._interchangeable(quad1, quad2)
+        self.assertFalse(interchangeable,
+                        msg = msg + '{!r} interchangeable with {!r}'.format(quad1, quad2))
 
     def test_construction_no_args(self):
         q = float128()
@@ -213,10 +228,34 @@ class TestFloat128(unittest.TestCase):
                 self.assertTrue(q.is_nan())
                 self.assertTrue(q.is_signaling())
 
-
         # Out-of-range payloads should just be clipped to be within range.
-        q = float128('nan(123123123123123123123123123123123123)')
+        self.assertNotInterchangeable(
+            float128('nan(0)'),
+            float128('nan(1)'),
+        )
+        self.assertInterchangeable(
+            float128('snan(0)'),
+            float128('snan(1)'),
+        )
 
+        self.assertInterchangeable(
+            float128('nan(123123123123123123123123123123123123)'),
+            float128('nan(2596148429267413814265248164610047)'),
+        )
+        self.assertNotInterchangeable(
+            float128('nan(123123123123123123123123123123123123)'),
+            float128('nan(2596148429267413814265248164610046)'),
+        )
+        self.assertInterchangeable(
+            float128('snan(123123123123123123123123123123123123)'),
+            float128('snan(2596148429267413814265248164610047)'),
+        )
+        self.assertNotInterchangeable(
+            float128('snan(123123123123123123123123123123123123)'),
+            float128('snan(2596148429267413814265248164610046)'),
+        )
+
+        # Some invalid values.
         with self.assertRaises(ValueError):
             float128('nan()')
 

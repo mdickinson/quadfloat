@@ -298,6 +298,14 @@ class BinaryInterchangeFormat(object):
     def _payload_bitmask(self):
         return (1 << self.precision - 2) - 1
 
+    @property
+    def _max_payload(self):
+        """
+        Maximum possible payload for a quiet or signaling NaN in this format.
+
+        """
+        return (1 << self.precision - 2) - 1
+
     def _from_value(self, value=0):
         """
         Float<nnn>([value])
@@ -333,10 +341,10 @@ class BinaryInterchangeFormat(object):
 
         """
         if b._type == _NAN:
-            converted = self._from_nan_triple(
+            converted = self._nan(
                 sign=b._sign,
                 signaling=b._signaling,
-                payload=b._payload,
+                payload=min(b._payload, self._max_payload),
             )
         elif b._type == _INFINITE:
             # Infinities convert with no loss of information.
@@ -420,7 +428,13 @@ class BinaryInterchangeFormat(object):
             assert m.group('nan')
             signaling = bool(m.group('signaling'))
             payload = int(m.group('payload') or 0)
-            return self._from_nan_triple(
+            # Clip payload to within range.  A signaling NaN payload must be at
+            # least 1.
+            payload = min(payload, self._max_payload)
+            if signaling and payload == 0:
+                payload = 1
+
+            return self._nan(
                 sign=sign,
                 signaling=signaling,
                 payload=payload,
@@ -470,20 +484,6 @@ class BinaryInterchangeFormat(object):
             converted = self._final_round(sign, exponent, significand, flags)
 
         return converted
-
-    def _from_nan(self, source):
-        """
-        Convert a NaN (possibly in a different format) to this format.
-
-        Silently truncates the payload to fit when necessary.  Also converts a
-        signaling NaN to a quiet NaN.
-
-        """
-        return self._from_nan_triple(
-            sign=source._sign,
-            signaling=False,
-            payload=source._payload,
-        )
 
     def _final_round(self, sign, e, q, flags=_null_flags):
         """
@@ -544,7 +544,8 @@ class BinaryInterchangeFormat(object):
         # these.
         for source in sources:
             if source._type == _NAN:
-                return self._from_nan(source)
+                # Convert to this format if necessary.
+                return self(source)
 
         # If we get here, then _handle_nans has been called with all arguments
         # non-NaN.  This shouldn't happen.
@@ -792,23 +793,6 @@ class BinaryInterchangeFormat(object):
             significand=0,
         )
 
-    def _from_nan_triple(self, sign, signaling, payload):
-        """
-        Return a NaN for this format, clipping the payload as appropriate.
-
-        """
-        min_payload = 1 if signaling else 0
-        max_payload = (1 << self.precision - 2) - 1
-        if payload < min_payload:
-            payload = min_payload
-        elif payload > max_payload:
-            payload = max_payload
-        return self._nan(
-            sign=sign,
-            signaling=signaling,
-            payload=payload,
-        )
-
     def _infinite(self, sign):
         """
         Return a suitably-signed infinity for this format.
@@ -1042,6 +1026,18 @@ class _BinaryFloat(object):
 
     def __str__(self):
         return self._to_short_str()
+
+    def _quieten_nan(self):
+        """
+        Quieten a NaN in this format.
+
+        """
+        assert self.is_signaling()
+        return self._format._nan(
+            sign=self._sign,
+            signaling=False,
+            payload=self._payload,
+        )
 
     # IEEE 754-2008 5.3.1: General operations.
     def _round_to_integral_general(self, rounding_direction, quiet):
