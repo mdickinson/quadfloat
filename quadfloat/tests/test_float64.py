@@ -9,9 +9,9 @@ import random
 import struct
 import unittest
 
-from binary_interchange_format import BinaryInterchangeFormat
+from quadfloat.binary_interchange_format import BinaryInterchangeFormat
 
-from binary_interchange_format import _FINITE, _INFINITE, _NAN
+from quadfloat.binary_interchange_format import _FINITE, _INFINITE, _NAN
 
 
 float64 = BinaryInterchangeFormat(width=64)

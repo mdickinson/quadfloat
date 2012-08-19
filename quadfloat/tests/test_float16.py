@@ -2,9 +2,9 @@ import contextlib
 import decimal
 import unittest
 
-from binary_interchange_format import BinaryInterchangeFormat
-from binary_interchange_format import rounding_direction
-from binary_interchange_format import (
+from quadfloat.binary_interchange_format import BinaryInterchangeFormat
+from quadfloat.binary_interchange_format import rounding_direction
+from quadfloat.binary_interchange_format import (
     round_ties_to_even,
     round_ties_to_away,
     round_toward_zero,
@@ -12,14 +12,14 @@ from binary_interchange_format import (
     round_toward_negative,
 )
 
-from binary_interchange_format import (
+from quadfloat.binary_interchange_format import (
     inexact_handler,
     invalid_operation_handler,
 )
 
-from binary_interchange_format import _bytes_from_iterable, _divide_nearest
+from quadfloat.binary_interchange_format import _bytes_from_iterable, _divide_nearest
 
-from binary_interchange_format import _FINITE, _INFINITE, _NAN
+from quadfloat.binary_interchange_format import _FINITE, _INFINITE, _NAN
 
 
 float16 = BinaryInterchangeFormat(width=16)

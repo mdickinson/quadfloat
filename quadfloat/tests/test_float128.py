@@ -2,9 +2,9 @@ import math
 import sys
 import unittest
 
-from binary_interchange_format import BinaryInterchangeFormat
+from quadfloat.binary_interchange_format import BinaryInterchangeFormat
 
-from binary_interchange_format import (
+from quadfloat.binary_interchange_format import (
     compare_quiet_equal,
     compare_quiet_not_equal,
     compare_quiet_greater,
@@ -30,7 +30,7 @@ from binary_interchange_format import (
     compare_signaling_greater_unordered,
 )
 
-from binary_interchange_format import _FINITE, _INFINITE, _NAN
+from quadfloat.binary_interchange_format import _FINITE, _INFINITE, _NAN
 
 float16 = BinaryInterchangeFormat(width=16)
 float32 = BinaryInterchangeFormat(width=32)

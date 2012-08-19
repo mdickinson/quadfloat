@@ -2,7 +2,7 @@ import decimal
 import unittest
 
 
-from binary_interchange_format import BinaryInterchangeFormat
+from quadfloat.binary_interchange_format import BinaryInterchangeFormat
 
 
 class TestShortRepr(unittest.TestCase):

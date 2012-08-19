@@ -5,9 +5,9 @@ Tests for mixed-precision arithmetic.
 
 import unittest
 
-from binary_interchange_format import BinaryInterchangeFormat
+from quadfloat.binary_interchange_format import BinaryInterchangeFormat
 
-from binary_interchange_format import _FINITE, _INFINITE, _NAN
+from quadfloat.binary_interchange_format import _FINITE, _INFINITE, _NAN
 
 
 float16 = BinaryInterchangeFormat(width=16)
