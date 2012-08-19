@@ -11,6 +11,13 @@ Bugs
 * Missing documentation.
 
 
+Nitpicks / consistency
+----------------------
+
+Don't talk about 'halfway' cases in docstrings; use 'ties' for consistency with
+the standard.
+
+
 Documentation
 -------------
 

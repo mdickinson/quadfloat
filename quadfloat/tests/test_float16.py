@@ -3,9 +3,14 @@ import decimal
 import unittest
 
 from quadfloat.arithmetic import _divide_nearest
-from quadfloat.binary_interchange_format import BinaryInterchangeFormat
-from quadfloat.binary_interchange_format import rounding_direction
+from quadfloat.attributes import (
+    inexact_handler,
+    invalid_operation_handler,
+    rounding_direction,
+)
+
 from quadfloat.binary_interchange_format import (
+    BinaryInterchangeFormat,
     round_ties_to_even,
     round_ties_to_away,
     round_toward_zero,
@@ -13,13 +18,7 @@ from quadfloat.binary_interchange_format import (
     round_toward_negative,
 )
 
-from quadfloat.binary_interchange_format import (
-    inexact_handler,
-    invalid_operation_handler,
-)
-
 from quadfloat.binary_interchange_format import _bytes_from_iterable
-
 from quadfloat.binary_interchange_format import _FINITE, _INFINITE, _NAN
 
 

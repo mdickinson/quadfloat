@@ -1,7 +1,6 @@
 from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
 
-import contextlib as _contextlib
 import math as _math
 import operator as _operator
 import re as _re
@@ -13,9 +12,21 @@ from quadfloat.arithmetic import (
     _remainder_nearest,
     _rshift_to_odd,
 )
+from quadfloat.attributes import (
+    _signal_invalid_operation,
+    _signal_inexact,
+    _current_rounding_direction,
+)
+from quadfloat.rounding_direction import (
+    round_ties_to_away,
+    round_ties_to_even,
+    round_toward_negative,
+    round_toward_positive,
+    round_toward_zero,
+)
+
 
 from quadfloat.interval import Interval as _Interval
-
 
 # Python 2 / 3 compatibility code.
 
@@ -138,87 +149,6 @@ _round_ties_to_even_offsets = [0, -1, -2, 1, 0, -1, 2, 1]
 # _divide_nearest function below for a nice example of this in practice.
 #
 # Here are primitives for integer division and shifting using round-to-odd.
-
-
-# Rounding directions.
-
-class RoundingDirection(object):
-    def __init__(self, _rounder):
-        self._rounder = _rounder
-
-
-round_ties_to_even = RoundingDirection(
-    _rounder=lambda q, sign: q + _round_ties_to_even_offsets[q & 7] >> 2
-)
-
-round_ties_to_away = RoundingDirection(_rounder=lambda q, sign: (q + 2) >> 2)
-
-round_toward_positive = RoundingDirection(
-    _rounder=lambda q, sign: q >> 2 if sign else -(-q >> 2)
-)
-
-round_toward_negative = RoundingDirection(
-    _rounder=lambda q, sign: -(-q >> 2) if sign else q >> 2
-)
-
-round_toward_zero = RoundingDirection(_rounder=lambda q, sign: q >> 2)
-
-
-# Attributes.
-
-# XXX Default handler should set flag.
-_attributes = {
-    'rounding_direction': round_ties_to_even,
-    'inexact_handler': lambda x: None,
-    'invalid_operation_handler': lambda x: None,
-}
-
-
-def _current_rounding_direction():
-    return _attributes['rounding_direction']
-
-
-# Context managers to set and restore particular attributes.
-
-@_contextlib.contextmanager
-def rounding_direction(new_rounding_direction):
-    old_rounding_direction = _attributes.get('rounding_direction')
-    _attributes['rounding_direction'] = new_rounding_direction
-    try:
-        yield
-    finally:
-        _attributes['rounding_direction'] = old_rounding_direction
-
-
-@_contextlib.contextmanager
-def inexact_handler(new_handler):
-    old_handler = _attributes.get('inexact_handler')
-    _attributes['inexact_handler'] = new_handler
-    try:
-        yield
-    finally:
-        _attributes['inexact_handler'] = old_handler
-
-
-@_contextlib.contextmanager
-def invalid_operation_handler(new_handler):
-    old_handler = _attributes.get('invalid_operation_handler')
-    _attributes['invalid_operation_handler'] = new_handler
-    try:
-        yield
-    finally:
-        _attributes['invalid_operation_handler'] = old_handler
-
-
-# Functions to signal various exceptions.  (Private for now, since only the
-# core code needs to be able to signal exceptions.)
-
-def _signal_inexact():
-    _attributes['inexact_handler'](None)
-
-
-def _signal_invalid_operation():
-    _attributes['invalid_operation_handler'](None)
 
 
 # Flags class.
