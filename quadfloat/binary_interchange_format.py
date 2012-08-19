@@ -1,3 +1,4 @@
+from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
 
 import contextlib as _contextlib
@@ -5,6 +6,15 @@ import math as _math
 import operator as _operator
 import re as _re
 import sys as _sys
+
+from quadfloat.arithmetic import (
+    _divide_to_odd,
+    _isqrt,
+    _remainder_nearest,
+    _rshift_to_odd,
+)
+
+from quadfloat.interval import Interval as _Interval
 
 
 # Python 2 / 3 compatibility code.
@@ -30,10 +40,6 @@ if _sys.version_info.major == 2:
         """
         return ''.join(chr(n) for n in ns)
 
-    # Iterator version of zip.
-    from future_builtins import zip as _zip
-    from future_builtins import map as _map
-
     # Values used to compute hashes.
     _PyHASH_INF = hash(float('inf'))
     _PyHASH_NINF = hash(float('-inf'))
@@ -45,9 +51,6 @@ else:
     _int_to_bytes = lambda n, length: n.to_bytes(length, byteorder='little')
     _int_from_bytes = lambda bs: int.from_bytes(bs, byteorder='little')
     _bytes_from_iterable = bytes
-
-    _zip = zip
-    _map = map
 
     _PyHASH_MODULUS = _sys.hash_info.modulus
     _PyHASH_2INV = pow(2, _PyHASH_MODULUS - 2, _PyHASH_MODULUS)
@@ -115,21 +118,6 @@ def _decimal_format(sign, exponent, digits):
 _round_ties_to_even_offsets = [0, -1, -2, 1, 0, -1, 2, 1]
 
 
-def _isqrt(n):
-    """
-    Return the integer square root of n for any integer n >= 1.
-
-    That is, return the unique integer m such that m*m <= n < (m+1)*(m+1).
-
-    """
-    m = n
-    while True:
-        q = n // m
-        if m <= q:
-            return m
-        m = m + q >> 1
-
-
 # Round-to-odd is a useful primitive rounding mode for performing general
 # rounding operations while avoiding problems from double rounding.
 #
@@ -149,77 +137,6 @@ def _isqrt(n):
 # _divide_nearest function below for a nice example of this in practice.
 #
 # Here are primitives for integer division and shifting using round-to-odd.
-
-
-def _divide_to_odd(a, b):
-    """
-    Compute a / b.  Round inexact results to the nearest *odd* integer.
-
-    >>> _divide_to_odd(-1, 4)
-    -1
-    >>> _divide_to_odd(0, 4)
-    0
-    >>> _divide_to_odd(1, 4)
-    1
-    >>> _divide_to_odd(4, 4)
-    1
-    >>> _divide_to_odd(5, 4)
-    1
-    >>> _divide_to_odd(7, 4)
-    1
-    >>> _divide_to_odd(8, 4)
-    2
-
-    """
-    q, r = divmod(a, b)
-    return q | bool(r)
-
-
-def _rshift_to_odd(a, shift):
-    """
-    Compute a / 2**shift. Round inexact results to the nearest *odd* integer.
-
-    """
-    if shift <= 0:
-        return a << -shift
-    else:
-        return (a >> shift) | bool(a & ~(-1 << shift))
-
-
-def _divide_nearest(a, b):
-    """
-    Compute the nearest integer to the quotient a / b, rounding ties to the
-    nearest even integer.  a and b should be integers, with b positive.
-
-    >>> _divide_nearest(-14, 4)
-    -4
-    >>> _divide_nearest(-10, 4)
-    -2
-    >>> _divide_nearest(10, 4)
-    2
-    >>> _divide_nearest(14, 4)
-    4
-    >>> [_divide_nearest(i, 3) for i in range(-10, 10)]
-    [-3, -3, -3, -2, -2, -2, -1, -1, -1, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3]
-    >>> [_divide_nearest(i, 4) for i in range(-10, 10)]
-    [-2, -2, -2, -2, -2, -1, -1, -1, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2]
-    >>> [_divide_nearest(i, 6) for i in range(-10, 10)]
-    [-2, -2, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2]
-
-    """
-    q = _divide_to_odd(4 * a, b)
-    return (q + _round_ties_to_even_offsets[q & 7]) >> 2
-
-
-def _remainder_nearest(a, b):
-    """
-    Compute a - q * b where q is the nearest integer to the quotient a / b,
-    rounding ties to the nearest even integer.  a and b should be integers,
-    with b positive.
-
-    Counterpart to divide_nearest.
-    """
-    return a - _divide_nearest(a, b) * b
 
 
 # Rounding directions.
@@ -1109,269 +1026,6 @@ class BinaryInterchangeFormat(object):
 
 
 _float64 = BinaryInterchangeFormat(64)
-
-
-class _Interval(object):
-    """
-    Open or closed finite subinterval of the positive reals, with marked point.
-
-    An instance of _Interval represents an open or closed nonempty finite
-    subinterval of the positive real numbers, with rational endpoints, along
-    with a marked point inside that interval.
-
-    """
-    def __new__(cls, low, high, target, denominator, closed):
-        """
-        _Interval(low, high, target, denominator, closed) -> _Interval object
-        representing the open interval
-
-            (low/denominator, high/denominator)
-
-        if closed is False, and
-
-            [low/denominator, high/denominator]
-
-        if closed is True.  target/denominator gives the marked point inside
-        the interval.
-
-        """
-        if not low < target < high:
-            raise ValueError(
-                "low, target and high should satisfy low < target < high"
-            )
-        if not denominator > 0:
-            raise ValueError("denominator should be positive")
-
-        self = object.__new__(cls)
-        self.low = low
-        self.high = high
-        self.target = target
-        self.denominator = denominator
-        self.closed = closed
-        return self
-
-    @classmethod
-    def from_binary_float(cls, x):
-        """
-        Given a nonzero finite binary float x, return the interval consisting
-        of all values that round to the float x under round-ties-to-even.
-
-        """
-        is_boundary_case = (
-            x._significand == 1 << (x._format.precision - 1) and
-            x._exponent > x._format.qmin
-            )
-
-        if is_boundary_case:
-            shift = x._exponent - 2
-            high = (4 * x._significand + 2) << max(shift, 0)
-            target = (4 * x._significand) << max(shift, 0)
-            low = (4 * x._significand - 1) << max(shift, 0)
-            denominator = 1 << max(0, -shift)
-        else:
-            shift = x._exponent - 1
-            high = (2 * x._significand + 1) << max(shift, 0)
-            target = (2 * x._significand) << max(shift, 0)
-            low = (2 * x._significand - 1) << max(shift, 0)
-            denominator = 1 << max(0, -shift)
-
-        # The interval of values that will round back to self is closed if
-        # the significand is even, and open otherwise.
-        closed = x._significand % 2 == 0
-        return cls(
-            low=low,
-            high=high,
-            target=target,
-            denominator=denominator,
-            closed=closed,
-        )
-
-    def __mul__(self, n):
-        """
-        Scale this interval by a positive integer n.
-
-        """
-        if not n > 0:
-            raise ValueError("n should be positive")
-
-        return _Interval(
-            low=self.low * n,
-            high=self.high * n,
-            target=self.target * n,
-            denominator=self.denominator,
-            closed=self.closed,
-        )
-
-    def __truediv__(self, n):
-        """
-        Divide by a positive integer n.
-
-        """
-        if not n > 0:
-            raise ValueError("n should be positive")
-
-        return _Interval(
-            low=self.low,
-            high=self.high,
-            target=self.target,
-            denominator=self.denominator * n,
-            closed=self.closed,
-        )
-
-
-    def __sub__(self, n):
-        """
-        Subtract an integer from this interval.
-
-        """
-        nd = n * self.denominator
-        return _Interval(
-            low=self.low - nd,
-            high=self.high - nd,
-            target=self.target - nd,
-            denominator=self.denominator,
-            closed=self.closed,
-        )
-
-    def contains_zero(self):
-        """
-        Return True if this interval contains zero, else False.
-
-        """
-        if self.closed:
-            return self.low <= 0 <= self.high
-        else:
-            return self.low < 0 < self.high
-
-    def __contains__(self, n):
-        """
-        Return True if this interval contains the given integer, else False.
-
-        """
-        return (self - n).contains_zero()
-
-    def high_integer(self):
-        """
-        Return greatest integer lying inside the upper bound of this interval.
-
-        For a closed interval [low, high] this method returns the greatest
-        integer n such that n <= high (that is, the floor of high).  For an
-        open interval (low, high) it returns the greatest integer n such that
-        n < high.
-
-        Note that the returned integer is not necessarily inside the interval,
-        since it may lie outside the lower bound.
-
-        """
-        if self.closed:
-            return self.high // self.denominator
-        else:
-            return -(-self.high // self.denominator) - 1
-
-    def low_integer(self):
-        """
-        Return least integer lying inside the lower bound of this interval.
-
-        For a closed interval [low, high] this method returns the least integer
-        n such that n >= low.  For an open interval (low, high) it returns the
-        least integer n such that n > low.
-
-        Note that the returned integer is not necessarily inside the interval,
-        since it may lie outside the upper bound.
-
-        """
-        if self.closed:
-            return -(-self.low // self.denominator)
-        else:
-            return self.low // self.denominator + 1
-
-    def closest_integer_to_target(self):
-        """
-        Return closest integer to the target value inside the interval.
-
-        """
-        max_digit = self.high_integer()
-        min_digit = self.low_integer()
-        if min_digit > max_digit:
-            raise ValueError("This interval contains no integers.")
-
-        closest_digit = _divide_nearest(self.target, self.denominator)
-        if closest_digit < min_digit:
-            return min_digit
-        elif closest_digit > max_digit:
-            return max_digit
-        else:
-            return closest_digit
-
-    def shortest_digit_string_fixed(self):
-        """
-        Given a subinterval of (0, 1), return the shortest string of digits
-        such that 0.digits represents a point in this interval.
-
-        In the case that there is more than one shortest string, return the one
-        that's closest to the target value.
-
-        """
-        digits = []
-        while True:
-            self *= 10
-            digit = self.high_integer()
-            if digit in self:
-                digits.append(self.closest_integer_to_target())
-                break
-            self -= digit
-            digits.append(digit)
-
-        return ''.join(_map(str, digits))
-
-    def rescale_to_unit_interval(self):
-        """
-        Rescale this interval by a power of 10 so that it fits within (0, 1).
-
-        self should lie entirely within the positive reals.
-
-        Return an integer n and a new interval I such that self = 10**n * I.
-
-        """
-        n = len(str(self.high)) - len(str(self.denominator))
-        I = self / 10 ** n if n >= 0 else self * 10 ** -n
-
-        if I.high_integer() > 0:
-            I /= 10
-            n += 1
-
-        # Check invariants.
-        assert I.high_integer() == 0
-        assert (I * 10).high_integer() > 0
-        return n, I
-
-    def shortest_digit_string_floating(self):
-        """
-        Generate the shortest string of digits representing a point
-        in this interval.
-
-        Return a pair (n, digits) such that int(digits) * 10**n gives the
-        required point.
-
-        """
-        n, I = self.rescale_to_unit_interval()
-
-        if 1 in I * 10:
-            # Corner case: I contains 0.1, and possibly other powers of 10.
-            # Rescale until the target value is in [1.0, 10.0).
-            while I.target < I.denominator:
-                n, I = n - 1, I * 10
-
-            # Now target value is in [1.0, 10.0), so the two closest 1-digit
-            # decimals to the target are both integers.
-            digits = str(I.closest_integer_to_target())
-            if digits.endswith('0'):
-                n, digits = n + 1, digits[:-1]
-        else:
-            # Usual case: 0.1 not in I; use the fixed-point algorithm.
-            digits = I.shortest_digit_string_fixed()
-            n -= len(digits)
-        return n, digits
 
 
 class _BinaryFloat(object):

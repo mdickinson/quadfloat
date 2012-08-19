@@ -2,6 +2,7 @@ import contextlib
 import decimal
 import unittest
 
+from quadfloat.arithmetic import _divide_nearest
 from quadfloat.binary_interchange_format import BinaryInterchangeFormat
 from quadfloat.binary_interchange_format import rounding_direction
 from quadfloat.binary_interchange_format import (
@@ -17,7 +18,7 @@ from quadfloat.binary_interchange_format import (
     invalid_operation_handler,
 )
 
-from quadfloat.binary_interchange_format import _bytes_from_iterable, _divide_nearest
+from quadfloat.binary_interchange_format import _bytes_from_iterable
 
 from quadfloat.binary_interchange_format import _FINITE, _INFINITE, _NAN
 

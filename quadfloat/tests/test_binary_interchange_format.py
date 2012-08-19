@@ -21,7 +21,7 @@ class TestBinaryIntegerchangeFormat(unittest.TestCase):
 
     def test_bad_width(self):
         with self.assertRaises(ValueError):
-            binary_bad = BinaryInterchangeFormat(width=96)
+            BinaryInterchangeFormat(width=96)
 
     def test_precision_formula(self):
         binary16 = BinaryInterchangeFormat(width=16)
