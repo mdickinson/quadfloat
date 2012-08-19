@@ -161,13 +161,29 @@ class Interval(object):
 
     def shortest_digit_string_fixed(self):
         """
-        Given a subinterval of (0, 1), return the shortest string of digits
-        such that 0.digits represents a point in this interval.
+        Given a positive-length subinterval of (0, 1), return the shortest
+        string of digits such that 0.digits represents a point in this
+        interval.
 
         In the case that there is more than one shortest string, return the one
         that's closest to the target value.
 
         """
+        # Sketch of algorithm:  there are two possibilities.  Either:
+        #
+        # (1) The interval 'self' contains an exact tenth, or in other words
+        #     self * 10 contains an integer.  In that case, we've found a
+        #     1-digit decimal representation of a point inside the interval.
+        #     It remains to choose the 'best' integer out of those available.
+        #
+        # or:
+        #
+        # (2) self * 10 doesn't contain any integer.  In this case every
+        #     decimal string representing a point in this interval starts with
+        #     the same first digit, so we just determine that digit (call it
+        #     'd'), record it, and then apply the algorithm recursively to
+        #     (self * 10 - d) to determine the remaining digits.
+
         digits = []
         while True:
             self *= 10
