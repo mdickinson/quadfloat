@@ -17,6 +17,14 @@ from quadfloat.attributes import (
     _signal_inexact,
     _current_rounding_direction,
 )
+from quadfloat.exceptions import (
+    InexactException,
+    InvalidBooleanOperationException,
+    InvalidIntegerOperationException,
+    InvalidOperationException,
+    SignalingNaNException,
+)
+
 from quadfloat.rounding_direction import (
     round_ties_to_away,
     round_ties_to_even,
@@ -529,8 +537,8 @@ class BinaryInterchangeFormat(object):
         # Look for signaling NaNs.
         for source in sources:
             if source._type == _NAN and source._signaling:
-                _signal_invalid_operation()
-                return self._from_nan(source)
+                exception = SignalingNaNException(self, source)
+                return _signal_invalid_operation(exception)
 
         # All operands are quiet NaNs; return a result based on the first of
         # these.
@@ -881,14 +889,9 @@ class BinaryInterchangeFormat(object):
         Handle an invalid operation.
 
         """
-        # For now, just return a quiet NaN.  Someday this should be more
-        # sophisticated.
-        _signal_invalid_operation()
-        return self._nan(
-            sign=False,
-            signaling=False,
-            payload=0,
-        )
+        # XXX All uses of this function should be replaced with something
+        # that signals a particular subclass of InvalidOperationException.
+        return _signal_invalid_operation(InvalidOperationException(self))
 
     def _encode_as_int(self, source):
         """
@@ -1063,15 +1066,20 @@ class _BinaryFloat(object):
         q = rounding_direction._rounder(to_quarter, self._sign)
 
         # Signal inexact if necessary.
-        if not quiet and q << 2 != to_quarter:
-            _signal_inexact()
+
+        inexact = not quiet and q << 2 != to_quarter
 
         # Normalize.
         if q == 0:
-            return self._format._zero(self._sign)
+            rounded = self._format._zero(self._sign)
         else:
             shift = self._format.precision - q.bit_length()
-            return self._format._finite(self._sign, -shift, q << shift)
+            rounded = self._format._finite(self._sign, -shift, q << shift)
+
+        if inexact:
+            return _signal_inexact(InexactException(rounded))
+        else:
+            return rounded
 
     def round_to_integral_ties_to_even(self):
         """
@@ -1901,7 +1909,7 @@ def _handle_invalid_bool(default_bool):
     are comparisons involving a signaling NaN.
 
     """
-    raise ValueError("Comparison involving signaling NaN")
+    return _signal_invalid_operation(InvalidBooleanOperationException())
 
 
 def _handle_invalid_int(message):
@@ -1910,8 +1918,7 @@ def _handle_invalid_int(message):
     int signals invalid operation.
 
     """
-    _signal_invalid_operation()
-    raise ValueError(message)
+    return _signal_invalid_operation(InvalidIntegerOperationException())
 
 
 def _compare_quiet_general(source1, source2, operator, unordered_result):
