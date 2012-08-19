@@ -97,6 +97,7 @@ _number_parser = _re.compile(r"""        # A numeric string consists of:
     \Z
 """, _re.VERBOSE | _re.IGNORECASE).match
 
+
 def _decimal_format(sign, exponent, digits):
     # (-1)**sign * int(digits) * 10**exponent
     # Format in non-scientific form.
@@ -107,7 +108,7 @@ def _decimal_format(sign, exponent, digits):
     if not digits:
         coefficient = '0'
     elif exponent >= 0:
-        coefficient = digits + '0'*exponent
+        coefficient = digits + '0' * exponent
     elif exponent + len(digits) > 0:
         coefficient = digits[:exponent] + '.' + digits[exponent:]
     else:

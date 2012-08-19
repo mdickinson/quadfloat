@@ -81,7 +81,6 @@ class Interval(object):
             closed=self.closed,
         )
 
-
     def __sub__(self, n):
         """
         Subtract an integer from this interval.
