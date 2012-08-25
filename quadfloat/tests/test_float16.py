@@ -1301,6 +1301,7 @@ class TestFloat16(unittest.TestCase):
             actual = source1.scale_b(n)
             self.assertInterchangeable(actual, expected, 'scale_b({}, {})'.format(source1, n))
 
+
     def test_log_b(self):
         # NaNs
         for x in float16('nan'), float16('-snan'):
@@ -1326,7 +1327,6 @@ class TestFloat16(unittest.TestCase):
                 except ValueError:
                     pass
 
-
         test_pairs = [
             ('0.9', '-1'),
             ('1', '0'),
@@ -1349,5 +1349,6 @@ class TestFloat16(unittest.TestCase):
             actual = source1.log_b()
             self.assertEqual(actual, expected, 'log_b({}): expected {}, got {}'.format(source1, expected, actual))
 
+        
 if __name__ == '__main__':
     unittest.main()
