@@ -3,7 +3,6 @@ from __future__ import division as _division
 
 import math as _math
 import operator as _operator
-import re as _re
 import sys as _sys
 
 from quadfloat.arithmetic import (
