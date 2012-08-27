@@ -319,10 +319,10 @@ class BinaryInterchangeFormat(object):
 
         """
         if b._type == _NAN:
-            converted = self._nan(
+            converted = self._from_nan_triple(
                 sign=b._sign,
                 signaling=b._signaling,
-                payload=min(b._payload, self._max_payload),
+                payload=b._payload,
             )
         elif b._type == _INFINITE:
             # Infinities convert with no loss of information.
@@ -407,11 +407,7 @@ class BinaryInterchangeFormat(object):
         except ValueError:
             pass
         else:
-            payload = min(payload, self._max_payload)
-            if signaling and payload == 0:
-                payload = 1
-
-            return self._nan(
+            return self._from_nan_triple(
                 sign=sign,
                 signaling=signaling,
                 payload=payload,
@@ -511,6 +507,22 @@ class BinaryInterchangeFormat(object):
         e = max(d - self.precision, self.qmin) - 2
         q = _rshift_to_odd(significand, e - exponent)
         return self._final_round(sign, e, q, flags=flags)
+
+    def _from_nan_triple(self, sign, signaling, payload):
+        """
+        Given a triple representing a NaN, convert to this format.
+        Clip payload to within bounds if necessary.
+
+        """
+        payload = min(payload, self._max_payload)
+        if signaling and payload == 0:
+            payload = 1
+
+        return self._nan(
+            sign=sign,
+            signaling=signaling,
+            payload=payload,
+        )
 
     def _handle_nans(self, *sources):
         # Look for signaling NaNs.
