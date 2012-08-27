@@ -24,7 +24,12 @@ from quadfloat.exceptions import (
     InvalidOperationException,
     SignalingNaNException,
 )
-
+from quadfloat.interval import Interval as _Interval
+from quadfloat.parsing import (
+    parse_finite_decimal,
+    parse_infinity,
+    parse_nan,
+)
 from quadfloat.rounding_direction import (
     round_ties_to_away,
     round_ties_to_even,
@@ -33,8 +38,6 @@ from quadfloat.rounding_direction import (
     round_toward_zero,
 )
 
-
-from quadfloat.interval import Interval as _Interval
 
 # Python 2 / 3 compatibility code.
 
@@ -91,31 +94,7 @@ _INFINITE = 'infinite_type'
 _NAN = 'nan_type'
 
 
-# Conversions of Decimal numbers to and from strings.
-
-_number_parser = _re.compile(r"""        # A numeric string consists of:
-    (?P<sign>[-+])?                     # an optional sign, then either ...
-    (?:
-        (?P<finite>                     # a finite number
-            (?=\d|\.\d)                 # with at least one digit
-            (?P<int>\d*)                # having a (maybe empty) integer part
-            (?:\.(?P<frac>\d*))?        # and a (maybe empty) fractional part
-            (?:E(?P<exp>[-+]?\d+))?     # and an optional exponent, or ...
-        )
-    |
-        (?P<infinite>                   # ... an infinite number, or ...
-            Inf(?:inity)?
-        )
-    |
-        (?P<nan>
-            (?P<signaling>s)?           # ... an (optionally signaling)
-            NaN                         # NaN
-            (?:\((?P<payload>\d+)\))?   # with optional parenthesized payload.
-        )
-    )
-    \Z
-""", _re.VERBOSE | _re.IGNORECASE).match
-
+# Conversions of Decimal numbers to strings.
 
 def _decimal_format(sign, exponent, digits):
     # (-1)**sign * int(digits) * 10**exponent
@@ -387,25 +366,20 @@ class BinaryInterchangeFormat(object):
         Convert an input string to this format.
 
         """
-        m = _number_parser(s)
-        if m is None:
-            raise ValueError('invalid numeric string')
-
-        sign = m.group('sign') == '-'
-
-        if m.group('finite'):
-            # Finite number.
-            fraction = m.group('frac') or ''
-            intpart = int(m.group('int') + fraction)
-            exp = int(m.group('exp') or '0') - len(fraction)
-
+        # Do we have a representation of a finite number?
+        try:
+            sign, exponent, significand = parse_finite_decimal(s)
+        except ValueError:
+            pass
+        else:
             # Quick return for zeros.
-            if not intpart:
+            if significand == 0:
                 return self._zero(sign)
 
             # Express (absolute value of) incoming string in form a / b;
             # find d such that 2 ** (d - 1) <= a / b < 2 ** d.
-            a, b = intpart * 10 ** max(exp, 0), 10 ** max(0, -exp)
+            a = significand * 10 ** max(exponent, 0)
+            b = 10 ** max(0, -exponent)
             d = a.bit_length() - b.bit_length()
             d += (a >> d if d >= 0 else a << -d) >= b
 
@@ -417,19 +391,23 @@ class BinaryInterchangeFormat(object):
                 a << max(-exponent, 0),
                 b << max(exponent, 0),
             )
+
             return self._final_round(sign, exponent, significand)
-
-        elif m.group('infinite'):
-            # Infinite number.
-            return self._infinite(sign)
-
+            
+        # Or a representation of infinity?
+        try:
+            sign = parse_infinity(s)
+        except ValueError:
+            pass
         else:
-            # NaN.
-            assert m.group('nan')
-            signaling = bool(m.group('signaling'))
-            payload = int(m.group('payload') or 0)
-            # Clip payload to within range.  A signaling NaN payload must be at
-            # least 1.
+            return self._infinite(sign=sign)
+
+        # Or a representation of a nan?
+        try:
+            sign, signaling, payload = parse_nan(s)
+        except ValueError:
+            pass
+        else:
             payload = min(payload, self._max_payload)
             if signaling and payload == 0:
                 payload = 1
@@ -439,6 +417,8 @@ class BinaryInterchangeFormat(object):
                 signaling=signaling,
                 payload=payload,
             )
+
+        raise ValueError('invalid numeric string')
 
     def _from_float(self, value, flags=_null_flags):
         """
