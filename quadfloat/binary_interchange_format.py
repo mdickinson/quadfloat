@@ -392,7 +392,7 @@ class BinaryInterchangeFormat(object):
             )
 
             return self._final_round(sign, exponent, significand)
-            
+
         # Or a representation of infinity?
         try:
             sign = parse_infinity(s)
