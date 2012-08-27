@@ -26,6 +26,7 @@ from quadfloat.exceptions import (
 from quadfloat.interval import Interval as _Interval
 from quadfloat.parsing import (
     parse_finite_decimal,
+    parse_finite_hexadecimal,
     parse_infinity,
     parse_nan,
 )
@@ -772,6 +773,42 @@ class BinaryInterchangeFormat(object):
 
         """
         return self._from_int(n)
+
+    def convert_from_hex_character(self, s):
+        """
+        Convert the string s to this format.
+
+        """
+        try:
+            sign, exponent, significand = parse_finite_hexadecimal(s)
+        except ValueError:
+            pass
+        else:
+            return self._from_triple(
+                sign=sign,
+                exponent=exponent,
+                significand=significand,
+            )
+
+        try:
+            sign = parse_infinity(s)
+        except ValueError:
+            pass
+        else:
+            return self._infinite(sign=sign)
+
+        try:
+            sign, signaling, payload = parse_nan(s)
+        except ValueError:
+            pass
+        else:
+            return self._from_nan_triple(
+                sign=sign,
+                signaling=signaling,
+                payload=payload,
+            )
+
+        raise ValueError('invalid numeric string')
 
     def _zero(self, sign):
         """
