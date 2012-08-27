@@ -57,7 +57,6 @@ class InexactException(object):
         return self.rounded
 
 
-
 def default_invalid_operation_handler(exception):
     return exception.default_handler()
 
