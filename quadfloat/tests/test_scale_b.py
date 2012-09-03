@@ -25,13 +25,70 @@ from quadfloat.binary_interchange_format import BinaryInterchangeFormat
 
 # 16-bit test values, round-half-to-even.
 test16 = """\
-0x1p0 -25 -> 0x0p0 underflow
+# NaNs behave as usual
+nan 0 -> nan
+-nan(123) 54 -> -nan(123)
+
+# Infinities are unchanged...
+inf -1000 -> inf
+inf -1 -> inf
+inf 0 -> inf
+inf 1 -> inf
+inf 1000 -> inf
+-inf -1000 -> -inf
+-inf -1 -> -inf
+-inf 0 -> -inf
+-inf 1 -> -inf
+-inf 1000 -> -inf
+
+# As are zeros.
+0x0p0 -1000 -> 0x0p0
+0x0p0 -1 -> 0x0p0
+0x0p0 0 -> 0x0p0
+0x0p0 1 -> 0x0p0
+0x0p0 1000 -> 0x0p0
+-0x0p0 -1000 -> -0x0p0
+-0x0p0 -1 -> -0x0p0
+-0x0p0 0 -> -0x0p0
+-0x0p0 1 -> -0x0p0
+-0x0p0 1000 -> -0x0p0
+
+# Powers of 2.
+0x1p0 -1000 -> 0x0p0 underflow inexact
+0x1p0 -25 -> 0x0p0 underflow inexact
 0x1p0 -24 -> 0x1p-24 underflow
-0x1.8p0 -24 -> 0x2p-24 underflow inexact
-0x1p0 -15 -> 0x1p-15
+0x1p0 -16 -> 0x1p-16 underflow
+0x1p0 -15 -> 0x1p-15 underflow
 0x1p0 -14 -> 0x1p-14
-0x1p0 15 -> 0x8000p0
-0x1p0 16 -> Infinity overflow
+0x1p0 -3 -> 0x1p-3
+0x1p0 -2 -> 0x1p-2
+0x1p0 -1 -> 0x1p-1
+0x1p0 0 -> 0x1p0
+0x1p0 1 -> 0x1p1
+0x1p0 2 -> 0x1p2
+0x1p0 3 -> 0x1p3
+0x1p0 15 -> 0x1p15
+0x1p0 16 -> inf overflow
+0x1p0 1000 -> inf overflow
+
+# Check rounding cases with subnormal result.
+0x1p-2 -24 -> 0x0p0 underflow inexact
+0x2p-2 -24 -> 0x0p0 underflow inexact
+0x3p-2 -24 -> 0x1p-24 underflow inexact
+0x4p-2 -24 -> 0x1p-24 underflow
+0x5p-2 -24 -> 0x1p-24 underflow inexact
+0x6p-2 -24 -> 0x2p-24 underflow inexact
+0x7p-2 -24 -> 0x2p-24 underflow inexact
+0x8p-2 -24 -> 0x2p-24 underflow
+0x9p-2 -24 -> 0x2p-24 underflow inexact
+0xap-2 -24 -> 0x2p-24 underflow inexact
+0xbp-2 -24 -> 0x3p-24 underflow inexact
+0xcp-2 -24 -> 0x3p-24 underflow
+0xdp-2 -24 -> 0x3p-24 underflow inexact
+0xep-2 -24 -> 0x4p-24 underflow inexact
+0xfp-2 -24 -> 0x4p-24 underflow inexact
+0x10p-2 -24 -> 0x4p-24 underflow
+
 """
 
 
