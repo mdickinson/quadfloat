@@ -774,6 +774,36 @@ class BinaryInterchangeFormat(object):
         """
         return self._from_int(n)
 
+    def convert_to_hex_character(self, source):
+        """
+        Convert the given source to this format.
+
+        """
+        if source._format != self:
+            raise ValueError("Wrong format in convert_to_hex_character")
+
+        # Quick returns for infinities and NaNs.
+        if source._type == _INFINITE:
+            return '-Infinity' if source._sign else 'Infinity'
+
+        if source._type == _NAN:
+            return '{sign}{signaling}NaN({payload})'.format(
+                sign='-' if source._sign else '',
+                signaling='s' if source._signaling else '',
+                payload=source._payload,
+            )
+
+        # Cosmetic special case for 0 (else we'll get
+        # tiny exponents for this case).
+        if source._significand == 0:
+            return '-0x0p0' if source._sign else '0x0p0'
+
+        return '{sign}0x{significand:x}p{exponent}'.format(
+            sign='-' if source._sign else '',
+            significand=source._significand,
+            exponent=source._exponent,
+        )
+
     def convert_from_hex_character(self, s):
         """
         Convert the string s to this format.
