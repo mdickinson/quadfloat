@@ -42,6 +42,15 @@ class TestScaleB(unittest.TestCase):
     def test_scale_b(self):
         arg_converters = float16.convert_from_hex_character, int
         for line in test16.splitlines():
+            # Strip comments.
+            if '#' in line:
+                line = line[:line.index('#')]
+
+            # Skip empty lines, or lines containing
+            # only whitespace and/or comments.
+            if not line.strip():
+                continue
+
             args, result = line.split('->')
             args = args.split()
 
