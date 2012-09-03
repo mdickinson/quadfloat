@@ -975,6 +975,10 @@ _float64 = BinaryInterchangeFormat(64)
 
 
 class _BinaryFloat(object):
+    @property
+    def format(self):
+        return self._format
+
     def _shortest_decimal(self):
         """
         Convert to shortest Decimal instance that rounds back to the correct
