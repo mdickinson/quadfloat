@@ -116,7 +116,7 @@ def parse_finite_hexadecimal(s):
     exponent = match.group('exponent')
     return (
         sign,
-        int(exponent) - len(fraction),
+        int(exponent) - 4 * len(fraction),
         int(integral + fraction, 16)
     )
 
