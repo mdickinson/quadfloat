@@ -294,7 +294,7 @@ class BinaryInterchangeFormat(object):
         """
         if isinstance(value, _BinaryFloat):
             # Initialize from another _BinaryFloat instance.
-            return self._from_binary_float_base(value)
+            return self._from_binary_float(value)
 
         elif isinstance(value, float):
             # Initialize from a float.
@@ -314,7 +314,7 @@ class BinaryInterchangeFormat(object):
                 "value of type {}".format(type(value))
             )
 
-    def _from_binary_float_base(self, b, flags=_null_flags):
+    def _from_binary_float(self, b, flags=_null_flags):
         """
         Convert another _BinaryFloat instance to this format.
 
@@ -1732,7 +1732,7 @@ class _BinaryFloat(object):
             other = self._format._from_float(other, flags)
 
         elif isinstance(other, _BinaryFloat):
-            other = self._format._from_binary_float_base(other, flags)
+            other = self._format._from_binary_float(other, flags)
 
         else:
             raise TypeError(
@@ -1898,7 +1898,7 @@ def _compare_ordered(source1, source2):
     1 according as source1 < source2, source1 == source2, or source1 > source2.
 
     """
-    # This function should only ever be called for two BinaryFloatBase
+    # This function should only ever be called for two _BinaryFloat
     # instances with the same underlying format.
     assert source1._format == source2._format
 
@@ -1959,7 +1959,7 @@ def _compare_quiet_general(source1, source2, operator, unordered_result):
         return unordered_result
     else:
         flags = _Flags()
-        source2 = source1._format._from_binary_float_base(source2, flags)
+        source2 = source1._format._from_binary_float(source2, flags)
         result = _compare_ordered(source1, source2) or flags.error
         return operator(result, 0)
 
@@ -1976,7 +1976,7 @@ def _compare_signaling_general(source1, source2, operator, unordered_result):
         return _handle_invalid_bool(unordered_result)
     else:
         flags = _Flags()
-        source2 = source1._format._from_binary_float_base(source2, flags)
+        source2 = source1._format._from_binary_float(source2, flags)
         result = _compare_ordered(source1, source2) or flags.error
         return operator(result, 0)
 
