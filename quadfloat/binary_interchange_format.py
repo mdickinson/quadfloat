@@ -414,7 +414,7 @@ class BinaryInterchangeFormat(object):
                 payload=payload,
             )
 
-        raise ValueError('invalid numeric string')
+        raise ValueError('invalid numeric string: {}'.format(s))
 
     def _from_float(self, value, flags=_null_flags):
         """
@@ -808,7 +808,7 @@ class BinaryInterchangeFormat(object):
                 payload=payload,
             )
 
-        raise ValueError('invalid numeric string')
+        raise ValueError('invalid numeric string: {}'.format(s))
 
     def _zero(self, sign):
         """
