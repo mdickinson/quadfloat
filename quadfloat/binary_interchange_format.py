@@ -168,7 +168,7 @@ _null_flags = _NullFlags()
 class BinaryInterchangeFormat(object):
     """
     A BinaryInterchangeFormat instance represents one of the binary interchange
-    formats described by IEEE 754-2008.  For example, the usual
+    formats described by IEEE 754-2008.  For example, the commonly-used
     double-precision binary floating-point type is given by
     BinaryInterchangeFormat(width=64):
 
@@ -779,30 +779,29 @@ class BinaryInterchangeFormat(object):
         Convert the given source to this format.
 
         """
+        # This function deliberately kept extremely simple, so that
+        # it can serve as a basis for checking that two floats
+        # are equivalent.
         if source._format != self:
             raise ValueError("Wrong format in convert_to_hex_character")
 
-        # Quick returns for infinities and NaNs.
+        sign = '-' if source._sign else ''
         if source._type == _INFINITE:
-            return '-Infinity' if source._sign else 'Infinity'
-
-        if source._type == _NAN:
+            return '{sign}Infinity'.format(sign=sign)
+        elif source._type == _NAN:
             return '{sign}{signaling}NaN({payload})'.format(
-                sign='-' if source._sign else '',
+                sign=sign,
                 signaling='s' if source._signaling else '',
                 payload=source._payload,
             )
-
-        # Cosmetic special case for 0 (else we'll get
-        # tiny exponents for this case).
-        if source._significand == 0:
-            return '-0x0p0' if source._sign else '0x0p0'
-
-        return '{sign}0x{significand:x}p{exponent}'.format(
-            sign='-' if source._sign else '',
-            significand=source._significand,
-            exponent=source._exponent,
-        )
+        elif source._type == _FINITE:
+            return '{sign}0x{significand:x}p{exponent}'.format(
+                sign=sign,
+                significand=source._significand,
+                exponent=source._exponent,
+            )
+        else:
+            assert False, "never get here"  # pragma no cover
 
     def convert_from_hex_character(self, s):
         """
