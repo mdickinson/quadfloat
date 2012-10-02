@@ -11,17 +11,17 @@ class TestShortRepr(unittest.TestCase):
         # establishes an exponent first and then gets the shortest string for
         # that exponent) can fail to give the 'best' shortest string.  This
         # corner case can only occur for small subnormals, and doesn't occur at
-        # all for float16, float32, float64 or float128.
+        # all for binary16, binary32, binary64 or binary128.
 
-        # An example where this does occur is for float256:  the 4th smallest
+        # An example where this does occur is for binary256:  the 4th smallest
         # subnormal value is 2**-262376, or approx. 8.9920e-78984.  The interval
         # of values that rounds to this contains (7.869e-78984, 10.11e-78984).
         # The closest 1-digit value that works is clearly 9e-78984, but the
         # naive algorithm can come up with 1e-78983 instead.
 
-        # Smallest representable positive float256 value (subnormal).
-        float256 = BinaryInterchangeFormat(256)
-        TINY = float256.decode(b'\x01' + 31 * b'\x00')
+        # Smallest representable positive binary256 value (subnormal).
+        binary256 = BinaryInterchangeFormat(256)
+        TINY = binary256.decode(b'\x01' + 31 * b'\x00')
         test_pairs = [
             (TINY, '2e-78984'),
             (2 * TINY, '4e-78984'),

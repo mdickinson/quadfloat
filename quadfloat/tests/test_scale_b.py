@@ -1,6 +1,7 @@
 import contextlib
 import unittest
 
+from quadfloat import binary16
 from quadfloat.attributes import (
     inexact_handler,
     invalid_operation_handler,
@@ -100,9 +101,6 @@ inf 1000 -> inf
 """
 
 
-float16 = BinaryInterchangeFormat(width=16)
-
-
 @contextlib.contextmanager
 def catch_exceptions():
     signal_list = []
@@ -120,7 +118,7 @@ def catch_exceptions():
 
 class TestScaleB(unittest.TestCase):
     def test_scale_b(self):
-        arg_converters = float16.convert_from_hex_character, int
+        arg_converters = binary16.convert_from_hex_character, int
         for line in test16.splitlines():
             # Strip comments.
             if '#' in line:
@@ -142,7 +140,7 @@ class TestScaleB(unittest.TestCase):
             source1, exp = args
 
             rhs = result.split()
-            expected = float16.convert_from_hex_character(rhs[0])
+            expected = binary16.convert_from_hex_character(rhs[0])
             flags = rhs[1:]
 
             with catch_exceptions() as exceptions:
@@ -159,8 +157,8 @@ class TestScaleB(unittest.TestCase):
                 expected.format,
             )
             self.assertEqual(
-                float16.convert_to_hex_character(actual),
-                float16.convert_to_hex_character(expected),
+                binary16.convert_to_hex_character(actual),
+                binary16.convert_to_hex_character(expected),
             )
 
 

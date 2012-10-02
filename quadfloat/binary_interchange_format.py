@@ -176,28 +176,28 @@ class BinaryInterchangeFormat(object):
     double-precision binary floating-point type is given by
     BinaryInterchangeFormat(width=64):
 
-    >>> float64 = BinaryInterchangeFormat(width=64)
+    >>> binary64 = BinaryInterchangeFormat(width=64)
 
     Objects of this class should be treated as immutable.
 
     There are various attributes and read-only properties providing information
     about the format:
 
-    >>> float64.precision  # precision in bits
+    >>> binary64.precision  # precision in bits
     53
-    >>> float64.width  # total width in bits
+    >>> binary64.width  # total width in bits
     64
-    >>> float64.emax  # maximum exponent
+    >>> binary64.emax  # maximum exponent
     1023
-    >>> float64.emin  # minimum exponent for normal numbers
+    >>> binary64.emin  # minimum exponent for normal numbers
     -1022
 
     Objects of this type are callable, and when called act like a class
     constructor to create floating-point numbers for the given format.
 
-    >>> float64('2.3')
+    >>> binary64('2.3')
     BinaryInterchangeFormat(width=64)('2.3')
-    >>> str(float64('2.3'))
+    >>> str(binary64('2.3'))
     '2.3'
 
     """
@@ -1022,7 +1022,7 @@ class BinaryInterchangeFormat(object):
         return self._decode_from_int(n)
 
 
-_float64 = BinaryInterchangeFormat(64)
+_binary64 = BinaryInterchangeFormat(64)
 
 
 class _BinaryFloat(object):
@@ -1688,7 +1688,7 @@ class _BinaryFloat(object):
         if isinstance(other, _BinaryFloat):
             pass
         elif isinstance(other, float):
-            other = _float64._from_float(other)
+            other = _binary64._from_float(other)
         elif isinstance(other, _INTEGER_TYPES):
             other = self._format._from_int(other)
         else:

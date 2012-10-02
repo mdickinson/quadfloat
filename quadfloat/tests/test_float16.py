@@ -2,6 +2,8 @@ import contextlib
 import decimal
 import unittest
 
+from quadfloat import binary16, binary32, binary64
+
 from quadfloat.arithmetic import _divide_nearest
 from quadfloat.attributes import (
     inexact_handler,
@@ -22,12 +24,7 @@ from quadfloat.binary_interchange_format import _bytes_from_iterable
 from quadfloat.tests.base_test_case import BaseTestCase
 
 
-float16 = BinaryInterchangeFormat(width=16)
-float32 = BinaryInterchangeFormat(width=32)
-float64 = BinaryInterchangeFormat(width=64)
-
-
-# float16 details:
+# binary16 details:
 #
 #    11-bit precision
 #     5-bit exponent, so normal range is 2**-14 through 2**16.
@@ -41,7 +38,7 @@ float64 = BinaryInterchangeFormat(width=64)
 #   smallest +ve integer that can't be represented exactly is 2**11 + 1
 
 
-class TestFloat16(BaseTestCase):
+class TestBinary16(BaseTestCase):
     @contextlib.contextmanager
     def assertSignalsInvalidOperation(self):
         signal_list = []
@@ -55,39 +52,39 @@ class TestFloat16(BaseTestCase):
         # 2048 -> significand bits of 0, exponent of ???
         # 5 exponent bits;  for 1.0, would expect exponent bits to have value 15
         # so for 2048.0, should be 15+ 11 = 26.  Shift by 2 to get 104.
-        self.assertEqual(float16(2048).encode(), b'\x00\x68')
-        self.assertEqual(float16(2049).encode(), b'\x00\x68')
-        self.assertEqual(float16(2050).encode(), b'\x01\x68')
-        self.assertEqual(float16(2051).encode(), b'\x02\x68')
-        self.assertEqual(float16(2052).encode(), b'\x02\x68')
-        self.assertEqual(float16(2053).encode(), b'\x02\x68')
-        self.assertEqual(float16(2054).encode(), b'\x03\x68')
-        self.assertEqual(float16(2055).encode(), b'\x04\x68')
-        self.assertEqual(float16(2056).encode(), b'\x04\x68')
+        self.assertEqual(binary16(2048).encode(), b'\x00\x68')
+        self.assertEqual(binary16(2049).encode(), b'\x00\x68')
+        self.assertEqual(binary16(2050).encode(), b'\x01\x68')
+        self.assertEqual(binary16(2051).encode(), b'\x02\x68')
+        self.assertEqual(binary16(2052).encode(), b'\x02\x68')
+        self.assertEqual(binary16(2053).encode(), b'\x02\x68')
+        self.assertEqual(binary16(2054).encode(), b'\x03\x68')
+        self.assertEqual(binary16(2055).encode(), b'\x04\x68')
+        self.assertEqual(binary16(2056).encode(), b'\x04\x68')
 
     def test_construction_from_float(self):
-        self.assertInterchangeable(float16(0.9), float16('0.89990234375'))
+        self.assertInterchangeable(binary16(0.9), binary16('0.89990234375'))
 
         # Test round-half-to-even
 
-        self.assertEqual(float16(2048.0).encode(), b'\x00\x68')
+        self.assertEqual(binary16(2048.0).encode(), b'\x00\x68')
         # halfway case
-        self.assertEqual(float16(2048.9999999999).encode(), b'\x00\x68')
-        self.assertEqual(float16(2049.0).encode(), b'\x00\x68')
-        self.assertEqual(float16(2049.0000000001).encode(), b'\x01\x68')
-        self.assertEqual(float16(2050.0).encode(), b'\x01\x68')
-        self.assertEqual(float16(2050.9999999999).encode(), b'\x01\x68')
-        self.assertEqual(float16(2051.0).encode(), b'\x02\x68')
-        self.assertEqual(float16(2051.0000000001).encode(), b'\x02\x68')
-        self.assertEqual(float16(2052.0).encode(), b'\x02\x68')
-        self.assertEqual(float16(2053.0).encode(), b'\x02\x68')
-        self.assertEqual(float16(2054.0).encode(), b'\x03\x68')
-        self.assertEqual(float16(2055.0).encode(), b'\x04\x68')
-        self.assertEqual(float16(2056.0).encode(), b'\x04\x68')
+        self.assertEqual(binary16(2048.9999999999).encode(), b'\x00\x68')
+        self.assertEqual(binary16(2049.0).encode(), b'\x00\x68')
+        self.assertEqual(binary16(2049.0000000001).encode(), b'\x01\x68')
+        self.assertEqual(binary16(2050.0).encode(), b'\x01\x68')
+        self.assertEqual(binary16(2050.9999999999).encode(), b'\x01\x68')
+        self.assertEqual(binary16(2051.0).encode(), b'\x02\x68')
+        self.assertEqual(binary16(2051.0000000001).encode(), b'\x02\x68')
+        self.assertEqual(binary16(2052.0).encode(), b'\x02\x68')
+        self.assertEqual(binary16(2053.0).encode(), b'\x02\x68')
+        self.assertEqual(binary16(2054.0).encode(), b'\x03\x68')
+        self.assertEqual(binary16(2055.0).encode(), b'\x04\x68')
+        self.assertEqual(binary16(2056.0).encode(), b'\x04\x68')
 
         # Subnormals.
         eps = 1e-10
-        tiny = 2.0**-24  # smallest positive representable float16 subnormal
+        tiny = 2.0**-24  # smallest positive representable binary16 subnormal
         test_values = [
             (0.0, b'\x00\x00'),
             (tiny * (0.5 - eps), b'\x00\x00'),
@@ -104,163 +101,163 @@ class TestFloat16(BaseTestCase):
             (tiny * 3.0, b'\x03\x00'),
         ]
         for x, bs in test_values:
-            self.assertEqual(float16(x).encode(), bs)
+            self.assertEqual(binary16(x).encode(), bs)
 
     def test_division(self):
         # Test division, with particular attention to correct rounding.
-        # Integers up to 2048 all representable in float16
+        # Integers up to 2048 all representable in binary16
 
         self.assertInterchangeable(
-            float16.division(float32(2048*4), float32(4)),
-            float16(2048)
+            binary16.division(binary32(2048*4), binary32(4)),
+            binary16(2048)
         )
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 1), float32(4)),
-            float16(2048)
+            binary16.division(binary32(2048*4 + 1), binary32(4)),
+            binary16(2048)
         )
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 2), float32(4)),
-            float16(2048)
+            binary16.division(binary32(2048*4 + 2), binary32(4)),
+            binary16(2048)
         )
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 3), float32(4)),
-            float16(2048)
+            binary16.division(binary32(2048*4 + 3), binary32(4)),
+            binary16(2048)
         )
         # Exact halfway case; should be rounded down.
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 4), float32(4)),
-            float16(2048)
+            binary16.division(binary32(2048*4 + 4), binary32(4)),
+            binary16(2048)
         )
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 5), float32(4)),
-            float16(2050)
+            binary16.division(binary32(2048*4 + 5), binary32(4)),
+            binary16(2050)
         )
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 6), float32(4)),
-            float16(2050)
+            binary16.division(binary32(2048*4 + 6), binary32(4)),
+            binary16(2050)
         )
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 7), float32(4)),
-            float16(2050)
+            binary16.division(binary32(2048*4 + 7), binary32(4)),
+            binary16(2050)
         )
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 8), float32(4)),
-            float16(2050)
+            binary16.division(binary32(2048*4 + 8), binary32(4)),
+            binary16(2050)
         )
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 9), float32(4)),
-            float16(2050)
+            binary16.division(binary32(2048*4 + 9), binary32(4)),
+            binary16(2050)
         )
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 10), float32(4)),
-            float16(2050)
+            binary16.division(binary32(2048*4 + 10), binary32(4)),
+            binary16(2050)
         )
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 11), float32(4)),
-            float16(2050)
+            binary16.division(binary32(2048*4 + 11), binary32(4)),
+            binary16(2050)
         )
         # Exact halfway case, rounds *up*!
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 12), float32(4)),
-            float16(2052)
+            binary16.division(binary32(2048*4 + 12), binary32(4)),
+            binary16(2052)
         )
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 13), float32(4)),
-            float16(2052)
+            binary16.division(binary32(2048*4 + 13), binary32(4)),
+            binary16(2052)
         )
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 14), float32(4)),
-            float16(2052)
+            binary16.division(binary32(2048*4 + 14), binary32(4)),
+            binary16(2052)
         )
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 15), float32(4)),
-            float16(2052)
+            binary16.division(binary32(2048*4 + 15), binary32(4)),
+            binary16(2052)
         )
         self.assertInterchangeable(
-            float16.division(float32(2048*4 + 16), float32(4)),
-            float16(2052)
+            binary16.division(binary32(2048*4 + 16), binary32(4)),
+            binary16(2052)
         )
 
     def test_sqrt(self):
         # Easy small integer cases.
         for i in range(1, 46):
             self.assertInterchangeable(
-                float16.square_root(float16(i * i)),
-                float16(i),
+                binary16.square_root(binary16(i * i)),
+                binary16(i),
             )
 
         # Zeros.
         self.assertInterchangeable(
-            float16.square_root(float16('0')),
-            float16('0'),
+            binary16.square_root(binary16('0')),
+            binary16('0'),
         )
         self.assertInterchangeable(
-            float16.square_root(float16('-0')),
-            float16('-0'),
+            binary16.square_root(binary16('-0')),
+            binary16('-0'),
         )
 
         # Infinities
         self.assertInterchangeable(
-            float16.square_root(float16('inf')),
-            float16('inf'),
+            binary16.square_root(binary16('inf')),
+            binary16('inf'),
         )
 
         self.assertInterchangeable(
-            float16.square_root(float16('-inf')),
-            float16('nan'),
+            binary16.square_root(binary16('-inf')),
+            binary16('nan'),
         )
 
         # Negatives
         self.assertInterchangeable(
-            float16.square_root(float16('-4.0')),
-            float16('nan'),
+            binary16.square_root(binary16('-4.0')),
+            binary16('nan'),
         )
 
         # NaNs
         self.assertInterchangeable(
-            float16.square_root(float16('snan(456)')),
-            float16('nan(456)'),
+            binary16.square_root(binary16('snan(456)')),
+            binary16('nan(456)'),
         )
 
         self.assertInterchangeable(
-            float16.square_root(float16('-nan(123)')),
-            float16('-nan(123)'),
+            binary16.square_root(binary16('-nan(123)')),
+            binary16('-nan(123)'),
         )
 
         # Subnormal results.
-        tiny = 2.0**-24  # smallest positive representable float16 subnormal
+        tiny = 2.0**-24  # smallest positive representable binary16 subnormal
 
         self.assertInterchangeable(
-            float16.square_root(float64(tiny * tiny)),
-            float16(tiny),
+            binary16.square_root(binary64(tiny * tiny)),
+            binary16(tiny),
         )
         self.assertInterchangeable(
-            float16.square_root(float64(tiny * tiny * 0.25)),
-            float16('0.0'),
+            binary16.square_root(binary64(tiny * tiny * 0.25)),
+            binary16('0.0'),
         )
         self.assertInterchangeable(
-            float16.square_root(float64(tiny * tiny * 0.250000001)),
-            float16(tiny),
+            binary16.square_root(binary64(tiny * tiny * 0.250000001)),
+            binary16(tiny),
         )
         self.assertInterchangeable(
-            float16.square_root(float64(tiny * tiny)),
-            float16(tiny),
+            binary16.square_root(binary64(tiny * tiny)),
+            binary16(tiny),
         )
         self.assertInterchangeable(
-            float16.square_root(float64(tiny * tiny * 2.24999999999)),
-            float16(tiny),
+            binary16.square_root(binary64(tiny * tiny * 2.24999999999)),
+            binary16(tiny),
         )
         self.assertInterchangeable(
-            float16.square_root(float64(tiny * tiny * 2.25)),
-            float16(2 * tiny),
+            binary16.square_root(binary64(tiny * tiny * 2.25)),
+            binary16(2 * tiny),
         )
         self.assertInterchangeable(
-            float16.square_root(float64(tiny * tiny * 2.250000001)),
-            float16(2 * tiny),
+            binary16.square_root(binary64(tiny * tiny * 2.250000001)),
+            binary16(2 * tiny),
         )
         self.assertInterchangeable(
-            float16.square_root(float64(tiny * tiny * 4.0)),
-            float16(2 * tiny),
+            binary16.square_root(binary64(tiny * tiny * 4.0)),
+            binary16(2 * tiny),
         )
 
     def test_repr_construct_roundtrip(self):
@@ -268,19 +265,19 @@ class TestFloat16(BaseTestCase):
 
         # Particularly interesting values.
         test_values = [
-            float16('4152'),  # sits at the middle of a *closed* interval with one endpoint at 4150;
+            binary16('4152'),  # sits at the middle of a *closed* interval with one endpoint at 4150;
                               # so '415e1' is an acceptable short representation.
-            float16('4148'),  # sits at the middle of an *open* interval with one endpoint at 4150;
+            binary16('4148'),  # sits at the middle of an *open* interval with one endpoint at 4150;
                               # so '415e1' is *not* an acceptable short representation.
-            float16('0.0078125'),  # power of 2;  interval needs special casing.
-            float16('0.015625')  # another power of 2 where rounding to nearest for the best
+            binary16('0.0078125'),  # power of 2;  interval needs special casing.
+            binary16('0.015625')  # another power of 2 where rounding to nearest for the best
                                 # final digit produces a value out of range.
         ]
 
-        # With float16, it's feasible to test *all* the values.
+        # With binary16, it's feasible to test *all* the values.
         for high_byte in range(256):
             for low_byte in range(256):
-                value = float16.decode(_bytes_from_iterable([low_byte, high_byte]))
+                value = binary16.decode(_bytes_from_iterable([low_byte, high_byte]))
                 test_values.append(value)
 
         for value in test_values:
@@ -289,7 +286,7 @@ class TestFloat16(BaseTestCase):
             self.assertInterchangeable(value, reconstructed_value)
 
             str_value = str(value)
-            reconstructed_value = float16(str_value)
+            reconstructed_value = binary16(str_value)
             self.assertInterchangeable(value, reconstructed_value)
 
     def test_short_float_repr(self):
@@ -301,15 +298,15 @@ class TestFloat16(BaseTestCase):
 
         TINY = 2.0**-24
         test_pairs = [
-            (float16(TINY), '6e-8'),
-            (float16(2 * TINY), '1e-7'),
-            (float16(3 * TINY), '2e-7'),
-            (float16(4 * TINY), '2.4e-7'),
-            (float16(5 * TINY), '3e-7'),
-            (float16('0.015625'), '0.01563'),
-            (float16('1.23'), '1.23'),
-            (float16('4152'), '415e1'),
-            (float16('4148'), '4148'),
+            (binary16(TINY), '6e-8'),
+            (binary16(2 * TINY), '1e-7'),
+            (binary16(3 * TINY), '2e-7'),
+            (binary16(4 * TINY), '2.4e-7'),
+            (binary16(5 * TINY), '3e-7'),
+            (binary16('0.015625'), '0.01563'),
+            (binary16('1.23'), '1.23'),
+            (binary16('4152'), '415e1'),
+            (binary16('4148'), '4148'),
         ]
         for input, output_string in test_pairs:
             input_string = str(input)
@@ -318,15 +315,15 @@ class TestFloat16(BaseTestCase):
                 decimal.Decimal(output_string),
             )
 
-        # Exhaustive testing for 3-digit decimal -> float16 -> decimal
+        # Exhaustive testing for 3-digit decimal -> binary16 -> decimal
         # round-tripping.
 
-        # The mapping from 3-digit decimal strings to float16 objects
+        # The mapping from 3-digit decimal strings to binary16 objects
         # is injective, outside of the overflow / underflow regions.
         # (Key point in the proof is that 2**10 < 10**3).  So 3-digit
         # strings should roundtrip.
 
-        # Subnormals: tiny value for float16 is 2**-24, or around
+        # Subnormals: tiny value for binary16 is 2**-24, or around
         # 5.9e-08.  So increments of 1e-07 should be safe.
         def input_strings():
             for exp in range(-7, 2):
@@ -339,7 +336,7 @@ class TestFloat16(BaseTestCase):
                     yield '-{}e{}'.format(n, exp)
 
         for input_string in input_strings():
-            output_string = str(float16(input_string))
+            output_string = str(binary16(input_string))
             self.assertEqual(
                 input_string.startswith('-'),
                 output_string.startswith('-'),
@@ -359,8 +356,8 @@ class TestFloat16(BaseTestCase):
         # 10**e for some e.  For the standard formats, an interval of this
         # relative width can only occur for subnormal target values.
 
-        # This corner case doesn't occur for float16, float32, float64 or
-        # float128.
+        # This corner case doesn't occur for binary16, binary32, binary64 or
+        # binary128.
 
         width = 16
         format = BinaryInterchangeFormat(width)
@@ -394,29 +391,29 @@ class TestFloat16(BaseTestCase):
                 )
 
     def _comparison_test_values(self):
-        zeros = [float16('0.0'), float16('-0.0'), 0]
+        zeros = [binary16('0.0'), binary16('-0.0'), 0]
         # List of lists;  all values in each of the inner lists are
         # equal; outer list ordered numerically.
         positives = [
             [0.4999999999],
-            [float16(0.5), 0.5],
-            [float16(1 - 2**-11), 1.0 - 2.0**-11],
+            [binary16(0.5), 0.5],
+            [binary16(1 - 2**-11), 1.0 - 2.0**-11],
             [1.0 - 2.0**-12],
-            [float64(1 - 2.0**-53), 1 - 2.0**-53],
-            [float16('1.0'), 1, 1.0],
-            [float64(1 + 2.0**-52), 1 + 2.0**-52],
+            [binary64(1 - 2.0**-53), 1 - 2.0**-53],
+            [binary16('1.0'), 1, 1.0],
+            [binary64(1 + 2.0**-52), 1 + 2.0**-52],
             [1.0 + 2.0 ** -11],
-            [float16(1 + 2**-10), 1 + 2.0**-10],
-            [float16(1.5)],
-            [float16('2.0'), 2],
-            [float16(2**11-1), 2**11 - 1],
-            [float16(2**11), 2**11],
+            [binary16(1 + 2**-10), 1 + 2.0**-10],
+            [binary16(1.5)],
+            [binary16('2.0'), 2],
+            [binary16(2**11-1), 2**11 - 1],
+            [binary16(2**11), 2**11],
             [2**11 + 1],
-            [float16(2**16 - 2**5), 2**16 - 2**5],
+            [binary16(2**16 - 2**5), 2**16 - 2**5],
             [2**16 - 2**4 - 1],
             [2**16 - 2**4],
             [2**16],
-            [float16('inf')],
+            [binary16('inf')],
         ]
         negatives = [
             [-x for x in sublist]
@@ -437,7 +434,7 @@ class TestFloat16(BaseTestCase):
                     yield x, y, 'EQ'
 
         # quiet nans
-        nans = [float16('nan'), float16('-nan(123)')]
+        nans = [binary16('nan'), binary16('-nan(123)')]
         for xset in all_pairs:
             for x in xset:
                 for y in nans:
@@ -448,7 +445,7 @@ class TestFloat16(BaseTestCase):
                 yield x, y, 'UN'
 
         # signaling nans
-        snans = [float16('-snan'), float16('snan(456)')]
+        snans = [binary16('-snan'), binary16('snan(456)')]
         for xset in all_pairs + [nans]:
             for x in xset:
                 for y in snans:
@@ -509,62 +506,62 @@ class TestFloat16(BaseTestCase):
                         '1.0', '0.125', '-1.0', '-2.0', '-1024.0']
 
         for test_string in test_strings:
-            self.assertEqual(hash(float16(test_string)), hash(float(test_string)))
+            self.assertEqual(hash(binary16(test_string)), hash(float(test_string)))
 
         # Signaling NaNs can't be hashed.
-        snan = float16('snan')
+        snan = binary16('snan')
         with self.assertRaises(ValueError):
             hash(snan)
 
     def test_round_to_integral_ties_to_even(self):
         test_values = [
-            (float16('inf'), float16('inf')),
-            (float16('-inf'), float16('-inf')),
-            (float16('-0.51'), float16('-1.0')),
-            (float16('-0.5'), float16('-0.0')),
-            (float16('-0.49'), float16('-0.0')),
-            (float16(-2.0**-24), float16('-0.0')),
-            (float16('-0.0'), float16('-0.0')),
-            (float16('0.0'), float16('0.0')),
-            (float16(2.0**-24), float16('0.0')),
-            (float16('0.49'), float16('0.0')),
-            (float16('0.5'), float16('0.0')),
-            (float16('0.51'), float16('1.0')),
-            (float16('0.99'), float16('1.0')),
-            (float16('1.0'), float16('1.0')),
-            (float16('1.49'), float16('1.0')),
-            (float16('1.5'), float16('2.0')),
-            (float16(2**9 - 2.0), float16(2**9 - 2)),
-            (float16(2**9 - 1.75), float16(2**9 - 2)),
-            (float16(2**9 - 1.5), float16(2**9 - 2)),
-            (float16(2**9 - 1.25), float16(2**9 - 1)),
-            (float16(2**9 - 1.0), float16(2**9 - 1)),
-            (float16(2**9 - 0.75), float16(2**9 - 1)),
-            (float16(2**9 - 0.5), float16(2**9)),
-            (float16(2**9 - 0.25), float16(2**9)),
-            (float16(2**9), float16(2**9)),
-            (float16(2**9 + 0.5), float16(2**9)),
-            (float16(2**9 + 1), float16(2**9 + 1)),
-            (float16(2**9 + 1.5), float16(2**9 + 2)),
-            (float16(2**9 + 2), float16(2**9 + 2)),
-            (float16(2**9 + 2.5), float16(2**9 + 2)),
-            (float16(2**9 + 3), float16(2**9 + 3)),
-            (float16(2**9 + 3.5), float16(2**9 + 4)),
-            (float16(2**9 + 4), float16(2**9 + 4)),
-            (float16(2**10 - 4), float16(2**10 - 4)),
-            (float16(2**10 - 3.5), float16(2**10 - 4)),
-            (float16(2**10 - 3.0), float16(2**10 - 3)),
-            (float16(2**10 - 2.5), float16(2**10 - 2)),
-            (float16(2**10 - 2.0), float16(2**10 - 2)),
-            (float16(2**10 - 1.5), float16(2**10 - 2)),
-            (float16(2**10 - 1), float16(2**10 - 1)),
-            (float16(2**10 - 0.5), float16(2**10)),
-            (float16(2**10), float16(2**10)),
-            (float16(2**11-1), float16(2**11-1)),
-            (float16(2**11), float16(2**11)),
-            (float16(2**11+2), float16(2**11+2)),
-            (float16('nan'), float16('nan')),
-            (float16('-nan(123)'), float16('-nan(123)')),
+            (binary16('inf'), binary16('inf')),
+            (binary16('-inf'), binary16('-inf')),
+            (binary16('-0.51'), binary16('-1.0')),
+            (binary16('-0.5'), binary16('-0.0')),
+            (binary16('-0.49'), binary16('-0.0')),
+            (binary16(-2.0**-24), binary16('-0.0')),
+            (binary16('-0.0'), binary16('-0.0')),
+            (binary16('0.0'), binary16('0.0')),
+            (binary16(2.0**-24), binary16('0.0')),
+            (binary16('0.49'), binary16('0.0')),
+            (binary16('0.5'), binary16('0.0')),
+            (binary16('0.51'), binary16('1.0')),
+            (binary16('0.99'), binary16('1.0')),
+            (binary16('1.0'), binary16('1.0')),
+            (binary16('1.49'), binary16('1.0')),
+            (binary16('1.5'), binary16('2.0')),
+            (binary16(2**9 - 2.0), binary16(2**9 - 2)),
+            (binary16(2**9 - 1.75), binary16(2**9 - 2)),
+            (binary16(2**9 - 1.5), binary16(2**9 - 2)),
+            (binary16(2**9 - 1.25), binary16(2**9 - 1)),
+            (binary16(2**9 - 1.0), binary16(2**9 - 1)),
+            (binary16(2**9 - 0.75), binary16(2**9 - 1)),
+            (binary16(2**9 - 0.5), binary16(2**9)),
+            (binary16(2**9 - 0.25), binary16(2**9)),
+            (binary16(2**9), binary16(2**9)),
+            (binary16(2**9 + 0.5), binary16(2**9)),
+            (binary16(2**9 + 1), binary16(2**9 + 1)),
+            (binary16(2**9 + 1.5), binary16(2**9 + 2)),
+            (binary16(2**9 + 2), binary16(2**9 + 2)),
+            (binary16(2**9 + 2.5), binary16(2**9 + 2)),
+            (binary16(2**9 + 3), binary16(2**9 + 3)),
+            (binary16(2**9 + 3.5), binary16(2**9 + 4)),
+            (binary16(2**9 + 4), binary16(2**9 + 4)),
+            (binary16(2**10 - 4), binary16(2**10 - 4)),
+            (binary16(2**10 - 3.5), binary16(2**10 - 4)),
+            (binary16(2**10 - 3.0), binary16(2**10 - 3)),
+            (binary16(2**10 - 2.5), binary16(2**10 - 2)),
+            (binary16(2**10 - 2.0), binary16(2**10 - 2)),
+            (binary16(2**10 - 1.5), binary16(2**10 - 2)),
+            (binary16(2**10 - 1), binary16(2**10 - 1)),
+            (binary16(2**10 - 0.5), binary16(2**10)),
+            (binary16(2**10), binary16(2**10)),
+            (binary16(2**11-1), binary16(2**11-1)),
+            (binary16(2**11), binary16(2**11)),
+            (binary16(2**11+2), binary16(2**11+2)),
+            (binary16('nan'), binary16('nan')),
+            (binary16('-nan(123)'), binary16('-nan(123)')),
         ]
 
         for input, expected in test_values:
@@ -577,14 +574,14 @@ class TestFloat16(BaseTestCase):
         # Signaling nans should signal the invalid operation exception.
         # (And return... what?)
         signal_list = []
-        input = float16('snan')
+        input = binary16('snan')
         with invalid_operation_handler(signal_list.append):
             input.round_to_integral_ties_to_even()
         self.assertEqual(len(signal_list), 1)
 
         # Quiet nans should *not* signal.
         signal_list = []
-        input = float16('-nan(234)')
+        input = binary16('-nan(234)')
         with invalid_operation_handler(signal_list.append):
             actual = input.round_to_integral_ties_to_even()
         self.assertInterchangeable(actual, input)
@@ -592,53 +589,53 @@ class TestFloat16(BaseTestCase):
 
     def test_round_to_integral_ties_to_away(self):
         test_values = [
-            (float16('inf'), float16('inf')),
-            (float16('-inf'), float16('-inf')),
-            (float16('-0.51'), float16('-1.0')),
-            (float16('-0.5'), float16('-1.0')),
-            (float16('-0.49'), float16('-0.0')),
-            (float16(-2.0**-24), float16('-0.0')),
-            (float16('-0.0'), float16('-0.0')),
-            (float16('0.0'), float16('0.0')),
-            (float16(2.0**-24), float16('0.0')),
-            (float16('0.49'), float16('0.0')),
-            (float16('0.5'), float16('1.0')),
-            (float16('0.51'), float16('1.0')),
-            (float16('0.99'), float16('1.0')),
-            (float16('1.0'), float16('1.0')),
-            (float16('1.49'), float16('1.0')),
-            (float16('1.5'), float16('2.0')),
-            (float16(2**9 - 2.0), float16(2**9 - 2)),
-            (float16(2**9 - 1.75), float16(2**9 - 2)),
-            (float16(2**9 - 1.5), float16(2**9 - 1)),
-            (float16(2**9 - 1.25), float16(2**9 - 1)),
-            (float16(2**9 - 1.0), float16(2**9 - 1)),
-            (float16(2**9 - 0.75), float16(2**9 - 1)),
-            (float16(2**9 - 0.5), float16(2**9)),
-            (float16(2**9 - 0.25), float16(2**9)),
-            (float16(2**9), float16(2**9)),
-            (float16(2**9 + 0.5), float16(2**9 + 1)),
-            (float16(2**9 + 1), float16(2**9 + 1)),
-            (float16(2**9 + 1.5), float16(2**9 + 2)),
-            (float16(2**9 + 2), float16(2**9 + 2)),
-            (float16(2**9 + 2.5), float16(2**9 + 3)),
-            (float16(2**9 + 3), float16(2**9 + 3)),
-            (float16(2**9 + 3.5), float16(2**9 + 4)),
-            (float16(2**9 + 4), float16(2**9 + 4)),
-            (float16(2**10 - 4), float16(2**10 - 4)),
-            (float16(2**10 - 3.5), float16(2**10 - 3)),
-            (float16(2**10 - 3.0), float16(2**10 - 3)),
-            (float16(2**10 - 2.5), float16(2**10 - 2)),
-            (float16(2**10 - 2.0), float16(2**10 - 2)),
-            (float16(2**10 - 1.5), float16(2**10 - 1)),
-            (float16(2**10 - 1), float16(2**10 - 1)),
-            (float16(2**10 - 0.5), float16(2**10)),
-            (float16(2**10), float16(2**10)),
-            (float16(2**11-1), float16(2**11-1)),
-            (float16(2**11), float16(2**11)),
-            (float16(2**11+2), float16(2**11+2)),
-            (float16('nan'), float16('nan')),
-            (float16('-nan(123)'), float16('-nan(123)')),
+            (binary16('inf'), binary16('inf')),
+            (binary16('-inf'), binary16('-inf')),
+            (binary16('-0.51'), binary16('-1.0')),
+            (binary16('-0.5'), binary16('-1.0')),
+            (binary16('-0.49'), binary16('-0.0')),
+            (binary16(-2.0**-24), binary16('-0.0')),
+            (binary16('-0.0'), binary16('-0.0')),
+            (binary16('0.0'), binary16('0.0')),
+            (binary16(2.0**-24), binary16('0.0')),
+            (binary16('0.49'), binary16('0.0')),
+            (binary16('0.5'), binary16('1.0')),
+            (binary16('0.51'), binary16('1.0')),
+            (binary16('0.99'), binary16('1.0')),
+            (binary16('1.0'), binary16('1.0')),
+            (binary16('1.49'), binary16('1.0')),
+            (binary16('1.5'), binary16('2.0')),
+            (binary16(2**9 - 2.0), binary16(2**9 - 2)),
+            (binary16(2**9 - 1.75), binary16(2**9 - 2)),
+            (binary16(2**9 - 1.5), binary16(2**9 - 1)),
+            (binary16(2**9 - 1.25), binary16(2**9 - 1)),
+            (binary16(2**9 - 1.0), binary16(2**9 - 1)),
+            (binary16(2**9 - 0.75), binary16(2**9 - 1)),
+            (binary16(2**9 - 0.5), binary16(2**9)),
+            (binary16(2**9 - 0.25), binary16(2**9)),
+            (binary16(2**9), binary16(2**9)),
+            (binary16(2**9 + 0.5), binary16(2**9 + 1)),
+            (binary16(2**9 + 1), binary16(2**9 + 1)),
+            (binary16(2**9 + 1.5), binary16(2**9 + 2)),
+            (binary16(2**9 + 2), binary16(2**9 + 2)),
+            (binary16(2**9 + 2.5), binary16(2**9 + 3)),
+            (binary16(2**9 + 3), binary16(2**9 + 3)),
+            (binary16(2**9 + 3.5), binary16(2**9 + 4)),
+            (binary16(2**9 + 4), binary16(2**9 + 4)),
+            (binary16(2**10 - 4), binary16(2**10 - 4)),
+            (binary16(2**10 - 3.5), binary16(2**10 - 3)),
+            (binary16(2**10 - 3.0), binary16(2**10 - 3)),
+            (binary16(2**10 - 2.5), binary16(2**10 - 2)),
+            (binary16(2**10 - 2.0), binary16(2**10 - 2)),
+            (binary16(2**10 - 1.5), binary16(2**10 - 1)),
+            (binary16(2**10 - 1), binary16(2**10 - 1)),
+            (binary16(2**10 - 0.5), binary16(2**10)),
+            (binary16(2**10), binary16(2**10)),
+            (binary16(2**11-1), binary16(2**11-1)),
+            (binary16(2**11), binary16(2**11)),
+            (binary16(2**11+2), binary16(2**11+2)),
+            (binary16('nan'), binary16('nan')),
+            (binary16('-nan(123)'), binary16('-nan(123)')),
         ]
 
         for input, expected in test_values:
@@ -650,53 +647,53 @@ class TestFloat16(BaseTestCase):
 
     def test_round_to_integral_toward_zero(self):
         test_values = [
-            (float16('inf'), float16('inf')),
-            (float16('-inf'), float16('-inf')),
-            (float16('-0.51'), float16('-0.0')),
-            (float16('-0.5'), float16('-0.0')),
-            (float16('-0.49'), float16('-0.0')),
-            (float16(-2.0**-24), float16('-0.0')),
-            (float16('-0.0'), float16('-0.0')),
-            (float16('0.0'), float16('0.0')),
-            (float16(2.0**-24), float16('0.0')),
-            (float16('0.49'), float16('0.0')),
-            (float16('0.5'), float16('0.0')),
-            (float16('0.51'), float16('0.0')),
-            (float16('0.99'), float16('0.0')),
-            (float16('1.0'), float16('1.0')),
-            (float16('1.49'), float16('1.0')),
-            (float16('1.5'), float16('1.0')),
-            (float16(2**9 - 2.0), float16(2**9 - 2)),
-            (float16(2**9 - 1.75), float16(2**9 - 2)),
-            (float16(2**9 - 1.5), float16(2**9 - 2)),
-            (float16(2**9 - 1.25), float16(2**9 - 2)),
-            (float16(2**9 - 1.0), float16(2**9 - 1)),
-            (float16(2**9 - 0.75), float16(2**9 - 1)),
-            (float16(2**9 - 0.5), float16(2**9 - 1)),
-            (float16(2**9 - 0.25), float16(2**9 - 1)),
-            (float16(2**9), float16(2**9)),
-            (float16(2**9 + 0.5), float16(2**9)),
-            (float16(2**9 + 1), float16(2**9 + 1)),
-            (float16(2**9 + 1.5), float16(2**9 + 1)),
-            (float16(2**9 + 2), float16(2**9 + 2)),
-            (float16(2**9 + 2.5), float16(2**9 + 2)),
-            (float16(2**9 + 3), float16(2**9 + 3)),
-            (float16(2**9 + 3.5), float16(2**9 + 3)),
-            (float16(2**9 + 4), float16(2**9 + 4)),
-            (float16(2**10 - 4), float16(2**10 - 4)),
-            (float16(2**10 - 3.5), float16(2**10 - 4)),
-            (float16(2**10 - 3.0), float16(2**10 - 3)),
-            (float16(2**10 - 2.5), float16(2**10 - 3)),
-            (float16(2**10 - 2.0), float16(2**10 - 2)),
-            (float16(2**10 - 1.5), float16(2**10 - 2)),
-            (float16(2**10 - 1), float16(2**10 - 1)),
-            (float16(2**10 - 0.5), float16(2**10 - 1)),
-            (float16(2**10), float16(2**10)),
-            (float16(2**11-1), float16(2**11-1)),
-            (float16(2**11), float16(2**11)),
-            (float16(2**11+2), float16(2**11+2)),
-            (float16('nan'), float16('nan')),
-            (float16('-nan(123)'), float16('-nan(123)')),
+            (binary16('inf'), binary16('inf')),
+            (binary16('-inf'), binary16('-inf')),
+            (binary16('-0.51'), binary16('-0.0')),
+            (binary16('-0.5'), binary16('-0.0')),
+            (binary16('-0.49'), binary16('-0.0')),
+            (binary16(-2.0**-24), binary16('-0.0')),
+            (binary16('-0.0'), binary16('-0.0')),
+            (binary16('0.0'), binary16('0.0')),
+            (binary16(2.0**-24), binary16('0.0')),
+            (binary16('0.49'), binary16('0.0')),
+            (binary16('0.5'), binary16('0.0')),
+            (binary16('0.51'), binary16('0.0')),
+            (binary16('0.99'), binary16('0.0')),
+            (binary16('1.0'), binary16('1.0')),
+            (binary16('1.49'), binary16('1.0')),
+            (binary16('1.5'), binary16('1.0')),
+            (binary16(2**9 - 2.0), binary16(2**9 - 2)),
+            (binary16(2**9 - 1.75), binary16(2**9 - 2)),
+            (binary16(2**9 - 1.5), binary16(2**9 - 2)),
+            (binary16(2**9 - 1.25), binary16(2**9 - 2)),
+            (binary16(2**9 - 1.0), binary16(2**9 - 1)),
+            (binary16(2**9 - 0.75), binary16(2**9 - 1)),
+            (binary16(2**9 - 0.5), binary16(2**9 - 1)),
+            (binary16(2**9 - 0.25), binary16(2**9 - 1)),
+            (binary16(2**9), binary16(2**9)),
+            (binary16(2**9 + 0.5), binary16(2**9)),
+            (binary16(2**9 + 1), binary16(2**9 + 1)),
+            (binary16(2**9 + 1.5), binary16(2**9 + 1)),
+            (binary16(2**9 + 2), binary16(2**9 + 2)),
+            (binary16(2**9 + 2.5), binary16(2**9 + 2)),
+            (binary16(2**9 + 3), binary16(2**9 + 3)),
+            (binary16(2**9 + 3.5), binary16(2**9 + 3)),
+            (binary16(2**9 + 4), binary16(2**9 + 4)),
+            (binary16(2**10 - 4), binary16(2**10 - 4)),
+            (binary16(2**10 - 3.5), binary16(2**10 - 4)),
+            (binary16(2**10 - 3.0), binary16(2**10 - 3)),
+            (binary16(2**10 - 2.5), binary16(2**10 - 3)),
+            (binary16(2**10 - 2.0), binary16(2**10 - 2)),
+            (binary16(2**10 - 1.5), binary16(2**10 - 2)),
+            (binary16(2**10 - 1), binary16(2**10 - 1)),
+            (binary16(2**10 - 0.5), binary16(2**10 - 1)),
+            (binary16(2**10), binary16(2**10)),
+            (binary16(2**11-1), binary16(2**11-1)),
+            (binary16(2**11), binary16(2**11)),
+            (binary16(2**11+2), binary16(2**11+2)),
+            (binary16('nan'), binary16('nan')),
+            (binary16('-nan(123)'), binary16('-nan(123)')),
         ]
 
         for input, expected in test_values:
@@ -708,53 +705,53 @@ class TestFloat16(BaseTestCase):
 
     def test_round_to_integral_toward_positive(self):
         test_values = [
-            (float16('inf'), float16('inf')),
-            (float16('-inf'), float16('-inf')),
-            (float16('-0.51'), float16('-0.0')),
-            (float16('-0.5'), float16('-0.0')),
-            (float16('-0.49'), float16('-0.0')),
-            (float16(-2.0**-24), float16('-0.0')),
-            (float16('-0.0'), float16('-0.0')),
-            (float16('0.0'), float16('0.0')),
-            (float16(2.0**-24), float16('1.0')),
-            (float16('0.49'), float16('1.0')),
-            (float16('0.5'), float16('1.0')),
-            (float16('0.51'), float16('1.0')),
-            (float16('0.99'), float16('1.0')),
-            (float16('1.0'), float16('1.0')),
-            (float16('1.49'), float16('2.0')),
-            (float16('1.5'), float16('2.0')),
-            (float16(2**9 - 2.0), float16(2**9 - 2)),
-            (float16(2**9 - 1.75), float16(2**9 - 1)),
-            (float16(2**9 - 1.5), float16(2**9 - 1)),
-            (float16(2**9 - 1.25), float16(2**9 - 1)),
-            (float16(2**9 - 1.0), float16(2**9 - 1)),
-            (float16(2**9 - 0.75), float16(2**9 - 0)),
-            (float16(2**9 - 0.5), float16(2**9 - 0)),
-            (float16(2**9 - 0.25), float16(2**9 - 0)),
-            (float16(2**9), float16(2**9)),
-            (float16(2**9 + 0.5), float16(2**9 + 1)),
-            (float16(2**9 + 1), float16(2**9 + 1)),
-            (float16(2**9 + 1.5), float16(2**9 + 2)),
-            (float16(2**9 + 2), float16(2**9 + 2)),
-            (float16(2**9 + 2.5), float16(2**9 + 3)),
-            (float16(2**9 + 3), float16(2**9 + 3)),
-            (float16(2**9 + 3.5), float16(2**9 + 4)),
-            (float16(2**9 + 4), float16(2**9 + 4)),
-            (float16(2**10 - 4), float16(2**10 - 4)),
-            (float16(2**10 - 3.5), float16(2**10 - 3)),
-            (float16(2**10 - 3.0), float16(2**10 - 3)),
-            (float16(2**10 - 2.5), float16(2**10 - 2)),
-            (float16(2**10 - 2.0), float16(2**10 - 2)),
-            (float16(2**10 - 1.5), float16(2**10 - 1)),
-            (float16(2**10 - 1), float16(2**10 - 1)),
-            (float16(2**10 - 0.5), float16(2**10)),
-            (float16(2**10), float16(2**10)),
-            (float16(2**11-1), float16(2**11-1)),
-            (float16(2**11), float16(2**11)),
-            (float16(2**11+2), float16(2**11+2)),
-            (float16('nan'), float16('nan')),
-            (float16('-nan(123)'), float16('-nan(123)')),
+            (binary16('inf'), binary16('inf')),
+            (binary16('-inf'), binary16('-inf')),
+            (binary16('-0.51'), binary16('-0.0')),
+            (binary16('-0.5'), binary16('-0.0')),
+            (binary16('-0.49'), binary16('-0.0')),
+            (binary16(-2.0**-24), binary16('-0.0')),
+            (binary16('-0.0'), binary16('-0.0')),
+            (binary16('0.0'), binary16('0.0')),
+            (binary16(2.0**-24), binary16('1.0')),
+            (binary16('0.49'), binary16('1.0')),
+            (binary16('0.5'), binary16('1.0')),
+            (binary16('0.51'), binary16('1.0')),
+            (binary16('0.99'), binary16('1.0')),
+            (binary16('1.0'), binary16('1.0')),
+            (binary16('1.49'), binary16('2.0')),
+            (binary16('1.5'), binary16('2.0')),
+            (binary16(2**9 - 2.0), binary16(2**9 - 2)),
+            (binary16(2**9 - 1.75), binary16(2**9 - 1)),
+            (binary16(2**9 - 1.5), binary16(2**9 - 1)),
+            (binary16(2**9 - 1.25), binary16(2**9 - 1)),
+            (binary16(2**9 - 1.0), binary16(2**9 - 1)),
+            (binary16(2**9 - 0.75), binary16(2**9 - 0)),
+            (binary16(2**9 - 0.5), binary16(2**9 - 0)),
+            (binary16(2**9 - 0.25), binary16(2**9 - 0)),
+            (binary16(2**9), binary16(2**9)),
+            (binary16(2**9 + 0.5), binary16(2**9 + 1)),
+            (binary16(2**9 + 1), binary16(2**9 + 1)),
+            (binary16(2**9 + 1.5), binary16(2**9 + 2)),
+            (binary16(2**9 + 2), binary16(2**9 + 2)),
+            (binary16(2**9 + 2.5), binary16(2**9 + 3)),
+            (binary16(2**9 + 3), binary16(2**9 + 3)),
+            (binary16(2**9 + 3.5), binary16(2**9 + 4)),
+            (binary16(2**9 + 4), binary16(2**9 + 4)),
+            (binary16(2**10 - 4), binary16(2**10 - 4)),
+            (binary16(2**10 - 3.5), binary16(2**10 - 3)),
+            (binary16(2**10 - 3.0), binary16(2**10 - 3)),
+            (binary16(2**10 - 2.5), binary16(2**10 - 2)),
+            (binary16(2**10 - 2.0), binary16(2**10 - 2)),
+            (binary16(2**10 - 1.5), binary16(2**10 - 1)),
+            (binary16(2**10 - 1), binary16(2**10 - 1)),
+            (binary16(2**10 - 0.5), binary16(2**10)),
+            (binary16(2**10), binary16(2**10)),
+            (binary16(2**11-1), binary16(2**11-1)),
+            (binary16(2**11), binary16(2**11)),
+            (binary16(2**11+2), binary16(2**11+2)),
+            (binary16('nan'), binary16('nan')),
+            (binary16('-nan(123)'), binary16('-nan(123)')),
         ]
 
         for input, expected in test_values:
@@ -766,53 +763,53 @@ class TestFloat16(BaseTestCase):
 
     def test_round_to_integral_toward_negative(self):
         test_values = [
-            (float16('inf'), float16('inf')),
-            (float16('-inf'), float16('-inf')),
-            (float16('-0.51'), float16('-1.0')),
-            (float16('-0.5'), float16('-1.0')),
-            (float16('-0.49'), float16('-1.0')),
-            (float16(-2.0**-24), float16('-1.0')),
-            (float16('-0.0'), float16('-0.0')),
-            (float16('0.0'), float16('0.0')),
-            (float16(2.0**-24), float16('0.0')),
-            (float16('0.49'), float16('0.0')),
-            (float16('0.5'), float16('0.0')),
-            (float16('0.51'), float16('0.0')),
-            (float16('0.99'), float16('0.0')),
-            (float16('1.0'), float16('1.0')),
-            (float16('1.49'), float16('1.0')),
-            (float16('1.5'), float16('1.0')),
-            (float16(2**9 - 2.0), float16(2**9 - 2)),
-            (float16(2**9 - 1.75), float16(2**9 - 2)),
-            (float16(2**9 - 1.5), float16(2**9 - 2)),
-            (float16(2**9 - 1.25), float16(2**9 - 2)),
-            (float16(2**9 - 1.0), float16(2**9 - 1)),
-            (float16(2**9 - 0.75), float16(2**9 - 1)),
-            (float16(2**9 - 0.5), float16(2**9 - 1)),
-            (float16(2**9 - 0.25), float16(2**9 - 1)),
-            (float16(2**9), float16(2**9)),
-            (float16(2**9 + 0.5), float16(2**9)),
-            (float16(2**9 + 1), float16(2**9 + 1)),
-            (float16(2**9 + 1.5), float16(2**9 + 1)),
-            (float16(2**9 + 2), float16(2**9 + 2)),
-            (float16(2**9 + 2.5), float16(2**9 + 2)),
-            (float16(2**9 + 3), float16(2**9 + 3)),
-            (float16(2**9 + 3.5), float16(2**9 + 3)),
-            (float16(2**9 + 4), float16(2**9 + 4)),
-            (float16(2**10 - 4), float16(2**10 - 4)),
-            (float16(2**10 - 3.5), float16(2**10 - 4)),
-            (float16(2**10 - 3.0), float16(2**10 - 3)),
-            (float16(2**10 - 2.5), float16(2**10 - 3)),
-            (float16(2**10 - 2.0), float16(2**10 - 2)),
-            (float16(2**10 - 1.5), float16(2**10 - 2)),
-            (float16(2**10 - 1), float16(2**10 - 1)),
-            (float16(2**10 - 0.5), float16(2**10 - 1)),
-            (float16(2**10), float16(2**10)),
-            (float16(2**11-1), float16(2**11-1)),
-            (float16(2**11), float16(2**11)),
-            (float16(2**11+2), float16(2**11+2)),
-            (float16('nan'), float16('nan')),
-            (float16('-nan(123)'), float16('-nan(123)')),
+            (binary16('inf'), binary16('inf')),
+            (binary16('-inf'), binary16('-inf')),
+            (binary16('-0.51'), binary16('-1.0')),
+            (binary16('-0.5'), binary16('-1.0')),
+            (binary16('-0.49'), binary16('-1.0')),
+            (binary16(-2.0**-24), binary16('-1.0')),
+            (binary16('-0.0'), binary16('-0.0')),
+            (binary16('0.0'), binary16('0.0')),
+            (binary16(2.0**-24), binary16('0.0')),
+            (binary16('0.49'), binary16('0.0')),
+            (binary16('0.5'), binary16('0.0')),
+            (binary16('0.51'), binary16('0.0')),
+            (binary16('0.99'), binary16('0.0')),
+            (binary16('1.0'), binary16('1.0')),
+            (binary16('1.49'), binary16('1.0')),
+            (binary16('1.5'), binary16('1.0')),
+            (binary16(2**9 - 2.0), binary16(2**9 - 2)),
+            (binary16(2**9 - 1.75), binary16(2**9 - 2)),
+            (binary16(2**9 - 1.5), binary16(2**9 - 2)),
+            (binary16(2**9 - 1.25), binary16(2**9 - 2)),
+            (binary16(2**9 - 1.0), binary16(2**9 - 1)),
+            (binary16(2**9 - 0.75), binary16(2**9 - 1)),
+            (binary16(2**9 - 0.5), binary16(2**9 - 1)),
+            (binary16(2**9 - 0.25), binary16(2**9 - 1)),
+            (binary16(2**9), binary16(2**9)),
+            (binary16(2**9 + 0.5), binary16(2**9)),
+            (binary16(2**9 + 1), binary16(2**9 + 1)),
+            (binary16(2**9 + 1.5), binary16(2**9 + 1)),
+            (binary16(2**9 + 2), binary16(2**9 + 2)),
+            (binary16(2**9 + 2.5), binary16(2**9 + 2)),
+            (binary16(2**9 + 3), binary16(2**9 + 3)),
+            (binary16(2**9 + 3.5), binary16(2**9 + 3)),
+            (binary16(2**9 + 4), binary16(2**9 + 4)),
+            (binary16(2**10 - 4), binary16(2**10 - 4)),
+            (binary16(2**10 - 3.5), binary16(2**10 - 4)),
+            (binary16(2**10 - 3.0), binary16(2**10 - 3)),
+            (binary16(2**10 - 2.5), binary16(2**10 - 3)),
+            (binary16(2**10 - 2.0), binary16(2**10 - 2)),
+            (binary16(2**10 - 1.5), binary16(2**10 - 2)),
+            (binary16(2**10 - 1), binary16(2**10 - 1)),
+            (binary16(2**10 - 0.5), binary16(2**10 - 1)),
+            (binary16(2**10), binary16(2**10)),
+            (binary16(2**11-1), binary16(2**11-1)),
+            (binary16(2**11), binary16(2**11)),
+            (binary16(2**11+2), binary16(2**11+2)),
+            (binary16('nan'), binary16('nan')),
+            (binary16('-nan(123)'), binary16('-nan(123)')),
         ]
 
         for input, expected in test_values:
@@ -826,7 +823,7 @@ class TestFloat16(BaseTestCase):
         # Round to integral exact is supposed to round according to the
         # 'applicable rounding-direction' attribute.
 
-        test_values = [float16(n / 4.0) for n in range(100)]
+        test_values = [binary16(n / 4.0) for n in range(100)]
         test_values.extend([-x for x in test_values])
 
         for x in test_values:
@@ -862,14 +859,14 @@ class TestFloat16(BaseTestCase):
     def test_round_to_integral_exact_signals(self):
         # Should signal the 'inexact' exception for inexact results.
         signal_list = []
-        x = float16('1.5')
+        x = binary16('1.5')
         with inexact_handler(signal_list.append):
             x.round_to_integral_exact()
         self.assertEqual(len(signal_list), 1)
 
         # But not for exact results.
         signal_list = []
-        x = float16('1.0')
+        x = binary16('1.0')
         with inexact_handler(signal_list.append):
             x.round_to_integral_exact()
         self.assertEqual(len(signal_list), 0)
@@ -877,25 +874,25 @@ class TestFloat16(BaseTestCase):
     def test_next_up_and_next_down(self):
         tiny = 2.0**-24
         test_values = [
-            (float16('-inf'), float16(2**5 - 2**16)),
-            (float16(-1.0-2**-10), float16('-1.0')),
-            (float16('-1.0'), float16(2**-11 - 1.0)),
-            (float16(-2 * tiny), float16(-tiny)),
-            (float16(-tiny), float16('-0.0')),
-            (float16('-0.0'), float16(tiny)),
-            (float16('0.0'), float16(tiny)),
-            (float16(tiny), float16(2 * tiny)),
-            (float16(2 * tiny), float16(3 * tiny)),
-            (float16(2**-14 - 2**-24), float16(2**-14)),
-            (float16(2**-14), float16(2**-14 + 2**-24)),
-            (float16(2**-13 - 2**-24), float16(2**-13)),
-            (float16(2**-13), float16(2**-13 + 2**-23)),
-            (float16(2**16 - 2**5), float16('inf')),
-            (float16(1.0 - 2**-11), float16('1.0')),
-            (float16('1.0'), float16(1.0 + 2**-10)),
-            (float16('inf'), float16('inf')),
-            (float16('nan'), float16('nan')),
-            (float16('-nan(123)'), float16('-nan(123)')),
+            (binary16('-inf'), binary16(2**5 - 2**16)),
+            (binary16(-1.0-2**-10), binary16('-1.0')),
+            (binary16('-1.0'), binary16(2**-11 - 1.0)),
+            (binary16(-2 * tiny), binary16(-tiny)),
+            (binary16(-tiny), binary16('-0.0')),
+            (binary16('-0.0'), binary16(tiny)),
+            (binary16('0.0'), binary16(tiny)),
+            (binary16(tiny), binary16(2 * tiny)),
+            (binary16(2 * tiny), binary16(3 * tiny)),
+            (binary16(2**-14 - 2**-24), binary16(2**-14)),
+            (binary16(2**-14), binary16(2**-14 + 2**-24)),
+            (binary16(2**-13 - 2**-24), binary16(2**-13)),
+            (binary16(2**-13), binary16(2**-13 + 2**-23)),
+            (binary16(2**16 - 2**5), binary16('inf')),
+            (binary16(1.0 - 2**-11), binary16('1.0')),
+            (binary16('1.0'), binary16(1.0 + 2**-10)),
+            (binary16('inf'), binary16('inf')),
+            (binary16('nan'), binary16('nan')),
+            (binary16('-nan(123)'), binary16('-nan(123)')),
         ]
         for input, expected in test_values:
             actual = input.next_up()
@@ -907,8 +904,8 @@ class TestFloat16(BaseTestCase):
 
     def test_remainder(self):
         # The two arguments to 'remainder' should have the same type.
-        x = float16('2.3')
-        y = float32('1.0')
+        x = binary16('2.3')
+        y = binary32('1.0')
         with self.assertRaises(ValueError):
             x.remainder(y)
 
@@ -919,8 +916,8 @@ class TestFloat16(BaseTestCase):
             ('snan(789)', '-nan(123)', 'nan(789)'),
         ]
         for source1, source2, expected in snan_triples:
-            source1 = float16(source1)
-            source2 = float16(source2)
+            source1 = binary16(source1)
+            source2 = binary16(source2)
             with self.assertSignalsInvalidOperation():
                 source1.remainder(source2)
 
@@ -1009,9 +1006,9 @@ class TestFloat16(BaseTestCase):
         ]
 
         for source1, source2, expected in test_triples:
-            source1 = float16(source1)
-            source2 = float16(source2)
-            expected = float16(expected)
+            source1 = binary16(source1)
+            source2 = binary16(source2)
+            expected = binary16(expected)
             actual = source1.remainder(source2)
             self.assertInterchangeable(actual, expected)
 
@@ -1039,16 +1036,16 @@ class TestFloat16(BaseTestCase):
         ]
 
         for source1, source2 in invalid_pairs:
-            source1 = float16(source1)
-            source2 = float16(source2)
+            source1 = binary16(source1)
+            source2 = binary16(source2)
             signal_list = []
             with invalid_operation_handler(signal_list.append):
                 source1.remainder(source2)
             self.assertEqual(len(signal_list), 1)
 
     def test_min_num(self):
-        x = float16('2.3')
-        y = float32('1.0')
+        x = binary16('2.3')
+        y = binary32('1.0')
         with self.assertRaises(ValueError):
             x.min_num(y)
 
@@ -1079,15 +1076,15 @@ class TestFloat16(BaseTestCase):
         ]
 
         for source1, source2, expected in test_triples:
-            source1 = float16(source1)
-            source2 = float16(source2)
-            expected = float16(expected)
+            source1 = binary16(source1)
+            source2 = binary16(source2)
+            expected = binary16(expected)
             actual = source1.min_num(source2)
             self.assertInterchangeable(actual, expected)
 
     def test_max_num(self):
-        x = float16('2.3')
-        y = float32('1.0')
+        x = binary16('2.3')
+        y = binary32('1.0')
         with self.assertRaises(ValueError):
             x.max_num(y)
 
@@ -1118,15 +1115,15 @@ class TestFloat16(BaseTestCase):
         ]
 
         for source1, source2, expected in test_triples:
-            source1 = float16(source1)
-            source2 = float16(source2)
-            expected = float16(expected)
+            source1 = binary16(source1)
+            source2 = binary16(source2)
+            expected = binary16(expected)
             actual = source1.max_num(source2)
             self.assertInterchangeable(actual, expected)
 
     def test_min_num_mag(self):
-        x = float16('2.3')
-        y = float32('1.0')
+        x = binary16('2.3')
+        y = binary32('1.0')
         with self.assertRaises(ValueError):
             x.min_num_mag(y)
 
@@ -1157,15 +1154,15 @@ class TestFloat16(BaseTestCase):
         ]
 
         for source1, source2, expected in test_triples:
-            source1 = float16(source1)
-            source2 = float16(source2)
-            expected = float16(expected)
+            source1 = binary16(source1)
+            source2 = binary16(source2)
+            expected = binary16(expected)
             actual = source1.min_num_mag(source2)
             self.assertInterchangeable(actual, expected, 'min_num_mag({}, {})'.format(source1, source2))
 
     def test_max_num_mag(self):
-        x = float16('2.3')
-        y = float32('1.0')
+        x = binary16('2.3')
+        y = binary32('1.0')
         with self.assertRaises(ValueError):
             x.max_num_mag(y)
 
@@ -1196,9 +1193,9 @@ class TestFloat16(BaseTestCase):
         ]
 
         for source1, source2, expected in test_triples:
-            source1 = float16(source1)
-            source2 = float16(source2)
-            expected = float16(expected)
+            source1 = binary16(source1)
+            source2 = binary16(source2)
+            expected = binary16(expected)
             actual = source1.max_num_mag(source2)
             self.assertInterchangeable(actual, expected, 'max_num_mag({}, {})'.format(source1, source2))
 
@@ -1264,16 +1261,16 @@ class TestFloat16(BaseTestCase):
         ]
 
         for source1, n, expected in test_triples:
-            source1 = float16(source1)
+            source1 = binary16(source1)
             n = int(n)
-            expected = float16(expected)
+            expected = binary16(expected)
             actual = source1.scale_b(n)
             self.assertInterchangeable(actual, expected, 'scale_b({}, {})'.format(source1, n))
 
 
     def test_log_b(self):
         # NaNs
-        for x in float16('nan'), float16('-snan'):
+        for x in binary16('nan'), binary16('-snan'):
             with self.assertSignalsInvalidOperation():
                 try:
                     x.log_b()
@@ -1281,7 +1278,7 @@ class TestFloat16(BaseTestCase):
                     pass
 
         # Infinities
-        for x in float16('inf'), float16('-inf'):
+        for x in binary16('inf'), binary16('-inf'):
             with self.assertSignalsInvalidOperation():
                 try:
                     x.log_b()
@@ -1289,7 +1286,7 @@ class TestFloat16(BaseTestCase):
                     pass
 
         # Zeros
-        for x in float16('0'), float16('-0'):
+        for x in binary16('0'), binary16('-0'):
             with self.assertSignalsInvalidOperation():
                 try:
                     x.log_b()
@@ -1308,16 +1305,16 @@ class TestFloat16(BaseTestCase):
             ('2e-7', '-23'),
         ]
         for str_source1, expected in test_pairs:
-            source1 = float16(str_source1)
+            source1 = binary16(str_source1)
             expected = int(expected)
             actual = source1.log_b()
             self.assertEqual(actual, expected, 'log_b({}): expected {}, got {}'.format(source1, expected, actual))
 
             # Same test with negative values.
-            source1 = float16('-' + str_source1)
+            source1 = binary16('-' + str_source1)
             actual = source1.log_b()
             self.assertEqual(actual, expected, 'log_b({}): expected {}, got {}'.format(source1, expected, actual))
 
-        
+
 if __name__ == '__main__':
     unittest.main()
