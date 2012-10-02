@@ -24,12 +24,12 @@ class TestConvertFromHexCharacter(unittest.TestCase):
     def test_invalid_inputs(self):
         for input in float16_invalid_inputs:
             with self.assertRaises(ValueError):
-                result = float16.convert_from_hex_character(input)
+                float16.convert_from_hex_character(input)
 
     def test_validity(self):
         for input in float16_inputs:
             result = float16.convert_from_hex_character(input)
-            self.assertEqual(result._format, float16)
+            self.assertEqual(result.format, float16)
 
     def test_against_convert_from_int(self):
         self.assertEqual(
