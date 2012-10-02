@@ -57,9 +57,35 @@ class InexactException(object):
         return self.rounded
 
 
-def default_invalid_operation_handler(exception):
+class UnderflowException(object):
+    """
+    Exception thrown when a result is non-zero and tiny.
+
+    """
+    def __init__(self, rounded):
+        self.rounded = rounded
+
+    def default_handler(self):
+        return self.rounded
+
+
+class OverflowException(object):
+    """
+    Exception thrown when a result overflows.
+
+    """
+    def __init__(self, rounded):
+        self.rounded = rounded
+
+    def default_handler(self):
+        return self.rounded
+
+
+def _default_handler(exception):
     return exception.default_handler()
 
 
-def default_inexact_handler(exception):
-    return exception.default_handler()
+default_invalid_operation_handler = _default_handler
+default_inexact_handler = _default_handler
+default_overflow_handler = _default_handler
+default_underflow_handler = _default_handler

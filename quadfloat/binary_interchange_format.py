@@ -14,6 +14,8 @@ from quadfloat.arithmetic import (
 from quadfloat.attributes import (
     _signal_invalid_operation,
     _signal_inexact,
+    _signal_overflow,
+    _signal_underflow,
     _current_rounding_direction,
 )
 from quadfloat.exceptions import (
@@ -21,6 +23,8 @@ from quadfloat.exceptions import (
     InvalidBooleanOperationException,
     InvalidIntegerOperationException,
     InvalidOperationException,
+    OverflowException,
+    UnderflowException,
     SignalingNaNException,
 )
 from quadfloat.interval import Interval as _Interval
@@ -475,9 +479,33 @@ class BinaryInterchangeFormat(object):
         if q.bit_length() == self.precision + 1:
             q, e = q >> 1, e + 1
 
+        # Signal the overflow exception when appropriate.
         if e > self.qmax:
             flags.error = -1 if sign else 1
-            return self._handle_overflow(sign)
+
+            rounded = self._infinite(sign)
+            return _signal_overflow(OverflowException(rounded))
+
+        # Detecting underflow: for underflow after rounding, we want to signal
+        # underflow whenever the exact result is strictly less than (1 -
+        # 2**-(precision + 1)) * 2**emin in absolute value.
+        #
+        # For underflow before rounding, signal whenever the exact result
+        # is strictly less than 2**emin.
+        #
+        # The result itself will be subnormal whenever the exact result
+        # is strictly less than (1 - 2**-precision) * 2**emin.
+        #
+        # Do we have enough information to detect underflow after rounding?
+
+        # Ex: double precision:  we've got an integer multiple of 2**-1076,
+        # and if it's even it's exact.
+        #
+        # But the boundary we need to look for is 2**-1022 - 2**-1076; so we do
+        # *not* have enough information.
+        #
+        # One option: *always* calculate 3 extra bits rather than 2.
+
 
         else:
             if sign:
@@ -915,15 +943,6 @@ class BinaryInterchangeFormat(object):
 
         """
         return fmt1 if fmt1.width >= fmt2.width else fmt2
-
-    def _handle_overflow(self, sign):
-        """
-        Handle an overflow.
-
-        """
-        # For now, just returns the appropriate infinity.  Someday this should
-        # handle rounding modes, flags, etc.
-        return self._infinite(sign)
 
     def _handle_invalid(self):
         """

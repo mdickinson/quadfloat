@@ -1,6 +1,14 @@
+import contextlib
 import unittest
 
+from quadfloat.attributes import (
+    inexact_handler,
+    invalid_operation_handler,
+    overflow_handler,
+    underflow_handler,
+)
 from quadfloat.binary_interchange_format import BinaryInterchangeFormat
+from quadfloat.exceptions import OverflowException
 
 
 # Format notes:
@@ -95,6 +103,21 @@ inf 1000 -> inf
 float16 = BinaryInterchangeFormat(width=16)
 
 
+@contextlib.contextmanager
+def catch_exceptions():
+    signal_list = []
+
+    def my_handler(exc):
+        signal_list.append(exc)
+        return exc.default_handler()
+
+    with invalid_operation_handler(my_handler):
+        with inexact_handler(my_handler):
+            with overflow_handler(my_handler):
+                with underflow_handler(my_handler):
+                    yield signal_list
+
+
 class TestScaleB(unittest.TestCase):
     def test_scale_b(self):
         arg_converters = float16.convert_from_hex_character, int
@@ -118,12 +141,17 @@ class TestScaleB(unittest.TestCase):
             ]
             source1, exp = args
 
-            # XXX Do something with the flags.
             rhs = result.split()
             expected = float16.convert_from_hex_character(rhs[0])
             flags = rhs[1:]
 
-            actual = source1.scale_b(exp)
+            with catch_exceptions() as exceptions:
+                actual = source1.scale_b(exp)
+
+            expect_overflow = 'overflow' in flags
+            got_overflow = any(isinstance(exc, OverflowException) for exc in exceptions)
+            self.assertEqual(expect_overflow, got_overflow)
+
 
             # Check that actual and expected are interchangeable.
             self.assertEqual(
