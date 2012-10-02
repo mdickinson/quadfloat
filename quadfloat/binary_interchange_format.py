@@ -216,6 +216,9 @@ class BinaryInterchangeFormat(object):
     def __repr__(self):
         return "BinaryInterchangeFormat(width={})".format(self.width)
 
+    def __str__(self):
+        return "binary{}".format(self.width)
+
     def __eq__(self, other):
         return self.width == other.width
 

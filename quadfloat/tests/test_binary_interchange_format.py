@@ -45,6 +45,10 @@ class TestBinaryIntegerchangeFormat(unittest.TestCase):
             actual_precision = format.precision
             self.assertEqual(actual_precision, expected_precision)
 
+    def test_str(self):
+        binary16 = BinaryInterchangeFormat(width=16)
+        self.assertEqual(str(binary16), 'binary16')
+
     def test_equality(self):
         binary128 = BinaryInterchangeFormat(width=128)
         binary128_copy = BinaryInterchangeFormat(width=128)
