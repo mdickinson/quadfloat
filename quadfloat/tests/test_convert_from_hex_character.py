@@ -1,6 +1,7 @@
 import unittest
 
 from quadfloat import binary16
+from quadfloat.tests.base_test_case import BaseTestCase
 
 
 binary16_inputs = """\
@@ -20,7 +21,7 @@ binary16_invalid_inputs = """\
 """.splitlines()
 
 
-class TestConvertFromHexCharacter(unittest.TestCase):
+class TestConvertFromHexCharacter(BaseTestCase):
     def test_invalid_inputs(self):
         for input in binary16_invalid_inputs:
             with self.assertRaises(ValueError):
@@ -32,33 +33,37 @@ class TestConvertFromHexCharacter(unittest.TestCase):
             self.assertEqual(result.format, binary16)
 
     def test_against_convert_from_int(self):
-        self.assertEqual(
+        self.assertInterchangeable(
             binary16.convert_from_hex_character('0x0p0'),
             binary16.convert_from_int(0),
         )
-        self.assertEqual(
+        self.assertInterchangeable(
             binary16.convert_from_hex_character('0x1p0'),
             binary16.convert_from_int(1),
         )
-        self.assertEqual(
+        self.assertInterchangeable(
             binary16.convert_from_hex_character('-0x1p0'),
             binary16.convert_from_int(-1),
         )
-        self.assertEqual(
+        self.assertInterchangeable(
             binary16.convert_from_hex_character('0xap0'),
             binary16.convert_from_int(10),
         )
-        self.assertEqual(
+        self.assertInterchangeable(
             binary16.convert_from_hex_character('0xap1'),
             binary16.convert_from_int(20),
         )
-        self.assertEqual(
+        self.assertInterchangeable(
             binary16.convert_from_hex_character('0xap-1'),
             binary16.convert_from_int(5),
         )
+        self.assertInterchangeable(
+            binary16.convert_from_hex_character('0x1p10'),
+            binary16.convert_from_int(1024),
+        )
 
     def test_against_convert_from_float(self):
-        self.assertEqual(
+        self.assertInterchangeable(
             binary16.convert_from_hex_character('0x1.8p0'),
             binary16(1.5),
         )
