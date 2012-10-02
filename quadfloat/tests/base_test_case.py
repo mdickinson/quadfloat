@@ -25,10 +25,9 @@ class BaseTestCase(unittest.TestCase):
 
     def assertNotInterchangeable(self, quad1, quad2, msg = None):
         """
-        Assert that two float16 instances are interchangeable.
+        Assert that two _BinaryFloat instances are not interchangeable.
 
-        This means more than just being numerically equal:  for example, -0.0
-        and 0.0 are equal, but not interchangeable.
+        See also: assertInterchangeable
 
         """
         self.assertNotEqual(
