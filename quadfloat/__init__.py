@@ -2,13 +2,13 @@ from quadfloat.binary_interchange_format import BinaryInterchangeFormat
 
 __all__ = [
     'BinaryInterchangeFormat',
-    'float16',
-    'float32',
-    'float64',
-    'float128',
+    'binary16',
+    'binary32',
+    'binary64',
+    'binary128',
 ]
 
-float16 = BinaryInterchangeFormat(width=16)
-float32 = BinaryInterchangeFormat(width=32)
-float64 = BinaryInterchangeFormat(width=64)
-float128 = BinaryInterchangeFormat(width=128)
+binary16 = BinaryInterchangeFormat(width=16)
+binary32 = BinaryInterchangeFormat(width=32)
+binary64 = BinaryInterchangeFormat(width=64)
+binary128 = BinaryInterchangeFormat(width=128)
