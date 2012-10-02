@@ -41,8 +41,20 @@ class TestConvertFromHexCharacter(unittest.TestCase):
             float16.convert_from_int(1),
         )
         self.assertEqual(
+            float16.convert_from_hex_character('-0x1p0'),
+            float16.convert_from_int(-1),
+        )
+        self.assertEqual(
             float16.convert_from_hex_character('0xap0'),
             float16.convert_from_int(10),
+        )
+        self.assertEqual(
+            float16.convert_from_hex_character('0xap1'),
+            float16.convert_from_int(20),
+        )
+        self.assertEqual(
+            float16.convert_from_hex_character('0xap-1'),
+            float16.convert_from_int(5),
         )
 
     def test_against_convert_from_float(self):

@@ -19,6 +19,7 @@ from quadfloat.binary_interchange_format import (
 )
 
 from quadfloat.binary_interchange_format import _bytes_from_iterable
+from quadfloat.tests.base_test_case import BaseTestCase
 
 
 float16 = BinaryInterchangeFormat(width=16)
@@ -40,28 +41,7 @@ float64 = BinaryInterchangeFormat(width=64)
 #   smallest +ve integer that can't be represented exactly is 2**11 + 1
 
 
-def identifying_string(binary_float):
-    fmt = binary_float.format
-    return "{} (format {})".format(
-        fmt.convert_to_hex_character(binary_float),
-        binary_float.format,
-    )
-
-
-class TestFloat16(unittest.TestCase):
-    def assertInterchangeable(self, quad1, quad2, msg = None):
-        """
-        Assert that two _BinaryFloat instances are interchangeable.
-
-        This means more than just being numerically equal:  for example, -0.0
-        and 0.0 are equal, but not interchangeable.
-
-        """
-        self.assertEqual(
-            identifying_string(quad1),
-            identifying_string(quad2),
-            msg)
-
+class TestFloat16(BaseTestCase):
     @contextlib.contextmanager
     def assertSignalsInvalidOperation(self):
         signal_list = []
