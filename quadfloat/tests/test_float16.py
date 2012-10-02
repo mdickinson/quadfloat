@@ -19,7 +19,6 @@ from quadfloat.binary_interchange_format import (
 )
 
 from quadfloat.binary_interchange_format import _bytes_from_iterable
-from quadfloat.binary_interchange_format import _FINITE, _INFINITE, _NAN
 
 
 float16 = BinaryInterchangeFormat(width=16)
@@ -41,37 +40,27 @@ float64 = BinaryInterchangeFormat(width=64)
 #   smallest +ve integer that can't be represented exactly is 2**11 + 1
 
 
+def identifying_string(binary_float):
+    fmt = binary_float.format
+    return "{} (format {})".format(
+        fmt.convert_to_hex_character(binary_float),
+        binary_float.format,
+    )
+
+
 class TestFloat16(unittest.TestCase):
-    def assertInterchangeable(self, quad1, quad2, msg = ''):
+    def assertInterchangeable(self, quad1, quad2, msg = None):
         """
-        Assert that two float16 instances are interchangeable.
+        Assert that two _BinaryFloat instances are interchangeable.
 
         This means more than just being numerically equal:  for example, -0.0
         and 0.0 are equal, but not interchangeable.
 
         """
-        # XXX Digs into private details, which isn't ideal.
-        if quad1._type != quad2._type:
-            interchangeable = False
-        elif quad1._type == _FINITE:
-            interchangeable = (
-                quad1._sign == quad2._sign and
-                quad1._exponent == quad2._exponent and
-                quad1._significand == quad2._significand
-            )
-        elif quad1._type == _INFINITE:
-            interchangeable = quad1._sign == quad2._sign
-        elif quad1._type == _NAN:
-            interchangeable = (
-                quad1._sign == quad2._sign and
-                quad1._signaling == quad2._signaling and
-                quad1._payload == quad2._payload
-            )
-        else:
-            assert False, "never get here"
-
-        self.assertTrue(interchangeable,
-                        msg = msg + '{!r} not interchangeable with {!r}'.format(quad1, quad2))
+        self.assertEqual(
+            identifying_string(quad1),
+            identifying_string(quad2),
+            msg)
 
     @contextlib.contextmanager
     def assertSignalsInvalidOperation(self):

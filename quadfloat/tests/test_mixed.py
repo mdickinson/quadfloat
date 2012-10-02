@@ -7,8 +7,6 @@ import unittest
 
 from quadfloat.binary_interchange_format import BinaryInterchangeFormat
 
-from quadfloat.binary_interchange_format import _FINITE, _INFINITE, _NAN
-
 
 float16 = BinaryInterchangeFormat(width=16)
 float32 = BinaryInterchangeFormat(width=32)
@@ -16,37 +14,27 @@ float64 = BinaryInterchangeFormat(width=64)
 float128 = BinaryInterchangeFormat(width=128)
 
 
+def identifying_string(binary_float):
+    fmt = binary_float.format
+    return "{} (format {})".format(
+        fmt.convert_to_hex_character(binary_float),
+        binary_float.format,
+    )
+
+
 class TestMixed(unittest.TestCase):
-    def assertInterchangeable(self, quad1, quad2, msg = ''):
+    def assertInterchangeable(self, quad1, quad2, msg = None):
         """
-        Assert that two float16 instances are interchangeable.
+        Assert that two _BinaryFloat instances are interchangeable.
 
         This means more than just being numerically equal:  for example, -0.0
         and 0.0 are equal, but not interchangeable.
 
         """
-        # XXX Digs into private details, which isn't ideal.
-        if quad1._type != quad2._type:
-            interchangeable = False
-        elif quad1._type == _FINITE:
-            interchangeable = (
-                quad1._sign == quad2._sign and
-                quad1._exponent == quad2._exponent and
-                quad1._significand == quad2._significand
-            )
-        elif quad1._type == _INFINITE:
-            interchangeable = quad1._sign == quad2._sign
-        elif quad1._type == _NAN:
-            interchangeable = (
-                quad1._sign == quad2._sign and
-                quad1._signaling == quad2._signaling and
-                quad1._payload == quad2._payload
-            )
-        else:
-            assert False, "never get here"
-
-        self.assertTrue(interchangeable,
-                        msg = msg + '{!r} not interchangeable with {!r}'.format(quad1, quad2))
+        self.assertEqual(
+            identifying_string(quad1),
+            identifying_string(quad2),
+            msg)
 
     def test_nan_payload(self):
         # a float32 NaN has 22 bits devoted to payload; float16 has only 9.
@@ -77,12 +65,12 @@ class TestMixed(unittest.TestCase):
         source2 = float32('2.0')
         for op in float16.addition, float16.subtraction, float16.multiplication, float16.division:
             result = op(source1, source2)
-            self.assertEqual(result._format, float16)
+            self.assertEqual(result.format, float16)
             self.assertEqual(result._payload, 2**9 - 1)
             self.assertEqual(result._sign, False)
 
             result = op(source2, source1)
-            self.assertEqual(result._format, float16)
+            self.assertEqual(result.format, float16)
             self.assertEqual(result._payload, 2**9 - 1)
             self.assertEqual(result._sign, False)
 
@@ -90,12 +78,12 @@ class TestMixed(unittest.TestCase):
         source2 = float32('2.0')
         for op in float16.addition, float16.subtraction, float16.multiplication, float16.division:
             result = op(source1, source2)
-            self.assertEqual(result._format, float16)
+            self.assertEqual(result.format, float16)
             self.assertEqual(result._payload, 2**9 - 1)
             self.assertEqual(result._sign, True)
 
             result = op(source2, source1)
-            self.assertEqual(result._format, float16)
+            self.assertEqual(result.format, float16)
             self.assertEqual(result._payload, 2**9 - 1)
             self.assertEqual(result._sign, True)
 
@@ -131,11 +119,11 @@ class TestMixed(unittest.TestCase):
         a = float16('3.5')
         b = float32('1.5')
         c = a + b
-        self.assertEqual(c._format, float32)
+        self.assertEqual(c.format, float32)
         self.assertInterchangeable(c, float32('5.0'))
 
         c = b + a
-        self.assertEqual(c._format, float32)
+        self.assertEqual(c.format, float32)
         self.assertInterchangeable(c, float32('5.0'))
 
         # Python's float treated as interchangeable with float64.
@@ -143,45 +131,45 @@ class TestMixed(unittest.TestCase):
         b = float32('1.5')
 
         c = a + b
-        self.assertEqual(c._format, float64)
+        self.assertEqual(c.format, float64)
         self.assertInterchangeable(c, float64('5.0'))
 
         c = b + a
-        self.assertEqual(c._format, float64)
+        self.assertEqual(c.format, float64)
         self.assertInterchangeable(c, float64('5.0'))
 
         a = 3.5
         b = float128('1.5')
 
         c = a + b
-        self.assertEqual(c._format, float128)
+        self.assertEqual(c.format, float128)
         self.assertInterchangeable(c, float128('5.0'))
 
         c = b + a
-        self.assertEqual(c._format, float128)
+        self.assertEqual(c.format, float128)
         self.assertInterchangeable(c, float128('5.0'))
 
         # Integers are converted to the float type before the operation.
         a = float16('21')
         b = 29
         c = a + b
-        self.assertEqual(c._format, float16)
+        self.assertEqual(c.format, float16)
         self.assertInterchangeable(c, float16('50'))
 
         a = float16('21')
         b = 29
         c = b + a
-        self.assertEqual(c._format, float16)
+        self.assertEqual(c.format, float16)
         self.assertInterchangeable(c, float16('50'))
 
         a = float16('21')
         b = 2409
         c = a + b
-        self.assertEqual(c._format, float16)
+        self.assertEqual(c.format, float16)
         # Note: inexact result due to rounding both of b and of the sum.
         self.assertInterchangeable(c, float16('2428'))
         c = b + a
-        self.assertEqual(c._format, float16)
+        self.assertEqual(c.format, float16)
         # Note: inexact result due to rounding both of b and of the sum.
         self.assertInterchangeable(c, float16('2428'))
 
@@ -196,13 +184,13 @@ class TestMixed(unittest.TestCase):
         a = float32('3.2')
         b = float32('inf')
         c = float64.addition(a, b)
-        self.assertEqual(c._format, float64)
+        self.assertEqual(c.format, float64)
         self.assertInterchangeable(c, float64('inf'))
         c = float64.addition(b, a)
-        self.assertEqual(c._format, float64)
+        self.assertEqual(c.format, float64)
         self.assertInterchangeable(c, float64('inf'))
         c = float64.addition(b, b)
-        self.assertEqual(c._format, float64)
+        self.assertEqual(c.format, float64)
         self.assertInterchangeable(c, float64('inf'))
 
     def test___sub__(self):
@@ -216,11 +204,11 @@ class TestMixed(unittest.TestCase):
         a = float16('3.5')
         b = float32('1.5')
         c = a - b
-        self.assertEqual(c._format, float32)
+        self.assertEqual(c.format, float32)
         self.assertInterchangeable(c, float32('2.0'))
 
         c = b - a
-        self.assertEqual(c._format, float32)
+        self.assertEqual(c.format, float32)
         self.assertInterchangeable(c, float32('-2.0'))
 
         # Python's float treated as interchangeable with float64.
@@ -228,11 +216,11 @@ class TestMixed(unittest.TestCase):
         b = float32('1.5')
 
         c = a - b
-        self.assertEqual(c._format, float64)
+        self.assertEqual(c.format, float64)
         self.assertInterchangeable(c, float64('2.0'))
 
         c = b - a
-        self.assertEqual(c._format, float64)
+        self.assertEqual(c.format, float64)
         self.assertInterchangeable(c, float64('-2.0'))
 
     def test___mul__(self):
@@ -246,11 +234,11 @@ class TestMixed(unittest.TestCase):
         a = float16('3.5')
         b = float32('1.5')
         c = a * b
-        self.assertEqual(c._format, float32)
+        self.assertEqual(c.format, float32)
         self.assertInterchangeable(c, float32('5.25'))
 
         c = b * a
-        self.assertEqual(c._format, float32)
+        self.assertEqual(c.format, float32)
         self.assertInterchangeable(c, float32('5.25'))
 
         # Python's float treated as interchangeable with float64.
@@ -258,11 +246,11 @@ class TestMixed(unittest.TestCase):
         b = float32('1.5')
 
         c = a * b
-        self.assertEqual(c._format, float64)
+        self.assertEqual(c.format, float64)
         self.assertInterchangeable(c, float64('5.25'))
 
         c = b * a
-        self.assertEqual(c._format, float64)
+        self.assertEqual(c.format, float64)
         self.assertInterchangeable(c, float64('5.25'))
 
     def test___div__(self):
@@ -275,11 +263,11 @@ class TestMixed(unittest.TestCase):
         a = float16('35.0')
         b = float32('5.0')
         c = a / b
-        self.assertEqual(c._format, float32)
+        self.assertEqual(c.format, float32)
         self.assertInterchangeable(c, float32('7.0'))
 
         c = b / a
-        self.assertEqual(c._format, float32)
+        self.assertEqual(c.format, float32)
         self.assertInterchangeable(c, float32('0.142857142857142857142857'))
 
         # Python's float treated as interchangeable with float64.
@@ -287,11 +275,11 @@ class TestMixed(unittest.TestCase):
         b = float32('1.5')
 
         c = a / b
-        self.assertEqual(c._format, float64)
+        self.assertEqual(c.format, float64)
         self.assertInterchangeable(c, float64(3.5 / 1.5))
 
         c = b / a
-        self.assertEqual(c._format, float64)
+        self.assertEqual(c.format, float64)
         self.assertInterchangeable(c, float64(1.5 / 3.5))
 
     def test_mixed_arithmetic(self):
@@ -299,7 +287,7 @@ class TestMixed(unittest.TestCase):
         a = float32(0)
         b = 2**64
         c = a + b
-        self.assertEqual(c._format, float32)
+        self.assertEqual(c.format, float32)
         self.assertInterchangeable(c, float32(2**64))
 
     def test_equality_operation(self):
