@@ -8,7 +8,6 @@ from quadfloat.attributes import (
     overflow_handler,
     underflow_handler,
 )
-from quadfloat.binary_interchange_format import BinaryInterchangeFormat
 from quadfloat.exceptions import OverflowException
 
 
