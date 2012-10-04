@@ -22,9 +22,9 @@ class TestBinary64(BaseTestCase):
         Return a random hardware float, avoiding infinities and NaNs.
 
         """
-        exponent_bits = random.randrange(2**11 - 1)
+        exponent_bits = random.randrange(2 ** 11 - 1)
         sign_bit = random.randrange(2)
-        significand_bits = random.randrange(2**52)
+        significand_bits = random.randrange(2 ** 52)
         equivalent_integer = ((sign_bit << 11) + exponent_bits << 52) + significand_bits
         return struct.unpack('<d', struct.pack('<Q', equivalent_integer))[0]
 

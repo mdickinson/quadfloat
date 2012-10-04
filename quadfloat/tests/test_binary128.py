@@ -39,7 +39,7 @@ class TestBinary128(BaseTestCase):
         q = binary128()
         encoded_q = q.encode()
         self.assertIsInstance(encoded_q, bytes)
-        self.assertEqual(encoded_q, b'\0'*16)
+        self.assertEqual(encoded_q, b'\0' * 16)
 
     def test_construction_from_binary_float_base(self):
         input = binary128('2.3')
@@ -70,7 +70,7 @@ class TestBinary128(BaseTestCase):
         input = binary16('-nan(123)')
         self.assertInterchangeable(binary128(input), binary128('-nan(123)'))
 
-        input_string = 'nan({})'.format(2**230)
+        input_string = 'nan({})'.format(2 ** 230)
         input = binary256(input_string)
         self.assertInterchangeable(binary128(input), binary128(input_string))
 
@@ -79,12 +79,12 @@ class TestBinary128(BaseTestCase):
         q = binary128(-3)
 
         # Testing round-half-to-even.
-        q = binary128(5**49)
-        r = binary128(5**49 - 1)
+        q = binary128(5 ** 49)
+        r = binary128(5 ** 49 - 1)
         self.assertInterchangeable(q, r)
 
-        q = binary128(5**49 + 2)
-        r = binary128(5**49 + 3)
+        q = binary128(5 ** 49 + 2)
+        r = binary128(5 ** 49 + 3)
         self.assertInterchangeable(q, r)
 
         # Values near powers of two.
@@ -458,7 +458,7 @@ class TestBinary128(BaseTestCase):
             binary128(0.10000000000001e150),
             binary128(0.32e150),
             binary128(0.99999999999999e150),
-            binary128(10**200),
+            binary128(10 ** 200),
             binary128('inf'),
             binary128('-inf'),
             binary128('nan'),
@@ -921,7 +921,7 @@ class TestBinary128(BaseTestCase):
         a = binary128('inf')
         b = binary128('-inf')
         self.assertTrue(binary128.division(a, b).is_nan())
-        
+
         # signaling nans?
         a = binary128('-snan(123)')
         b = binary128('2.3')
@@ -1058,8 +1058,8 @@ class TestBinary128(BaseTestCase):
         def test_long(self):
             self.assertIsInstance(long(binary128(-1.75)), long)
             self.assertEqual(long(binary128(-1.75)), long(-1))
-            self.assertIsInstance(long(binary128(2**64)), long)
-            self.assertEqual(long(binary128(2**64)), long(2**64))
+            self.assertIsInstance(long(binary128(2 ** 64)), long)
+            self.assertEqual(long(binary128(2 ** 64)), long(2 ** 64))
 
     def test_float(self):
         self.assertTrue(math.isnan(float(binary128('nan'))))

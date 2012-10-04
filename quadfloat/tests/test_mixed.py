@@ -18,20 +18,20 @@ class TestMixed(BaseTestCase):
 
         source1 = binary32('nan(0)')
         self.assertEqual(source1._payload, 0)
-        
+
         # Payloads larger than that allowed should be clipped to be within range.
         # XXX As an implementation choice, this needs documenting.
-        source1 = binary32('nan({})'.format(2**22))
-        self.assertEqual(source1._payload, 2**22 - 1)
+        source1 = binary32('nan({})'.format(2 ** 22))
+        self.assertEqual(source1._payload, 2 ** 22 - 1)
 
         source1 = binary32('snan(0)')
         self.assertEqual(source1._payload, 1)
 
-        source1 = binary32('snan({})'.format(2**22))
-        self.assertEqual(source1._payload, 2**22 - 1)
+        source1 = binary32('snan({})'.format(2 ** 22))
+        self.assertEqual(source1._payload, 2 ** 22 - 1)
 
-        source1 = binary16('snan({})'.format(2**22))
-        self.assertEqual(source1._payload, 2**9 - 1)
+        source1 = binary16('snan({})'.format(2 ** 22))
+        self.assertEqual(source1._payload, 2 ** 9 - 1)
 
         # Now combine two binary32 instances with a binary16 result; NaN should be shortened
         # appropriately.
@@ -40,12 +40,12 @@ class TestMixed(BaseTestCase):
         for op in binary16.addition, binary16.subtraction, binary16.multiplication, binary16.division:
             result = op(source1, source2)
             self.assertEqual(result.format, binary16)
-            self.assertEqual(result._payload, 2**9 - 1)
+            self.assertEqual(result._payload, 2 ** 9 - 1)
             self.assertEqual(result._sign, False)
 
             result = op(source2, source1)
             self.assertEqual(result.format, binary16)
-            self.assertEqual(result._payload, 2**9 - 1)
+            self.assertEqual(result._payload, 2 ** 9 - 1)
             self.assertEqual(result._sign, False)
 
         source1 = binary32('-snan(999999)')
@@ -53,12 +53,12 @@ class TestMixed(BaseTestCase):
         for op in binary16.addition, binary16.subtraction, binary16.multiplication, binary16.division:
             result = op(source1, source2)
             self.assertEqual(result.format, binary16)
-            self.assertEqual(result._payload, 2**9 - 1)
+            self.assertEqual(result._payload, 2 ** 9 - 1)
             self.assertEqual(result._sign, True)
 
             result = op(source2, source1)
             self.assertEqual(result.format, binary16)
-            self.assertEqual(result._payload, 2**9 - 1)
+            self.assertEqual(result._payload, 2 ** 9 - 1)
             self.assertEqual(result._sign, True)
 
     def test___pos__(self):
@@ -259,18 +259,18 @@ class TestMixed(BaseTestCase):
     def test_mixed_arithmetic(self):
         # Check that large integers work.
         a = binary32(0)
-        b = 2**64
+        b = 2 ** 64
         c = a + b
         self.assertEqual(c.format, binary32)
-        self.assertInterchangeable(c, binary32(2**64))
+        self.assertInterchangeable(c, binary32(2 ** 64))
 
     def test_equality_operation(self):
         # Comparisons between integers and floats.
         self.assertFalse(binary64(3.2) == 0)
         self.assertTrue(binary64(0) == 0)
         # Check that we're not simply converting the integer to a float.
-        self.assertFalse(binary64(2**64) == 2 ** 64 + 1)
-        self.assertTrue(binary64(2**64) == 2 ** 64)
+        self.assertFalse(binary64(2 ** 64) == 2 ** 64 + 1)
+        self.assertTrue(binary64(2 ** 64) == 2 ** 64)
 
         with self.assertRaises(TypeError):
             binary64(3.2) == '3.2'

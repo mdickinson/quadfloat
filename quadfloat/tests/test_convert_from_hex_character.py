@@ -27,8 +27,6 @@ def catch_exceptions():
                     yield signal_list
 
 
-
-
 binary16_inputs = """\
 0x0p0
 0x0p1
@@ -52,7 +50,6 @@ infini
 infinit
 infinityy
 """.splitlines()
-
 
 
 # 16-bit test values, round-half-to-even
@@ -148,7 +145,6 @@ class ArithmeticTestCase(object):
         self.callable = callable
 
 
-
 def test_lines(iterable):
     """Given an iterable of strings representing individual tests,
     remove blank lines and comment lines.
@@ -172,7 +168,7 @@ def test_lines(iterable):
             args=args,
             result=result,
             flags=flags,
-            callable = binary16.convert_from_hex_character,
+            callable=binary16.convert_from_hex_character,
         )
 
 
