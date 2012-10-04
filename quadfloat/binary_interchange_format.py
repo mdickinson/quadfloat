@@ -509,18 +509,25 @@ class BinaryInterchangeFormat(object):
         #
         # One option: *always* calculate 3 extra bits rather than 2.
 
+        # Signal the inexact exception when appropriate.
+        
+        rounded = self._finite(
+            sign=sign,
+            exponent=e,
+            significand=q,
+        )
 
+        if sign:
+            inexact = (adj < 0) - (adj > 0)
         else:
-            if sign:
-                flags.error = (adj < 0) - (adj > 0)
-            else:
-                flags.error = (adj > 0) - (adj < 0)
+            inexact = (adj > 0) - (adj < 0)
 
-            return self._finite(
-                sign=sign,
-                exponent=e,
-                significand=q,
-            )
+        flags.error = inexact
+
+        if inexact == 0:
+            return rounded
+        else:
+            return _signal_inexact(InexactException(rounded))
 
     def _from_triple(self, sign, exponent, significand, flags=_null_flags):
         """

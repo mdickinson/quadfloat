@@ -78,7 +78,9 @@ class OverflowException(object):
         self.rounded = rounded
 
     def default_handler(self):
-        return self.rounded
+        # Local import to avoid circular imports.
+        from quadfloat.attributes import _signal_inexact
+        return _signal_inexact(InexactException(self.rounded))
 
 
 def _default_handler(exception):

@@ -1,7 +1,32 @@
+import contextlib
 import unittest
 
 from quadfloat import binary16
 from quadfloat.tests.base_test_case import BaseTestCase
+from quadfloat.attributes import (
+    inexact_handler,
+    invalid_operation_handler,
+    overflow_handler,
+    underflow_handler,
+)
+from quadfloat.exceptions import InexactException
+
+
+@contextlib.contextmanager
+def catch_exceptions():
+    signal_list = []
+
+    def my_handler(exc):
+        signal_list.append(exc)
+        return exc.default_handler()
+
+    with invalid_operation_handler(my_handler):
+        with inexact_handler(my_handler):
+            with overflow_handler(my_handler):
+                with underflow_handler(my_handler):
+                    yield signal_list
+
+
 
 
 binary16_inputs = """\
@@ -93,6 +118,14 @@ test16 = """\
 0x1.007p0 -> 0x1.008p0 inexact
 0x1.008p0 -> 0x1.008p0
 
+# Testing near overflow boundary.
+0x0.ffcp16 -> 0x0.ffcp16
+0x0.ffdp16 -> 0x0.ffcp16 inexact
+0x0.ffep16 -> 0x0.ffep16
+0x0.ffefffffffffp16 -> 0x0.ffep16 inexact
+0x0.fffp16 -> Infinity inexact
+0x1p16 -> Infinity inexact overflow
+
 # Infinities
 inf -> Infinity
 infinity -> Infinity
@@ -107,9 +140,20 @@ INF -> Infinity
 """
 
 
+class ArithmeticTestCase(object):
+    def __init__(self, args, result, flags, callable):
+        self.args = args
+        self.result = result
+        self.flags = flags
+        self.callable = callable
+
+
+
 def test_lines(iterable):
     """Given an iterable of strings representing individual tests,
     remove blank lines and comment lines.
+
+    Generate ArithmeticTestCase instances containing test details.
 
     """
     for line in iterable:
@@ -121,22 +165,30 @@ def test_lines(iterable):
         args, results = line.split('->')
         args = args.split()
         results = results.split()
-        result = results[0]
+        # XXX Check that conversion is exact.
+        result = binary16.convert_from_hex_character(results[0])
         flags = results[1:]
-        yield args, result, flags
-
-
-# convert_from_hex_character is an excellent method to use to test correct
-# rounding under the various rounding modes.
+        yield ArithmeticTestCase(
+            args=args,
+            result=result,
+            flags=flags,
+            callable = binary16.convert_from_hex_character,
+        )
 
 
 class TestConvertFromHexCharacter(BaseTestCase):
     def test_16(self):
-        for args, expected, flags in test_lines(test16.splitlines()):
-            # XXX Check that this conversion is exact.
-            expected = binary16.convert_from_hex_character(expected)
-            actual = binary16.convert_from_hex_character(*args)
-            self.assertInterchangeable(actual, expected)
+        for arithmetic_test_case in test_lines(test16.splitlines()):
+            with catch_exceptions() as exceptions:
+                actual = arithmetic_test_case.callable(*arithmetic_test_case.args)
+            self.assertInterchangeable(actual, arithmetic_test_case.result)
+
+            expected_inexact = 'inexact' in arithmetic_test_case.flags
+            actual_inexact = any(
+                isinstance(exc, InexactException)
+                for exc in exceptions)
+
+            self.assertEqual(expected_inexact, actual_inexact)
 
     def test_invalid_inputs(self):
         for input in binary16_invalid_inputs:
