@@ -27,15 +27,15 @@ from quadfloat.tests.base_test_case import BaseTestCase
 # binary16 details:
 #
 #    11-bit precision
-#     5-bit exponent, so normal range is 2**-14 through 2**16.
+#     5-bit exponent, so normal range is 2 ** -14 through 2 ** 16.
 #
-#   next up from 1 is 1 + 2**-10
-#   next down from 1 is 1 - 2**-11
-#   max representable value is 2**16 - 2**5
-#   smallest +ve integer that rounds to infinity is 2**16 - 2**4.
-#   smallest +ve representable normal value is 2**-14.
-#   smallest +ve representable value is 2**-24.
-#   smallest +ve integer that can't be represented exactly is 2**11 + 1
+#   next up from 1 is 1 + 2 ** -10
+#   next down from 1 is 1 - 2 ** -11
+#   max representable value is 2 ** 16 - 2 ** 5
+#   smallest +ve integer that rounds to infinity is 2 ** 16 - 2 ** 4.
+#   smallest +ve representable normal value is 2 ** -14.
+#   smallest +ve representable value is 2 ** -24.
+#   smallest +ve integer that can't be represented exactly is 2 ** 11 + 1
 
 
 class TestBinary16(BaseTestCase):
@@ -48,10 +48,6 @@ class TestBinary16(BaseTestCase):
 
     def test_construction_from_int(self):
         # Test round-half-to-even
-
-        # 2048 -> significand bits of 0, exponent of ???
-        # 5 exponent bits;  for 1.0, would expect exponent bits to have value 15
-        # so for 2048.0, should be 15+ 11 = 26.  Shift by 2 to get 104.
         self.assertEqual(binary16(2048).encode(), b'\x00\x68')
         self.assertEqual(binary16(2049).encode(), b'\x00\x68')
         self.assertEqual(binary16(2050).encode(), b'\x01\x68')
@@ -84,7 +80,7 @@ class TestBinary16(BaseTestCase):
 
         # Subnormals.
         eps = 1e-10
-        tiny = 2.0**-24  # smallest positive representable binary16 subnormal
+        tiny = 2.0 ** -24  # smallest positive representable binary16 subnormal
         test_values = [
             (0.0, b'\x00\x00'),
             (tiny * (0.5 - eps), b'\x00\x00'),
@@ -108,73 +104,73 @@ class TestBinary16(BaseTestCase):
         # Integers up to 2048 all representable in binary16
 
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4), binary32(4)),
+            binary16.division(binary32(2048 * 4), binary32(4)),
             binary16(2048)
         )
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 1), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 1), binary32(4)),
             binary16(2048)
         )
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 2), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 2), binary32(4)),
             binary16(2048)
         )
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 3), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 3), binary32(4)),
             binary16(2048)
         )
         # Exact halfway case; should be rounded down.
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 4), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 4), binary32(4)),
             binary16(2048)
         )
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 5), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 5), binary32(4)),
             binary16(2050)
         )
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 6), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 6), binary32(4)),
             binary16(2050)
         )
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 7), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 7), binary32(4)),
             binary16(2050)
         )
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 8), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 8), binary32(4)),
             binary16(2050)
         )
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 9), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 9), binary32(4)),
             binary16(2050)
         )
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 10), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 10), binary32(4)),
             binary16(2050)
         )
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 11), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 11), binary32(4)),
             binary16(2050)
         )
         # Exact halfway case, rounds *up*!
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 12), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 12), binary32(4)),
             binary16(2052)
         )
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 13), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 13), binary32(4)),
             binary16(2052)
         )
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 14), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 14), binary32(4)),
             binary16(2052)
         )
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 15), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 15), binary32(4)),
             binary16(2052)
         )
         self.assertInterchangeable(
-            binary16.division(binary32(2048*4 + 16), binary32(4)),
+            binary16.division(binary32(2048 * 4 + 16), binary32(4)),
             binary16(2052)
         )
 
@@ -225,7 +221,7 @@ class TestBinary16(BaseTestCase):
         )
 
         # Subnormal results.
-        tiny = 2.0**-24  # smallest positive representable binary16 subnormal
+        tiny = 2.0 ** -24  # smallest positive representable binary16 subnormal
 
         self.assertInterchangeable(
             binary16.square_root(binary64(tiny * tiny)),
@@ -296,7 +292,7 @@ class TestBinary16(BaseTestCase):
         # rather than the string representation itself (exact positioning of
         # decimal point, exponent, etc.)
 
-        TINY = 2.0**-24
+        TINY = 2.0 ** -24
         test_pairs = [
             (binary16(TINY), '6e-8'),
             (binary16(2 * TINY), '1e-7'),
@@ -320,10 +316,10 @@ class TestBinary16(BaseTestCase):
 
         # The mapping from 3-digit decimal strings to binary16 objects
         # is injective, outside of the overflow / underflow regions.
-        # (Key point in the proof is that 2**10 < 10**3).  So 3-digit
+        # (Key point in the proof is that 2 ** 10 < 10 ** 3).  So 3-digit
         # strings should roundtrip.
 
-        # Subnormals: tiny value for binary16 is 2**-24, or around
+        # Subnormals: tiny value for binary16 is 2 ** -24, or around
         # 5.9e-08.  So increments of 1e-07 should be safe.
         def input_strings():
             for exp in range(-7, 2):
@@ -353,7 +349,7 @@ class TestBinary16(BaseTestCase):
         # shortest string has a different exponent.  Some thought shows that
         # this is only a problem when the interval of values rounding to the
         # particular target value contains a subinterval of the form [9, 10] *
-        # 10**e for some e.  For the standard formats, an interval of this
+        # 10 ** e for some e.  For the standard formats, an interval of this
         # relative width can only occur for subnormal target values.
 
         # This corner case doesn't occur for binary16, binary32, binary64 or
@@ -397,22 +393,22 @@ class TestBinary16(BaseTestCase):
         positives = [
             [0.4999999999],
             [binary16(0.5), 0.5],
-            [binary16(1 - 2**-11), 1.0 - 2.0**-11],
-            [1.0 - 2.0**-12],
-            [binary64(1 - 2.0**-53), 1 - 2.0**-53],
+            [binary16(1 - 2 ** -11), 1.0 - 2.0 ** -11],
+            [1.0 - 2.0 ** -12],
+            [binary64(1 - 2.0 ** -53), 1 - 2.0 ** -53],
             [binary16('1.0'), 1, 1.0],
-            [binary64(1 + 2.0**-52), 1 + 2.0**-52],
+            [binary64(1 + 2.0 ** -52), 1 + 2.0 ** -52],
             [1.0 + 2.0 ** -11],
-            [binary16(1 + 2**-10), 1 + 2.0**-10],
+            [binary16(1 + 2 ** -10), 1 + 2.0 ** -10],
             [binary16(1.5)],
             [binary16('2.0'), 2],
-            [binary16(2**11-1), 2**11 - 1],
-            [binary16(2**11), 2**11],
-            [2**11 + 1],
-            [binary16(2**16 - 2**5), 2**16 - 2**5],
-            [2**16 - 2**4 - 1],
-            [2**16 - 2**4],
-            [2**16],
+            [binary16(2 ** 11 - 1), 2 ** 11 - 1],
+            [binary16(2 ** 11), 2 ** 11],
+            [2 ** 11 + 1],
+            [binary16(2 ** 16 - 2 ** 5), 2 ** 16 - 2 ** 5],
+            [2 ** 16 - 2 ** 4 - 1],
+            [2 ** 16 - 2 ** 4],
+            [2 ** 16],
             [binary16('inf')],
         ]
         negatives = [
@@ -520,10 +516,10 @@ class TestBinary16(BaseTestCase):
             (binary16('-0.51'), binary16('-1.0')),
             (binary16('-0.5'), binary16('-0.0')),
             (binary16('-0.49'), binary16('-0.0')),
-            (binary16(-2.0**-24), binary16('-0.0')),
+            (binary16(-2.0 ** -24), binary16('-0.0')),
             (binary16('-0.0'), binary16('-0.0')),
             (binary16('0.0'), binary16('0.0')),
-            (binary16(2.0**-24), binary16('0.0')),
+            (binary16(2.0 ** -24), binary16('0.0')),
             (binary16('0.49'), binary16('0.0')),
             (binary16('0.5'), binary16('0.0')),
             (binary16('0.51'), binary16('1.0')),
@@ -531,35 +527,35 @@ class TestBinary16(BaseTestCase):
             (binary16('1.0'), binary16('1.0')),
             (binary16('1.49'), binary16('1.0')),
             (binary16('1.5'), binary16('2.0')),
-            (binary16(2**9 - 2.0), binary16(2**9 - 2)),
-            (binary16(2**9 - 1.75), binary16(2**9 - 2)),
-            (binary16(2**9 - 1.5), binary16(2**9 - 2)),
-            (binary16(2**9 - 1.25), binary16(2**9 - 1)),
-            (binary16(2**9 - 1.0), binary16(2**9 - 1)),
-            (binary16(2**9 - 0.75), binary16(2**9 - 1)),
-            (binary16(2**9 - 0.5), binary16(2**9)),
-            (binary16(2**9 - 0.25), binary16(2**9)),
-            (binary16(2**9), binary16(2**9)),
-            (binary16(2**9 + 0.5), binary16(2**9)),
-            (binary16(2**9 + 1), binary16(2**9 + 1)),
-            (binary16(2**9 + 1.5), binary16(2**9 + 2)),
-            (binary16(2**9 + 2), binary16(2**9 + 2)),
-            (binary16(2**9 + 2.5), binary16(2**9 + 2)),
-            (binary16(2**9 + 3), binary16(2**9 + 3)),
-            (binary16(2**9 + 3.5), binary16(2**9 + 4)),
-            (binary16(2**9 + 4), binary16(2**9 + 4)),
-            (binary16(2**10 - 4), binary16(2**10 - 4)),
-            (binary16(2**10 - 3.5), binary16(2**10 - 4)),
-            (binary16(2**10 - 3.0), binary16(2**10 - 3)),
-            (binary16(2**10 - 2.5), binary16(2**10 - 2)),
-            (binary16(2**10 - 2.0), binary16(2**10 - 2)),
-            (binary16(2**10 - 1.5), binary16(2**10 - 2)),
-            (binary16(2**10 - 1), binary16(2**10 - 1)),
-            (binary16(2**10 - 0.5), binary16(2**10)),
-            (binary16(2**10), binary16(2**10)),
-            (binary16(2**11-1), binary16(2**11-1)),
-            (binary16(2**11), binary16(2**11)),
-            (binary16(2**11+2), binary16(2**11+2)),
+            (binary16(2 ** 9 - 2.0), binary16(2 ** 9 - 2)),
+            (binary16(2 ** 9 - 1.75), binary16(2 ** 9 - 2)),
+            (binary16(2 ** 9 - 1.5), binary16(2 ** 9 - 2)),
+            (binary16(2 ** 9 - 1.25), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 1.0), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 0.75), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 0.5), binary16(2 ** 9)),
+            (binary16(2 ** 9 - 0.25), binary16(2 ** 9)),
+            (binary16(2 ** 9), binary16(2 ** 9)),
+            (binary16(2 ** 9 + 0.5), binary16(2 ** 9)),
+            (binary16(2 ** 9 + 1), binary16(2 ** 9 + 1)),
+            (binary16(2 ** 9 + 1.5), binary16(2 ** 9 + 2)),
+            (binary16(2 ** 9 + 2), binary16(2 ** 9 + 2)),
+            (binary16(2 ** 9 + 2.5), binary16(2 ** 9 + 2)),
+            (binary16(2 ** 9 + 3), binary16(2 ** 9 + 3)),
+            (binary16(2 ** 9 + 3.5), binary16(2 ** 9 + 4)),
+            (binary16(2 ** 9 + 4), binary16(2 ** 9 + 4)),
+            (binary16(2 ** 10 - 4), binary16(2 ** 10 - 4)),
+            (binary16(2 ** 10 - 3.5), binary16(2 ** 10 - 4)),
+            (binary16(2 ** 10 - 3.0), binary16(2 ** 10 - 3)),
+            (binary16(2 ** 10 - 2.5), binary16(2 ** 10 - 2)),
+            (binary16(2 ** 10 - 2.0), binary16(2 ** 10 - 2)),
+            (binary16(2 ** 10 - 1.5), binary16(2 ** 10 - 2)),
+            (binary16(2 ** 10 - 1), binary16(2 ** 10 - 1)),
+            (binary16(2 ** 10 - 0.5), binary16(2 ** 10)),
+            (binary16(2 ** 10), binary16(2 ** 10)),
+            (binary16(2 ** 11 - 1), binary16(2 ** 11 - 1)),
+            (binary16(2 ** 11), binary16(2 ** 11)),
+            (binary16(2 ** 11 + 2), binary16(2 ** 11 + 2)),
             (binary16('nan'), binary16('nan')),
             (binary16('-nan(123)'), binary16('-nan(123)')),
         ]
@@ -594,10 +590,10 @@ class TestBinary16(BaseTestCase):
             (binary16('-0.51'), binary16('-1.0')),
             (binary16('-0.5'), binary16('-1.0')),
             (binary16('-0.49'), binary16('-0.0')),
-            (binary16(-2.0**-24), binary16('-0.0')),
+            (binary16(-2.0 ** -24), binary16('-0.0')),
             (binary16('-0.0'), binary16('-0.0')),
             (binary16('0.0'), binary16('0.0')),
-            (binary16(2.0**-24), binary16('0.0')),
+            (binary16(2.0 ** -24), binary16('0.0')),
             (binary16('0.49'), binary16('0.0')),
             (binary16('0.5'), binary16('1.0')),
             (binary16('0.51'), binary16('1.0')),
@@ -605,35 +601,35 @@ class TestBinary16(BaseTestCase):
             (binary16('1.0'), binary16('1.0')),
             (binary16('1.49'), binary16('1.0')),
             (binary16('1.5'), binary16('2.0')),
-            (binary16(2**9 - 2.0), binary16(2**9 - 2)),
-            (binary16(2**9 - 1.75), binary16(2**9 - 2)),
-            (binary16(2**9 - 1.5), binary16(2**9 - 1)),
-            (binary16(2**9 - 1.25), binary16(2**9 - 1)),
-            (binary16(2**9 - 1.0), binary16(2**9 - 1)),
-            (binary16(2**9 - 0.75), binary16(2**9 - 1)),
-            (binary16(2**9 - 0.5), binary16(2**9)),
-            (binary16(2**9 - 0.25), binary16(2**9)),
-            (binary16(2**9), binary16(2**9)),
-            (binary16(2**9 + 0.5), binary16(2**9 + 1)),
-            (binary16(2**9 + 1), binary16(2**9 + 1)),
-            (binary16(2**9 + 1.5), binary16(2**9 + 2)),
-            (binary16(2**9 + 2), binary16(2**9 + 2)),
-            (binary16(2**9 + 2.5), binary16(2**9 + 3)),
-            (binary16(2**9 + 3), binary16(2**9 + 3)),
-            (binary16(2**9 + 3.5), binary16(2**9 + 4)),
-            (binary16(2**9 + 4), binary16(2**9 + 4)),
-            (binary16(2**10 - 4), binary16(2**10 - 4)),
-            (binary16(2**10 - 3.5), binary16(2**10 - 3)),
-            (binary16(2**10 - 3.0), binary16(2**10 - 3)),
-            (binary16(2**10 - 2.5), binary16(2**10 - 2)),
-            (binary16(2**10 - 2.0), binary16(2**10 - 2)),
-            (binary16(2**10 - 1.5), binary16(2**10 - 1)),
-            (binary16(2**10 - 1), binary16(2**10 - 1)),
-            (binary16(2**10 - 0.5), binary16(2**10)),
-            (binary16(2**10), binary16(2**10)),
-            (binary16(2**11-1), binary16(2**11-1)),
-            (binary16(2**11), binary16(2**11)),
-            (binary16(2**11+2), binary16(2**11+2)),
+            (binary16(2 ** 9 - 2.0), binary16(2 ** 9 - 2)),
+            (binary16(2 ** 9 - 1.75), binary16(2 ** 9 - 2)),
+            (binary16(2 ** 9 - 1.5), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 1.25), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 1.0), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 0.75), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 0.5), binary16(2 ** 9)),
+            (binary16(2 ** 9 - 0.25), binary16(2 ** 9)),
+            (binary16(2 ** 9), binary16(2 ** 9)),
+            (binary16(2 ** 9 + 0.5), binary16(2 ** 9 + 1)),
+            (binary16(2 ** 9 + 1), binary16(2 ** 9 + 1)),
+            (binary16(2 ** 9 + 1.5), binary16(2 ** 9 + 2)),
+            (binary16(2 ** 9 + 2), binary16(2 ** 9 + 2)),
+            (binary16(2 ** 9 + 2.5), binary16(2 ** 9 + 3)),
+            (binary16(2 ** 9 + 3), binary16(2 ** 9 + 3)),
+            (binary16(2 ** 9 + 3.5), binary16(2 ** 9 + 4)),
+            (binary16(2 ** 9 + 4), binary16(2 ** 9 + 4)),
+            (binary16(2 ** 10 - 4), binary16(2 ** 10 - 4)),
+            (binary16(2 ** 10 - 3.5), binary16(2 ** 10 - 3)),
+            (binary16(2 ** 10 - 3.0), binary16(2 ** 10 - 3)),
+            (binary16(2 ** 10 - 2.5), binary16(2 ** 10 - 2)),
+            (binary16(2 ** 10 - 2.0), binary16(2 ** 10 - 2)),
+            (binary16(2 ** 10 - 1.5), binary16(2 ** 10 - 1)),
+            (binary16(2 ** 10 - 1), binary16(2 ** 10 - 1)),
+            (binary16(2 ** 10 - 0.5), binary16(2 ** 10)),
+            (binary16(2 ** 10), binary16(2 ** 10)),
+            (binary16(2 ** 11 - 1), binary16(2 ** 11 - 1)),
+            (binary16(2 ** 11), binary16(2 ** 11)),
+            (binary16(2 ** 11 + 2), binary16(2 ** 11 + 2)),
             (binary16('nan'), binary16('nan')),
             (binary16('-nan(123)'), binary16('-nan(123)')),
         ]
@@ -652,10 +648,10 @@ class TestBinary16(BaseTestCase):
             (binary16('-0.51'), binary16('-0.0')),
             (binary16('-0.5'), binary16('-0.0')),
             (binary16('-0.49'), binary16('-0.0')),
-            (binary16(-2.0**-24), binary16('-0.0')),
+            (binary16(-2.0 ** -24), binary16('-0.0')),
             (binary16('-0.0'), binary16('-0.0')),
             (binary16('0.0'), binary16('0.0')),
-            (binary16(2.0**-24), binary16('0.0')),
+            (binary16(2.0 ** -24), binary16('0.0')),
             (binary16('0.49'), binary16('0.0')),
             (binary16('0.5'), binary16('0.0')),
             (binary16('0.51'), binary16('0.0')),
@@ -663,35 +659,35 @@ class TestBinary16(BaseTestCase):
             (binary16('1.0'), binary16('1.0')),
             (binary16('1.49'), binary16('1.0')),
             (binary16('1.5'), binary16('1.0')),
-            (binary16(2**9 - 2.0), binary16(2**9 - 2)),
-            (binary16(2**9 - 1.75), binary16(2**9 - 2)),
-            (binary16(2**9 - 1.5), binary16(2**9 - 2)),
-            (binary16(2**9 - 1.25), binary16(2**9 - 2)),
-            (binary16(2**9 - 1.0), binary16(2**9 - 1)),
-            (binary16(2**9 - 0.75), binary16(2**9 - 1)),
-            (binary16(2**9 - 0.5), binary16(2**9 - 1)),
-            (binary16(2**9 - 0.25), binary16(2**9 - 1)),
-            (binary16(2**9), binary16(2**9)),
-            (binary16(2**9 + 0.5), binary16(2**9)),
-            (binary16(2**9 + 1), binary16(2**9 + 1)),
-            (binary16(2**9 + 1.5), binary16(2**9 + 1)),
-            (binary16(2**9 + 2), binary16(2**9 + 2)),
-            (binary16(2**9 + 2.5), binary16(2**9 + 2)),
-            (binary16(2**9 + 3), binary16(2**9 + 3)),
-            (binary16(2**9 + 3.5), binary16(2**9 + 3)),
-            (binary16(2**9 + 4), binary16(2**9 + 4)),
-            (binary16(2**10 - 4), binary16(2**10 - 4)),
-            (binary16(2**10 - 3.5), binary16(2**10 - 4)),
-            (binary16(2**10 - 3.0), binary16(2**10 - 3)),
-            (binary16(2**10 - 2.5), binary16(2**10 - 3)),
-            (binary16(2**10 - 2.0), binary16(2**10 - 2)),
-            (binary16(2**10 - 1.5), binary16(2**10 - 2)),
-            (binary16(2**10 - 1), binary16(2**10 - 1)),
-            (binary16(2**10 - 0.5), binary16(2**10 - 1)),
-            (binary16(2**10), binary16(2**10)),
-            (binary16(2**11-1), binary16(2**11-1)),
-            (binary16(2**11), binary16(2**11)),
-            (binary16(2**11+2), binary16(2**11+2)),
+            (binary16(2 ** 9 - 2.0), binary16(2 ** 9 - 2)),
+            (binary16(2 ** 9 - 1.75), binary16(2 ** 9 - 2)),
+            (binary16(2 ** 9 - 1.5), binary16(2 ** 9 - 2)),
+            (binary16(2 ** 9 - 1.25), binary16(2 ** 9 - 2)),
+            (binary16(2 ** 9 - 1.0), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 0.75), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 0.5), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 0.25), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9), binary16(2 ** 9)),
+            (binary16(2 ** 9 + 0.5), binary16(2 ** 9)),
+            (binary16(2 ** 9 + 1), binary16(2 ** 9 + 1)),
+            (binary16(2 ** 9 + 1.5), binary16(2 ** 9 + 1)),
+            (binary16(2 ** 9 + 2), binary16(2 ** 9 + 2)),
+            (binary16(2 ** 9 + 2.5), binary16(2 ** 9 + 2)),
+            (binary16(2 ** 9 + 3), binary16(2 ** 9 + 3)),
+            (binary16(2 ** 9 + 3.5), binary16(2 ** 9 + 3)),
+            (binary16(2 ** 9 + 4), binary16(2 ** 9 + 4)),
+            (binary16(2 ** 10 - 4), binary16(2 ** 10 - 4)),
+            (binary16(2 ** 10 - 3.5), binary16(2 ** 10 - 4)),
+            (binary16(2 ** 10 - 3.0), binary16(2 ** 10 - 3)),
+            (binary16(2 ** 10 - 2.5), binary16(2 ** 10 - 3)),
+            (binary16(2 ** 10 - 2.0), binary16(2 ** 10 - 2)),
+            (binary16(2 ** 10 - 1.5), binary16(2 ** 10 - 2)),
+            (binary16(2 ** 10 - 1), binary16(2 ** 10 - 1)),
+            (binary16(2 ** 10 - 0.5), binary16(2 ** 10 - 1)),
+            (binary16(2 ** 10), binary16(2 ** 10)),
+            (binary16(2 ** 11 - 1), binary16(2 ** 11 - 1)),
+            (binary16(2 ** 11), binary16(2 ** 11)),
+            (binary16(2 ** 11 + 2), binary16(2 ** 11 + 2)),
             (binary16('nan'), binary16('nan')),
             (binary16('-nan(123)'), binary16('-nan(123)')),
         ]
@@ -710,10 +706,10 @@ class TestBinary16(BaseTestCase):
             (binary16('-0.51'), binary16('-0.0')),
             (binary16('-0.5'), binary16('-0.0')),
             (binary16('-0.49'), binary16('-0.0')),
-            (binary16(-2.0**-24), binary16('-0.0')),
+            (binary16(-2.0 ** -24), binary16('-0.0')),
             (binary16('-0.0'), binary16('-0.0')),
             (binary16('0.0'), binary16('0.0')),
-            (binary16(2.0**-24), binary16('1.0')),
+            (binary16(2.0 ** -24), binary16('1.0')),
             (binary16('0.49'), binary16('1.0')),
             (binary16('0.5'), binary16('1.0')),
             (binary16('0.51'), binary16('1.0')),
@@ -721,35 +717,35 @@ class TestBinary16(BaseTestCase):
             (binary16('1.0'), binary16('1.0')),
             (binary16('1.49'), binary16('2.0')),
             (binary16('1.5'), binary16('2.0')),
-            (binary16(2**9 - 2.0), binary16(2**9 - 2)),
-            (binary16(2**9 - 1.75), binary16(2**9 - 1)),
-            (binary16(2**9 - 1.5), binary16(2**9 - 1)),
-            (binary16(2**9 - 1.25), binary16(2**9 - 1)),
-            (binary16(2**9 - 1.0), binary16(2**9 - 1)),
-            (binary16(2**9 - 0.75), binary16(2**9 - 0)),
-            (binary16(2**9 - 0.5), binary16(2**9 - 0)),
-            (binary16(2**9 - 0.25), binary16(2**9 - 0)),
-            (binary16(2**9), binary16(2**9)),
-            (binary16(2**9 + 0.5), binary16(2**9 + 1)),
-            (binary16(2**9 + 1), binary16(2**9 + 1)),
-            (binary16(2**9 + 1.5), binary16(2**9 + 2)),
-            (binary16(2**9 + 2), binary16(2**9 + 2)),
-            (binary16(2**9 + 2.5), binary16(2**9 + 3)),
-            (binary16(2**9 + 3), binary16(2**9 + 3)),
-            (binary16(2**9 + 3.5), binary16(2**9 + 4)),
-            (binary16(2**9 + 4), binary16(2**9 + 4)),
-            (binary16(2**10 - 4), binary16(2**10 - 4)),
-            (binary16(2**10 - 3.5), binary16(2**10 - 3)),
-            (binary16(2**10 - 3.0), binary16(2**10 - 3)),
-            (binary16(2**10 - 2.5), binary16(2**10 - 2)),
-            (binary16(2**10 - 2.0), binary16(2**10 - 2)),
-            (binary16(2**10 - 1.5), binary16(2**10 - 1)),
-            (binary16(2**10 - 1), binary16(2**10 - 1)),
-            (binary16(2**10 - 0.5), binary16(2**10)),
-            (binary16(2**10), binary16(2**10)),
-            (binary16(2**11-1), binary16(2**11-1)),
-            (binary16(2**11), binary16(2**11)),
-            (binary16(2**11+2), binary16(2**11+2)),
+            (binary16(2 ** 9 - 2.0), binary16(2 ** 9 - 2)),
+            (binary16(2 ** 9 - 1.75), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 1.5), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 1.25), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 1.0), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 0.75), binary16(2 ** 9 - 0)),
+            (binary16(2 ** 9 - 0.5), binary16(2 ** 9 - 0)),
+            (binary16(2 ** 9 - 0.25), binary16(2 ** 9 - 0)),
+            (binary16(2 ** 9), binary16(2 ** 9)),
+            (binary16(2 ** 9 + 0.5), binary16(2 ** 9 + 1)),
+            (binary16(2 ** 9 + 1), binary16(2 ** 9 + 1)),
+            (binary16(2 ** 9 + 1.5), binary16(2 ** 9 + 2)),
+            (binary16(2 ** 9 + 2), binary16(2 ** 9 + 2)),
+            (binary16(2 ** 9 + 2.5), binary16(2 ** 9 + 3)),
+            (binary16(2 ** 9 + 3), binary16(2 ** 9 + 3)),
+            (binary16(2 ** 9 + 3.5), binary16(2 ** 9 + 4)),
+            (binary16(2 ** 9 + 4), binary16(2 ** 9 + 4)),
+            (binary16(2 ** 10 - 4), binary16(2 ** 10 - 4)),
+            (binary16(2 ** 10 - 3.5), binary16(2 ** 10 - 3)),
+            (binary16(2 ** 10 - 3.0), binary16(2 ** 10 - 3)),
+            (binary16(2 ** 10 - 2.5), binary16(2 ** 10 - 2)),
+            (binary16(2 ** 10 - 2.0), binary16(2 ** 10 - 2)),
+            (binary16(2 ** 10 - 1.5), binary16(2 ** 10 - 1)),
+            (binary16(2 ** 10 - 1), binary16(2 ** 10 - 1)),
+            (binary16(2 ** 10 - 0.5), binary16(2 ** 10)),
+            (binary16(2 ** 10), binary16(2 ** 10)),
+            (binary16(2 ** 11 - 1), binary16(2 ** 11 - 1)),
+            (binary16(2 ** 11), binary16(2 ** 11)),
+            (binary16(2 ** 11 + 2), binary16(2 ** 11 + 2)),
             (binary16('nan'), binary16('nan')),
             (binary16('-nan(123)'), binary16('-nan(123)')),
         ]
@@ -768,10 +764,10 @@ class TestBinary16(BaseTestCase):
             (binary16('-0.51'), binary16('-1.0')),
             (binary16('-0.5'), binary16('-1.0')),
             (binary16('-0.49'), binary16('-1.0')),
-            (binary16(-2.0**-24), binary16('-1.0')),
+            (binary16(-2.0 ** -24), binary16('-1.0')),
             (binary16('-0.0'), binary16('-0.0')),
             (binary16('0.0'), binary16('0.0')),
-            (binary16(2.0**-24), binary16('0.0')),
+            (binary16(2.0 ** -24), binary16('0.0')),
             (binary16('0.49'), binary16('0.0')),
             (binary16('0.5'), binary16('0.0')),
             (binary16('0.51'), binary16('0.0')),
@@ -779,35 +775,35 @@ class TestBinary16(BaseTestCase):
             (binary16('1.0'), binary16('1.0')),
             (binary16('1.49'), binary16('1.0')),
             (binary16('1.5'), binary16('1.0')),
-            (binary16(2**9 - 2.0), binary16(2**9 - 2)),
-            (binary16(2**9 - 1.75), binary16(2**9 - 2)),
-            (binary16(2**9 - 1.5), binary16(2**9 - 2)),
-            (binary16(2**9 - 1.25), binary16(2**9 - 2)),
-            (binary16(2**9 - 1.0), binary16(2**9 - 1)),
-            (binary16(2**9 - 0.75), binary16(2**9 - 1)),
-            (binary16(2**9 - 0.5), binary16(2**9 - 1)),
-            (binary16(2**9 - 0.25), binary16(2**9 - 1)),
-            (binary16(2**9), binary16(2**9)),
-            (binary16(2**9 + 0.5), binary16(2**9)),
-            (binary16(2**9 + 1), binary16(2**9 + 1)),
-            (binary16(2**9 + 1.5), binary16(2**9 + 1)),
-            (binary16(2**9 + 2), binary16(2**9 + 2)),
-            (binary16(2**9 + 2.5), binary16(2**9 + 2)),
-            (binary16(2**9 + 3), binary16(2**9 + 3)),
-            (binary16(2**9 + 3.5), binary16(2**9 + 3)),
-            (binary16(2**9 + 4), binary16(2**9 + 4)),
-            (binary16(2**10 - 4), binary16(2**10 - 4)),
-            (binary16(2**10 - 3.5), binary16(2**10 - 4)),
-            (binary16(2**10 - 3.0), binary16(2**10 - 3)),
-            (binary16(2**10 - 2.5), binary16(2**10 - 3)),
-            (binary16(2**10 - 2.0), binary16(2**10 - 2)),
-            (binary16(2**10 - 1.5), binary16(2**10 - 2)),
-            (binary16(2**10 - 1), binary16(2**10 - 1)),
-            (binary16(2**10 - 0.5), binary16(2**10 - 1)),
-            (binary16(2**10), binary16(2**10)),
-            (binary16(2**11-1), binary16(2**11-1)),
-            (binary16(2**11), binary16(2**11)),
-            (binary16(2**11+2), binary16(2**11+2)),
+            (binary16(2 ** 9 - 2.0), binary16(2 ** 9 - 2)),
+            (binary16(2 ** 9 - 1.75), binary16(2 ** 9 - 2)),
+            (binary16(2 ** 9 - 1.5), binary16(2 ** 9 - 2)),
+            (binary16(2 ** 9 - 1.25), binary16(2 ** 9 - 2)),
+            (binary16(2 ** 9 - 1.0), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 0.75), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 0.5), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9 - 0.25), binary16(2 ** 9 - 1)),
+            (binary16(2 ** 9), binary16(2 ** 9)),
+            (binary16(2 ** 9 + 0.5), binary16(2 ** 9)),
+            (binary16(2 ** 9 + 1), binary16(2 ** 9 + 1)),
+            (binary16(2 ** 9 + 1.5), binary16(2 ** 9 + 1)),
+            (binary16(2 ** 9 + 2), binary16(2 ** 9 + 2)),
+            (binary16(2 ** 9 + 2.5), binary16(2 ** 9 + 2)),
+            (binary16(2 ** 9 + 3), binary16(2 ** 9 + 3)),
+            (binary16(2 ** 9 + 3.5), binary16(2 ** 9 + 3)),
+            (binary16(2 ** 9 + 4), binary16(2 ** 9 + 4)),
+            (binary16(2 ** 10 - 4), binary16(2 ** 10 - 4)),
+            (binary16(2 ** 10 - 3.5), binary16(2 ** 10 - 4)),
+            (binary16(2 ** 10 - 3.0), binary16(2 ** 10 - 3)),
+            (binary16(2 ** 10 - 2.5), binary16(2 ** 10 - 3)),
+            (binary16(2 ** 10 - 2.0), binary16(2 ** 10 - 2)),
+            (binary16(2 ** 10 - 1.5), binary16(2 ** 10 - 2)),
+            (binary16(2 ** 10 - 1), binary16(2 ** 10 - 1)),
+            (binary16(2 ** 10 - 0.5), binary16(2 ** 10 - 1)),
+            (binary16(2 ** 10), binary16(2 ** 10)),
+            (binary16(2 ** 11 - 1), binary16(2 ** 11 - 1)),
+            (binary16(2 ** 11), binary16(2 ** 11)),
+            (binary16(2 ** 11 + 2), binary16(2 ** 11 + 2)),
             (binary16('nan'), binary16('nan')),
             (binary16('-nan(123)'), binary16('-nan(123)')),
         ]
@@ -872,24 +868,24 @@ class TestBinary16(BaseTestCase):
         self.assertEqual(len(signal_list), 0)
 
     def test_next_up_and_next_down(self):
-        tiny = 2.0**-24
+        tiny = 2.0 ** -24
         test_values = [
-            (binary16('-inf'), binary16(2**5 - 2**16)),
-            (binary16(-1.0-2**-10), binary16('-1.0')),
-            (binary16('-1.0'), binary16(2**-11 - 1.0)),
+            (binary16('-inf'), binary16(2 ** 5 - 2 ** 16)),
+            (binary16(-1.0 - 2 ** -10), binary16('-1.0')),
+            (binary16('-1.0'), binary16(2 ** -11 - 1.0)),
             (binary16(-2 * tiny), binary16(-tiny)),
             (binary16(-tiny), binary16('-0.0')),
             (binary16('-0.0'), binary16(tiny)),
             (binary16('0.0'), binary16(tiny)),
             (binary16(tiny), binary16(2 * tiny)),
             (binary16(2 * tiny), binary16(3 * tiny)),
-            (binary16(2**-14 - 2**-24), binary16(2**-14)),
-            (binary16(2**-14), binary16(2**-14 + 2**-24)),
-            (binary16(2**-13 - 2**-24), binary16(2**-13)),
-            (binary16(2**-13), binary16(2**-13 + 2**-23)),
-            (binary16(2**16 - 2**5), binary16('inf')),
-            (binary16(1.0 - 2**-11), binary16('1.0')),
-            (binary16('1.0'), binary16(1.0 + 2**-10)),
+            (binary16(2 ** -14 - 2 ** -24), binary16(2 ** -14)),
+            (binary16(2 ** -14), binary16(2 ** -14 + 2 ** -24)),
+            (binary16(2 ** -13 - 2 ** -24), binary16(2 ** -13)),
+            (binary16(2 ** -13), binary16(2 ** -13 + 2 ** -23)),
+            (binary16(2 ** 16 - 2 ** 5), binary16('inf')),
+            (binary16(1.0 - 2 ** -11), binary16('1.0')),
+            (binary16('1.0'), binary16(1.0 + 2 ** -10)),
             (binary16('inf'), binary16('inf')),
             (binary16('nan'), binary16('nan')),
             (binary16('-nan(123)'), binary16('-nan(123)')),
@@ -991,7 +987,7 @@ class TestBinary16(BaseTestCase):
             ('6e-8', '2e-7', '6e-8'),   # (tiny, 3 * tiny, tiny)
             ('1e-7', '2e-7', '-6e-8'),  # (2 * tiny, 3 * tiny, -tiny)
             ('2e-7', '2e-7', '0'),      # (3 * tiny, 3 * tiny, 0)
-            ('2.4e-7', '2e-7', '6e-8'), # (4 * tiny, 3 * tiny, tiny)
+            ('2.4e-7', '2e-7', '6e-8'),  # (4 * tiny, 3 * tiny, tiny)
             ('3e-7', '2e-7', '-6e-8'),  # (5 * tiny, 3 * tiny, -tiny)
 
             # Special case: second argument is infinite.
@@ -1220,7 +1216,7 @@ class TestBinary16(BaseTestCase):
             ('-0', '0', '-0'),
             ('-0', '1', '-0'),
             ('-0', '-1', '-0'),
-            
+
             # General case.
             ('1', '-25', '0.0'),
             ('1', '-24', '6e-8'),
@@ -1266,7 +1262,6 @@ class TestBinary16(BaseTestCase):
             expected = binary16(expected)
             actual = source1.scale_b(n)
             self.assertInterchangeable(actual, expected, 'scale_b({}, {})'.format(source1, n))
-
 
     def test_log_b(self):
         # NaNs
