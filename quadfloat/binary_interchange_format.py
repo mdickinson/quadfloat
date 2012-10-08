@@ -908,7 +908,7 @@ class BinaryInterchangeFormat(object):
 
         """
         min_payload = 1 if signaling else 0
-        if not min_payload <= payload < 1 << (self.precision - 2):
+        if not min_payload <= payload <= self._max_payload:
             assert False, "NaN payload out of range"  # pragma no cover
 
         num = object.__new__(_BinaryFloat)
