@@ -474,6 +474,18 @@ class BinaryInterchangeFormat(object):
         current context.  For now, only round-ties-to-even is supported.
 
         """
+        # Debugging checks.  What's coming in should be in the auxiliary /
+        # support format...
+
+        # Auxiliary format: qmin = self.qmin - 2, precision = self.precision +
+        # 2, no qmax, conversion to this format always does round-to-odd.
+        assert (
+            # normal
+            e >= self.qmin - 2 and q.bit_length() == self.precision + 2 or
+            # subnormal
+            e == self.qmin - 2 and q.bit_length() < self.precision + 2
+        )
+
         # Do the round ties to even, get rid of the 2 excess rounding bits.
         adj = _round_ties_to_even_offsets[q & 7]
         q, e = (q + adj) >> 2, e + 2
