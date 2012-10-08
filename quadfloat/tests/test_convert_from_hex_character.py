@@ -9,7 +9,7 @@ from quadfloat.attributes import (
     overflow_handler,
     underflow_handler,
 )
-from quadfloat.exceptions import InexactException
+from quadfloat.exceptions import InexactException, OverflowException
 
 
 @contextlib.contextmanager
@@ -127,9 +127,15 @@ test16 = """\
 0x0.ffcp16 -> 0x0.ffcp16
 0x0.ffdp16 -> 0x0.ffcp16 inexact
 0x0.ffep16 -> 0x0.ffep16
+0x0.ffe8p16 -> 0x0.ffe8p16 inexact
 0x0.ffefffffffffp16 -> 0x0.ffep16 inexact
-0x0.fffp16 -> Infinity inexact
+0x0.fffp16 -> Infinity inexact overflow
+0x0.fff8p16 -> Infinity inexact overflow
 0x1p16 -> Infinity inexact overflow
+0x1.0008p16 -> Infinity inexact overflow
+0x1.001p16 -> Infinity inexact overflow
+0x1.0018p16 -> Infinity inexact overflow
+0x1.002p16 -> Infinity inexact overflow
 
 # Infinities
 inf -> Infinity
@@ -151,6 +157,14 @@ class ArithmeticTestCase(object):
         self.result = result
         self.flags = flags
         self.callable = callable
+
+    def __repr__(self):
+        return "{} {} -> {} {}".format(
+            self.callable.__name__,
+            self.args,
+            self.result,
+            self.flags,
+        )
 
 
 def test_lines(iterable):
@@ -185,14 +199,28 @@ class TestConvertFromHexCharacter(BaseTestCase):
         for arithmetic_test_case in test_lines(test16.splitlines()):
             with catch_exceptions() as exceptions:
                 actual = arithmetic_test_case.callable(*arithmetic_test_case.args)
-            self.assertInterchangeable(actual, arithmetic_test_case.result)
+            self.assertInterchangeable(
+                actual,
+                arithmetic_test_case.result,
+                msg=str(arithmetic_test_case))
 
             expected_inexact = 'inexact' in arithmetic_test_case.flags
             actual_inexact = any(
                 isinstance(exc, InexactException)
                 for exc in exceptions)
+            self.assertEqual(
+                actual_inexact,
+                expected_inexact,
+                msg=str(arithmetic_test_case))
 
-            self.assertEqual(expected_inexact, actual_inexact)
+            expected_overflow = 'overflow' in arithmetic_test_case.flags
+            actual_overflow = any(
+                isinstance(exc, OverflowException)
+                for exc in exceptions)
+            self.assertEqual(
+                actual_overflow,
+                expected_overflow,
+                msg=str(arithmetic_test_case))
 
     def test_invalid_inputs(self):
         for input in binary16_invalid_inputs:
