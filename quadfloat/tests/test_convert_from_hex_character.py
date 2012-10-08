@@ -9,7 +9,11 @@ from quadfloat.attributes import (
     overflow_handler,
     underflow_handler,
 )
-from quadfloat.exceptions import InexactException, OverflowException
+from quadfloat.exceptions import (
+    InexactException,
+    OverflowException,
+    UnderflowException,
+)
 
 
 @contextlib.contextmanager
@@ -198,7 +202,8 @@ class TestConvertFromHexCharacter(BaseTestCase):
     def test_16(self):
         for arithmetic_test_case in test_lines(test16.splitlines()):
             with catch_exceptions() as exceptions:
-                actual = arithmetic_test_case.callable(*arithmetic_test_case.args)
+                fn = arithmetic_test_case.callable
+                actual = fn(*arithmetic_test_case.args)
             self.assertInterchangeable(
                 actual,
                 arithmetic_test_case.result,
@@ -220,6 +225,15 @@ class TestConvertFromHexCharacter(BaseTestCase):
             self.assertEqual(
                 actual_overflow,
                 expected_overflow,
+                msg=str(arithmetic_test_case))
+
+            expected_underflow = 'underflow' in arithmetic_test_case.flags
+            actual_underflow = any(
+                isinstance(exc, UnderflowException)
+                for exc in exceptions)
+            self.assertEqual(
+                actual_underflow,
+                expected_underflow,
                 msg=str(arithmetic_test_case))
 
     def test_invalid_inputs(self):

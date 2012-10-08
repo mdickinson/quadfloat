@@ -62,11 +62,17 @@ class UnderflowException(object):
     Exception thrown when a result is non-zero and tiny.
 
     """
-    def __init__(self, rounded):
+    def __init__(self, rounded, inexact):
         self.rounded = rounded
+        self.inexact = inexact
 
     def default_handler(self):
-        return self.rounded
+        # Local import to avoid circular imports.
+        from quadfloat.attributes import _signal_inexact
+        if self.inexact:
+            return _signal_inexact(InexactException(self.rounded))
+        else:
+            return self.rounded
 
 
 class OverflowException(object):

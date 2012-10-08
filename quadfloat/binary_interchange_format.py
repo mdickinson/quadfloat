@@ -472,7 +472,9 @@ class BinaryInterchangeFormat(object):
         # support format...
 
         # Auxiliary format: qmin = self.qmin - 3, precision = self.precision +
-        # 2, no qmax, conversion to this format always does round-to-odd.
+        # 2, no qmax, no infinities, no nans, conversion to this format always
+        # does round-to-odd.  Negative zero is supported.
+
         assert (
             # normal in both auxiliary and output format; 2 extra bits
             e > self.qmin - 3 and q.bit_length() == self.precision + 2 or
@@ -480,6 +482,18 @@ class BinaryInterchangeFormat(object):
             e == self.qmin - 3 and q.bit_length() == self.precision + 2 or
             # subnormal in both auxiliary and output format; 3 extra bits
             e == self.qmin - 3 and q.bit_length() < self.precision + 2
+        )
+
+        # Detect underflow *after* rounding. The boundary is:
+        #
+        #    2**qmin * 2**(p - 1) * (1 - 2**(-p-1))
+        #    = 2**qmin * (2**(p - 1) - 2**-2)
+        #    = 2**(qmin - 3) * (2**(p + 2) - 2)
+        #
+        # Values *strictly* smaller than this trigger underflow.
+        underflow = (
+            e == self.qmin - 3 and
+            0 < q < (1 << self.precision + 2) - 2
         )
 
         # Remove extra bit in the subnormal case.
@@ -501,27 +515,6 @@ class BinaryInterchangeFormat(object):
             rounded = self._infinite(sign)
             return _signal_overflow(OverflowException(rounded))
 
-        # Detecting underflow: for underflow after rounding, we want to signal
-        # underflow whenever the exact result is strictly less than (1 -
-        # 2**-(precision + 1)) * 2**emin in absolute value.
-        #
-        # For underflow before rounding, signal whenever the exact result
-        # is strictly less than 2**emin.
-        #
-        # The result itself will be subnormal whenever the exact result
-        # is strictly less than (1 - 2**-precision) * 2**emin.
-        #
-        # Do we have enough information to detect underflow after rounding?
-
-        # Ex: double precision:  we've got an integer multiple of 2**-1076,
-        # and if it's even it's exact.
-        #
-        # But the boundary we need to look for is 2**-1022 - 2**-1076; so we do
-        # *not* have enough information.
-        #
-        # One option: *always* calculate 3 extra bits rather than 2.
-
-        # Signal the inexact exception when appropriate.
         rounded = self._finite(
             sign=sign,
             exponent=e,
@@ -533,12 +526,17 @@ class BinaryInterchangeFormat(object):
         else:
             inexact = (adj > 0) - (adj < 0)
 
+        # Note: flags.error may be write-only.
         flags.error = inexact
 
-        if inexact == 0:
-            return rounded
-        else:
+        inexact = bool(inexact)
+
+        if underflow:
+            return _signal_underflow(UnderflowException(rounded, inexact))
+        elif inexact:
             return _signal_inexact(InexactException(rounded))
+        else:
+            return rounded
 
     def _from_triple(self, sign, exponent, significand, flags=_null_flags):
         """
