@@ -353,20 +353,12 @@ class BinaryInterchangeFormat(object):
         Convert the integer `n` to this format.
 
         """
-        if n == 0:
-            converted = self._zero(False)
-            flags.error = 0
-        else:
-            sign, n = n < 0, abs(n)
-
-            # Find d such that 2 ** (d - 1) <= n < 2 ** d.
-            d = n.bit_length()
-
-            exponent = max(d - self.precision, self.qmin) - 2
-            significand = _rshift_to_odd(n, exponent)
-            converted = self._final_round(sign, exponent, significand, flags)
-
-        return converted
+        return self._from_triple(
+            sign=n < 0,
+            exponent=0,
+            significand=abs(n),
+            flags=flags,
+        )
 
     def _from_str(self, s):
         """
@@ -385,20 +377,22 @@ class BinaryInterchangeFormat(object):
 
             # Express (absolute value of) incoming string in form a / b;
             # find d such that 2 ** (d - 1) <= a / b < 2 ** d.
-            a = significand * 10 ** max(exponent, 0)
-            b = 10 ** max(0, -exponent)
+            a = significand * 5 ** max(exponent, 0)
+            b = 5 ** max(0, -exponent)
+            exp_diff = exponent
             d = a.bit_length() - b.bit_length()
             d += (a >> d if d >= 0 else a << -d) >= b
+            d += exp_diff
 
             # Approximate a / b by number of the form q * 2 ** e.  We compute
             # two extra bits (hence the '- 2' below) of the result and round to
             # odd.
-            exponent = max(d - self.precision, self.qmin) - 2
+            exponent = max(d - self.precision - 2, self.qmin - 3)
+            shift = exponent - exp_diff
             significand = _divide_to_odd(
-                a << max(-exponent, 0),
-                b << max(exponent, 0),
+                a << max(-shift, 0),
+                b << max(0, shift),
             )
-
             return self._final_round(sign, exponent, significand)
 
         # Or a representation of infinity?
@@ -459,7 +453,7 @@ class BinaryInterchangeFormat(object):
             # Approximate a / b by number of the form q * 2 ** e.  We compute
             # two extra bits (hence the '- 2' below) of the result and round to
             # odd.
-            exponent = max(d - self.precision, self.qmin) - 2
+            exponent = max(d - self.precision - 2, self.qmin - 3)
             significand = _divide_to_odd(
                 a << max(-exponent, 0),
                 b << max(exponent, 0),
@@ -477,14 +471,20 @@ class BinaryInterchangeFormat(object):
         # Debugging checks.  What's coming in should be in the auxiliary /
         # support format...
 
-        # Auxiliary format: qmin = self.qmin - 2, precision = self.precision +
+        # Auxiliary format: qmin = self.qmin - 3, precision = self.precision +
         # 2, no qmax, conversion to this format always does round-to-odd.
         assert (
-            # normal
-            e >= self.qmin - 2 and q.bit_length() == self.precision + 2 or
-            # subnormal
-            e == self.qmin - 2 and q.bit_length() < self.precision + 2
+            # normal in both auxiliary and output format; 2 extra bits
+            e > self.qmin - 3 and q.bit_length() == self.precision + 2 or
+            # normal in auxiliary, subnormal in output; 3 extra bits
+            e == self.qmin - 3 and q.bit_length() == self.precision + 2 or
+            # subnormal in both auxiliary and output format; 3 extra bits
+            e == self.qmin - 3 and q.bit_length() < self.precision + 2
         )
+
+        # Remove extra bit in the subnormal case.
+        if e == self.qmin - 3:
+            q, e = (q >> 1) | (q & 1), e + 1
 
         # Do the round ties to even, get rid of the 2 excess rounding bits.
         adj = _round_ties_to_even_offsets[q & 7]
@@ -554,7 +554,7 @@ class BinaryInterchangeFormat(object):
 
         # Find q such that q * 2 ** e approximates significand * 2 ** exponent.
         # Allow two extra bits for the final round.
-        e = max(d - self.precision, self.qmin) - 2
+        e = max(d - self.precision - 2, self.qmin - 3)
         q = _rshift_to_odd(significand, e - exponent)
         return self._final_round(sign, e, q, flags=flags)
 
@@ -703,26 +703,18 @@ class BinaryInterchangeFormat(object):
         # 2 ** d.
         a = source1._significand
         b = source2._significand
+        exp_diff = source1._exponent - source2._exponent
         d = a.bit_length() - b.bit_length()
         d += (a >> d if d >= 0 else a << -d) >= b
-        d += source1._exponent - source2._exponent
+        d += exp_diff
 
-        # Exponent of result.  Reduce by 2 in order to compute a couple of
-        # extra bits for rounding purposes.
-        e = max(d - self.precision, self.qmin) - 2
-
-        # Round (source1 / source2) * 2 ** -e to nearest integer.  source1 /
-        # source2 * 2 ** -e == source1._significand / source2._significand *
-        # 2 ** shift, where...
-        shift = source1._exponent - source2._exponent - e
-
-        a, b = a << max(shift, 0), b << max(0, -shift)
-        q, r = divmod(a, b)
-        # Round-to-odd.
-        q |= bool(r)
-
-        # Now result approximated by (-1) ** sign * q * 2 ** e.
-        return self._final_round(sign, e, q)
+        exponent = max(d - self.precision - 2, self.qmin - 3)
+        shift = exponent - exp_diff
+        significand = _divide_to_odd(
+            a << max(-shift, 0),
+            b << max(0, shift),
+        )
+        return self._final_round(sign, exponent, significand)
 
     def square_root(self, source1):
         """
@@ -749,7 +741,7 @@ class BinaryInterchangeFormat(object):
 
         # Exponent of result.
         d = (sig.bit_length() + exponent + 1) // 2
-        e = max(d - self.precision, self.qmin) - 2
+        e = max(d - self.precision - 2, self.qmin - 3)
 
         # Now find integer square root of sig, and add 1 if inexact.
         shift = exponent - 2 * e

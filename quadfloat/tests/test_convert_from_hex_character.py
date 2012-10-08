@@ -57,15 +57,23 @@ test16 = """\
 # Testing round-half-to-even, tiny numbers.
 0x0p-26 -> 0x0p-24
 0x0p-1000 -> 0x0p-24
+0x0.8p-26 -> 0x0p-24 inexact underflow
 0x1p-26 -> 0x0p-24 inexact underflow
+0x1.8p-26 -> 0x0p-24 inexact underflow
 0x2p-26 -> 0x0p-24 inexact underflow
 0x2.0000000000000000001p-26 -> 0x1p-24 inexact underflow
+0x2.8p-26 -> 0x1p-24 inexact underflow
 0x3p-26 -> 0x1p-24 inexact underflow
+0x3.8p-26 -> 0x1p-24 inexact underflow
 0x4p-26 -> 0x1p-24 underflow
+0x4.8p-26 -> 0x1p-24 inexact underflow
 0x5p-26 -> 0x1p-24 inexact underflow
+0x5.8p-26 -> 0x1p-24 inexact underflow
 0x5.fffffffffffffffffffp-26 -> 0x1p-24 inexact underflow
 0x6p-26 -> 0x2p-24 inexact underflow
+0x6.8p-26 -> 0x2p-24 inexact underflow
 0x7p-26 -> 0x2p-24 inexact underflow
+0x7.8p-26 -> 0x2p-24 inexact underflow
 0x8p-26 -> 0x2p-24 underflow
 0x9p-26 -> 0x2p-24 inexact underflow
 0xap-26 -> 0x2p-24 inexact underflow
