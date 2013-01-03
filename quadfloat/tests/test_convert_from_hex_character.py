@@ -93,8 +93,8 @@ attribute tininess-detection: after-rounding
 0x0.ffcp-14 -> 0x0.ffcp-14 underflow
 0x0.ffep-14 -> 0x1p-14 inexact underflow
 0x0.ffefffffffp-14 -> 0x1p-14 inexact underflow
-0x0.fffp-14 -> 0x1p-14 inexact underflow
-0x0.ffffffffffp-14 -> 0x1p-14 inexact underflow
+0x0.fffp-14 -> 0x1p-14 inexact
+0x0.ffffffffffp-14 -> 0x1p-14 inexact
 0x1p-14 -> 0x1p-14
 0x1.001p-14 -> 0x1p-14 inexact
 0x1.002p-14 -> 0x1p-14 inexact
@@ -133,6 +133,15 @@ attribute tininess-detection: after-rounding
 0x1.007p0 -> 0x1.008p0 inexact
 0x1.008p0 -> 0x1.008p0
 
+# Integers
+0x1p0 -> 0x1p0
+0x2p0 -> 0x2p0
+0x7ffp0 -> 0x7ffp0
+0x800p0 -> 0x800p0
+0x801p0 -> 0x800p0 inexact
+0x802p0 -> 0x802p0
+0x803p0 -> 0x804p0 inexact
+
 # Testing near overflow boundary.
 0x0.ffcp16 -> 0x0.ffcp16
 0x0.ffdp16 -> 0x0.ffcp16 inexact
@@ -160,9 +169,18 @@ INF -> Infinity
 -INF -> -Infinity
 
 # Tests for underflow before rounding.
-attribute underflow: before-rounding
+attribute tininess-detection: before-rounding
+0x0.ffcp-14 -> 0x0.ffcp-14 underflow
+0x0.ffep-14 -> 0x1p-14 inexact underflow
+0x0.ffefffffffp-14 -> 0x1p-14 inexact underflow
 0x0.fffp-14 -> 0x1p-14 inexact underflow
 0x0.ffffffffffp-14 -> 0x1p-14 inexact underflow
+0x1p-14 -> 0x1p-14
+0x1.001p-14 -> 0x1p-14 inexact
+0x1.002p-14 -> 0x1p-14 inexact
+0x1.00200000001p-14 -> 0x1.004p-14 inexact
+0x1.003p-14 -> 0x1.004p-14 inexact
+0x1.004p-14 -> 0x1.004p-14
 """
 
 
@@ -191,11 +209,17 @@ def default_test_attributes():
     )
 
 
+# Attributes used when reading a RHS.
 READ_ATTRIBUTES = Attributes(
     rounding_direction = round_ties_to_even,
     tininess_detection = AFTER_ROUNDING,
 )
 
+
+tininess_detection_modes = {
+    'before-rounding': BEFORE_ROUNDING,
+    'after-rounding': AFTER_ROUNDING,
+}
 
 
 
@@ -219,7 +243,20 @@ def test_lines(iterable):
         # Deal with attributes.
         if line.startswith('attribute'):
             line = line[len('attribute'):]
-            # XXX To do.
+            lhs, rhs = [piece.strip() for piece in line.split(':')]
+
+            if lhs == 'rounding-direction':
+                attributes = Attributes(
+                    rounding_direction=rhs,
+                    tininess_detection=attributes.tininess_detection,
+                )
+            elif lhs == 'tininess-detection':
+                attributes = Attributes(
+                    rounding_direction=attributes.rounding_direction,
+                    tininess_detection=tininess_detection_modes[rhs],
+                )
+            else:
+                raise ValueError("Unrecognized attribute: {}".format(lhs))
         else:
             args, results = line.split('->')
             args = args.split()
@@ -227,7 +264,7 @@ def test_lines(iterable):
             # XXX Check that conversion is exact.
             # Result type should be encoded in test file.
             result = binary16.convert_from_hex_character(results[0], READ_ATTRIBUTES)
-            flags = results[1:]
+            flags = set(results[1:])
             yield ArithmeticTestCase(
                 args=args,
                 result=result,
@@ -243,39 +280,43 @@ class TestConvertFromHexCharacter(BaseTestCase):
         for arithmetic_test_case in test_lines(test16.splitlines()):
             with catch_exceptions() as exceptions:
                 fn = arithmetic_test_case.callable
-                actual = fn(*arithmetic_test_case.args + [arithmetic_test_case.attributes])
+                kwargs = {'attributes': arithmetic_test_case.attributes}
+                actual = fn(*arithmetic_test_case.args, **kwargs)
             self.assertInterchangeable(
                 actual,
                 arithmetic_test_case.result,
                 msg=str(arithmetic_test_case))
 
-            expected_inexact = 'inexact' in arithmetic_test_case.flags
+            expected_flags = arithmetic_test_case.flags
+
+            actual_flags = set()
             actual_inexact = any(
                 isinstance(exc, InexactException)
                 for exc in exceptions)
-            self.assertEqual(
-                actual_inexact,
-                expected_inexact,
-                msg=str(arithmetic_test_case))
+            if actual_inexact:
+                actual_flags.add('inexact')
 
-            expected_overflow = 'overflow' in arithmetic_test_case.flags
             actual_overflow = any(
                 isinstance(exc, OverflowException)
                 for exc in exceptions)
-            self.assertEqual(
-                actual_overflow,
-                expected_overflow,
-                msg=str(arithmetic_test_case))
-
-            expected_underflow = 'underflow' in arithmetic_test_case.flags
+            if actual_overflow:
+                actual_flags.add('overflow')
 
             actual_underflow = any(
                 isinstance(exc, UnderflowException)
                 for exc in exceptions)
+            if actual_underflow:
+                actual_flags.add('underflow')
+
             self.assertEqual(
-                actual_underflow,
-                expected_underflow,
-                msg=str(arithmetic_test_case))
+                actual_flags,
+                expected_flags,
+                msg = """\
+Flags don't match for failed test: {!r}
+Actual flags: {!r}
+Expected flags: {!r}
+""".format(arithmetic_test_case, actual_flags, expected_flags)
+            )
 
     def test_invalid_inputs(self):
         for input in binary16_invalid_inputs:

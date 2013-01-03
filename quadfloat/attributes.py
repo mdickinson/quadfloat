@@ -35,16 +35,42 @@ from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
 
 class Attributes(object):
+    """
+    Class representing a set of attributes.
+
+    Instances of this class are supposed to be treated as *immutable*.
+
+    """
     def __init__(self,
                  rounding_direction,
                  tininess_detection,
                  ):
         if tininess_detection not in (BEFORE_ROUNDING, AFTER_ROUNDING):
-            raise ValueError("tininess_detection should be one of {} or {}".format(
+            raise ValueError("tininess_detection should be one of {!r} or {!r}".format(
                 BEFORE_ROUNDING, AFTER_ROUNDING))
 
-        self.rounding_direction = rounding_direction
-        self.tininess_detection = tininess_detection
+        self._rounding_direction = rounding_direction
+        self._tininess_detection = tininess_detection
+
+    @property
+    def rounding_direction(self):
+        """
+        Return rounding direction for this attribute set.
+
+        """
+        return self._rounding_direction
+
+    @property
+    def tininess_detection(self):
+        """
+        Return tininess detection mode for this attribute set.
+
+        """
+        return self._tininess_detection
+
+    def __repr__(self):
+        return "Attributes(rounding_direction={!r}, tininess_detection={!r})".format(
+            self.rounding_direction, self.tininess_detection)
 
 
 # Attributes.
