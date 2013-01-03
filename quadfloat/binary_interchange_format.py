@@ -54,6 +54,7 @@ _default_attributes = Attributes(
 def get_default_attributes():
     return _default_attributes
 
+
 def get_current_attributes():
     # Current attributes are not currently modifiable...
     return _default_attributes
@@ -384,7 +385,12 @@ class BinaryInterchangeFormat(object):
                 a << max(-shift, 0),
                 b << max(0, shift),
             )
-            return self._final_round(sign, exponent, significand, attributes)[1]
+            return self._final_round(
+                sign,
+                exponent,
+                significand,
+                attributes,
+            )[1]
 
         # Or a representation of infinity?
         try:
@@ -449,7 +455,12 @@ class BinaryInterchangeFormat(object):
                 a << max(-exponent, 0),
                 b << max(exponent, 0),
             )
-            inexact, converted = self._final_round(sign, exponent, significand, attributes)
+            inexact, converted = self._final_round(
+                sign,
+                exponent,
+                significand,
+                attributes,
+            )
 
         return inexact, converted
 
@@ -517,7 +528,9 @@ class BinaryInterchangeFormat(object):
                 significand=q,
             )
             if underflow:
-                rounded = _signal_underflow(UnderflowException(rounded, inexact != 0))
+                rounded = _signal_underflow(
+                    UnderflowException(rounded, inexact != 0)
+                )
             elif inexact:
                 rounded = _signal_inexact(InexactException(rounded))
 
@@ -1819,10 +1832,11 @@ class _BinaryFloat(object):
         """
         Common code for __eq__, __ne__, __lt__, etc.
 
-        `operator` is one of the 6 comparison operators from the operator module.
+        `operator` is one of the 6 comparison operators from the operator
+        module.
 
-        `unordered_result` is the result that should be returned in the case that
-        the comparison result is 'unordered', in the sense of 5.11.
+        `unordered_result` is the result that should be returned in the case
+        that the comparison result is 'unordered', in the sense of 5.11.
 
         """
         attributes = get_default_attributes()
@@ -2061,7 +2075,8 @@ def _compare_quiet_general(source1, source2, operator, unordered_result):
         return unordered_result
     else:
         attributes = get_default_attributes()
-        inexact, source2 = source1._format._from_binary_float(source2, attributes)
+        fmt = source1._format
+        inexact, source2 = fmt._from_binary_float(source2, attributes)
         result = _compare_ordered(source1, source2) or inexact
         return operator(result, 0)
 
@@ -2078,7 +2093,8 @@ def _compare_signaling_general(source1, source2, operator, unordered_result):
         return _handle_invalid_bool(unordered_result)
     else:
         attributes = get_default_attributes()
-        inexact, source2 = source1._format._from_binary_float(source2, attributes)
+        fmt = source1._format
+        inexact, source2 = fmt._from_binary_float(source2, attributes)
         result = _compare_ordered(source1, source2) or inexact
         return operator(result, 0)
 

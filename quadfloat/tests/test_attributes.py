@@ -47,7 +47,7 @@ class TestAttributes(unittest.TestCase):
 
     def test_bad_tininess(self):
         with self.assertRaises(ValueError):
-            attr = Attributes(
+            Attributes(
                 rounding_direction = round_ties_to_even,
                 tininess_detection = "before"
             )

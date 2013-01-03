@@ -5,7 +5,7 @@ or operation of various functions.
 IEEE 754 requires the following attributes:
 
  - rounding-direction attributes
- 
+
 and recommends:
 
  - alternate exception handling attributes
@@ -46,8 +46,11 @@ class Attributes(object):
                  tininess_detection,
                  ):
         if tininess_detection not in (BEFORE_ROUNDING, AFTER_ROUNDING):
-            raise ValueError("tininess_detection should be one of {!r} or {!r}".format(
-                BEFORE_ROUNDING, AFTER_ROUNDING))
+            raise ValueError(
+                "tininess_detection should be one of {!r} or {!r}".format(
+                    BEFORE_ROUNDING, AFTER_ROUNDING
+                 )
+            )
 
         self._rounding_direction = rounding_direction
         self._tininess_detection = tininess_detection
@@ -69,8 +72,12 @@ class Attributes(object):
         return self._tininess_detection
 
     def __repr__(self):
-        return "Attributes(rounding_direction={!r}, tininess_detection={!r})".format(
-            self.rounding_direction, self.tininess_detection)
+        return (
+            "Attributes(rounding_direction={!r}, "
+            "tininess_detection={!r})".format(
+                self.rounding_direction, self.tininess_detection
+            )
+        )
 
 
 # Attributes.
