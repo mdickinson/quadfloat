@@ -1,3 +1,27 @@
+"""
+Support for IEEE 754 attributes.  These are settings that may affect the output
+or operation of various functions.
+
+IEEE 754 requires the following attributes:
+
+ - rounding-direction attributes
+ 
+and recommends:
+
+ - alternate exception handling attributes
+
+There may also be:
+
+ - preferred width attributes
+ - value-changing optimization attributes
+ - reproducibility attributes
+
+We add one more attribute not included in the standard:
+
+ - tininess detection
+
+"""
+
 import contextlib
 
 from quadfloat.exceptions import (
@@ -7,6 +31,21 @@ from quadfloat.exceptions import (
     default_underflow_handler,
 )
 from quadfloat.rounding_direction import round_ties_to_even
+from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
+
+
+class Attributes(object):
+    def __init__(self,
+                 rounding_direction,
+                 tininess_detection,
+                 ):
+        if tininess_detection not in (BEFORE_ROUNDING, AFTER_ROUNDING):
+            raise ValueError("tininess_detection should be one of {} or {}".format(
+                BEFORE_ROUNDING, AFTER_ROUNDING))
+
+        self.rounding_direction = rounding_direction
+        self.tininess_detection = tininess_detection
+
 
 # Attributes.
 

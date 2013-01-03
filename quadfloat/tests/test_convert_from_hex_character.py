@@ -3,6 +3,7 @@ import unittest
 
 from quadfloat import binary16
 from quadfloat.tests.base_test_case import BaseTestCase
+from quadfloat.attributes import Attributes
 from quadfloat.attributes import (
     inexact_handler,
     invalid_operation_handler,
@@ -14,6 +15,8 @@ from quadfloat.exceptions import (
     OverflowException,
     UnderflowException,
 )
+from quadfloat.rounding_direction import round_ties_to_even
+from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
 
 @contextlib.contextmanager
@@ -58,6 +61,9 @@ infinityy
 
 # 16-bit test values, round-half-to-even
 test16 = """\
+attribute rounding-direction: round-ties-to-even
+attribute tininess-detection: after-rounding
+
 # Testing round-half-to-even, tiny numbers.
 0x0p-26 -> 0x0p-24
 0x0p-1000 -> 0x0p-24
@@ -87,8 +93,8 @@ test16 = """\
 0x0.ffcp-14 -> 0x0.ffcp-14 underflow
 0x0.ffep-14 -> 0x1p-14 inexact underflow
 0x0.ffefffffffp-14 -> 0x1p-14 inexact underflow
-0x0.fffp-14 -> 0x1p-14 inexact underflow-before
-0x0.ffffffffffp-14 -> 0x1p-14 inexact underflow-before
+0x0.fffp-14 -> 0x1p-14 inexact underflow
+0x0.ffffffffffp-14 -> 0x1p-14 inexact underflow
 0x1p-14 -> 0x1p-14
 0x1.001p-14 -> 0x1p-14 inexact
 0x1.002p-14 -> 0x1p-14 inexact
@@ -152,23 +158,45 @@ INF -> Infinity
 -Infinity -> -Infinity
 -iNFinItY -> -Infinity
 -INF -> -Infinity
+
+# Tests for underflow before rounding.
+attribute underflow: before-rounding
+0x0.fffp-14 -> 0x1p-14 inexact underflow
+0x0.ffffffffffp-14 -> 0x1p-14 inexact underflow
 """
 
 
 class ArithmeticTestCase(object):
-    def __init__(self, args, result, flags, callable):
+    def __init__(self, args, result, flags, callable, attributes):
         self.args = args
         self.result = result
         self.flags = flags
         self.callable = callable
+        self.attributes = attributes
 
     def __repr__(self):
-        return "{} {} -> {} {}".format(
+        return "{} {} -> {} {} {}".format(
             self.callable.__name__,
             self.args,
             self.result,
             self.flags,
+            self.attributes,
         )
+
+
+def default_test_attributes():
+    return Attributes(
+        rounding_direction = round_ties_to_even,
+        tininess_detection = AFTER_ROUNDING,
+    )
+
+
+READ_ATTRIBUTES = Attributes(
+    rounding_direction = round_ties_to_even,
+    tininess_detection = AFTER_ROUNDING,
+)
+
+
 
 
 def test_lines(iterable):
@@ -178,24 +206,36 @@ def test_lines(iterable):
     Generate ArithmeticTestCase instances containing test details.
 
     """
+    attributes = default_test_attributes()
+
     for line in iterable:
-        # Strip comments.
+        # Strip comments; skip blank lines.
         if '#' in line:
             line = line[:line.index('#')]
-        if not line.strip():
+        line = line.strip()
+        if not line:
             continue
-        args, results = line.split('->')
-        args = args.split()
-        results = results.split()
-        # XXX Check that conversion is exact.
-        result = binary16.convert_from_hex_character(results[0])
-        flags = results[1:]
-        yield ArithmeticTestCase(
-            args=args,
-            result=result,
-            flags=flags,
-            callable=binary16.convert_from_hex_character,
-        )
+
+        # Deal with attributes.
+        if line.startswith('attribute'):
+            line = line[len('attribute'):]
+            # XXX To do.
+        else:
+            args, results = line.split('->')
+            args = args.split()
+            results = results.split()
+            # XXX Check that conversion is exact.
+            # Result type should be encoded in test file.
+            result = binary16.convert_from_hex_character(results[0], READ_ATTRIBUTES)
+            flags = results[1:]
+            yield ArithmeticTestCase(
+                args=args,
+                result=result,
+                flags=flags,
+                # Function to call should be encoded in test file.
+                callable=binary16.convert_from_hex_character,
+                attributes=attributes,
+            )
 
 
 class TestConvertFromHexCharacter(BaseTestCase):
@@ -203,7 +243,7 @@ class TestConvertFromHexCharacter(BaseTestCase):
         for arithmetic_test_case in test_lines(test16.splitlines()):
             with catch_exceptions() as exceptions:
                 fn = arithmetic_test_case.callable
-                actual = fn(*arithmetic_test_case.args)
+                actual = fn(*arithmetic_test_case.args + [arithmetic_test_case.attributes])
             self.assertInterchangeable(
                 actual,
                 arithmetic_test_case.result,
@@ -228,6 +268,7 @@ class TestConvertFromHexCharacter(BaseTestCase):
                 msg=str(arithmetic_test_case))
 
             expected_underflow = 'underflow' in arithmetic_test_case.flags
+
             actual_underflow = any(
                 isinstance(exc, UnderflowException)
                 for exc in exceptions)
