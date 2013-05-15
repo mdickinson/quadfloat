@@ -261,13 +261,17 @@ class TestBinary16(BaseTestCase):
 
         # Particularly interesting values.
         test_values = [
-            binary16('4152'),  # sits at the middle of a *closed* interval with one endpoint at 4150;
-                              # so '415e1' is an acceptable short representation.
-            binary16('4148'),  # sits at the middle of an *open* interval with one endpoint at 4150;
-                              # so '415e1' is *not* an acceptable short representation.
-            binary16('0.0078125'),  # power of 2;  interval needs special casing.
-            binary16('0.015625')  # another power of 2 where rounding to nearest for the best
-                                # final digit produces a value out of range.
+            # sits at the middle of a *closed* interval with one endpoint at
+            # 4150; so '415e1' is an acceptable short representation.
+            binary16('4152'),
+            # sits at the middle of an *open* interval with one endpoint at
+            # 4150; so '415e1' is *not* an acceptable short representation.
+            binary16('4148'),
+            # power of 2;  interval needs special casing.
+            binary16('0.0078125'),
+            # another power of 2 where rounding to nearest for the best
+            # final digit produces a value out of range.
+            binary16('0.015625')
         ]
 
         # With binary16, it's feasible to test *all* the values.

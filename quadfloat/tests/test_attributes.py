@@ -20,8 +20,8 @@ class Attributes(object):
 class TestAttributes(unittest.TestCase):
     def test_creation(self):
         attr = Attributes(
-            rounding_direction = round_ties_to_even,
-            tininess_detection = AFTER_ROUNDING
+            rounding_direction=round_ties_to_even,
+            tininess_detection=AFTER_ROUNDING
         )
         self.assertEqual(
             attr.rounding_direction,
@@ -33,8 +33,8 @@ class TestAttributes(unittest.TestCase):
         )
 
         attr = Attributes(
-            rounding_direction = round_ties_to_away,
-            tininess_detection = BEFORE_ROUNDING
+            rounding_direction=round_ties_to_away,
+            tininess_detection=BEFORE_ROUNDING
         )
         self.assertEqual(
             attr.rounding_direction,
@@ -48,8 +48,8 @@ class TestAttributes(unittest.TestCase):
     def test_bad_tininess(self):
         with self.assertRaises(ValueError):
             Attributes(
-                rounding_direction = round_ties_to_even,
-                tininess_detection = "before"
+                rounding_direction=round_ties_to_even,
+                tininess_detection="before"
             )
 
 

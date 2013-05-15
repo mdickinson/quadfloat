@@ -234,15 +234,15 @@ class ArithmeticTestCase(object):
 
 def default_test_attributes():
     return Attributes(
-        rounding_direction = round_ties_to_even,
-        tininess_detection = AFTER_ROUNDING,
+        rounding_direction=round_ties_to_even,
+        tininess_detection=AFTER_ROUNDING,
     )
 
 
 # Attributes used when reading a RHS.
 READ_ATTRIBUTES = Attributes(
-    rounding_direction = round_ties_to_even,
-    tininess_detection = AFTER_ROUNDING,
+    rounding_direction=round_ties_to_even,
+    tininess_detection=AFTER_ROUNDING,
 )
 
 
@@ -346,7 +346,7 @@ class TestConvertFromHexCharacter(BaseTestCase):
             self.assertEqual(
                 actual_flags,
                 expected_flags,
-                msg = """\
+                msg="""\
 Flags don't match for failed test: {!r}
 Actual flags: {!r}
 Expected flags: {!r}
