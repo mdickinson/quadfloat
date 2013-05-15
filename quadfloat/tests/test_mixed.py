@@ -12,15 +12,19 @@ from quadfloat.tests.base_test_case import BaseTestCase
 class TestMixed(BaseTestCase):
     def test_nan_payload(self):
         # a binary32 NaN has 22 bits devoted to payload; binary16 has only 9.
-        # XXX Should really make _payload public if we're going to test it this way.
+
+        # XXX Should really make _payload public if we're going to test it this
+        # way.
+
         source1 = binary32('nan')
         self.assertEqual(source1._payload, 0)
 
         source1 = binary32('nan(0)')
         self.assertEqual(source1._payload, 0)
 
-        # Payloads larger than that allowed should be clipped to be within range.
-        # XXX As an implementation choice, this needs documenting.
+        # Payloads larger than that allowed should be clipped to be within
+        # range. XXX As an implementation choice, this needs documenting.
+
         source1 = binary32('nan({})'.format(2 ** 22))
         self.assertEqual(source1._payload, 2 ** 22 - 1)
 
@@ -33,11 +37,17 @@ class TestMixed(BaseTestCase):
         source1 = binary16('snan({})'.format(2 ** 22))
         self.assertEqual(source1._payload, 2 ** 9 - 1)
 
-        # Now combine two binary32 instances with a binary16 result; NaN should be shortened
-        # appropriately.
+        # Now combine two binary32 instances with a binary16 result; NaN should
+        # be shortened appropriately.
         source1 = binary32('nan(999999)')
         source2 = binary32('2.0')
-        for op in binary16.addition, binary16.subtraction, binary16.multiplication, binary16.division:
+        operations = [
+            binary16.addition,
+            binary16.subtraction,
+            binary16.multiplication,
+            binary16.division,
+        ]
+        for op in operations:
             result = op(source1, source2)
             self.assertEqual(result.format, binary16)
             self.assertEqual(result._payload, 2 ** 9 - 1)
@@ -50,7 +60,7 @@ class TestMixed(BaseTestCase):
 
         source1 = binary32('-snan(999999)')
         source2 = binary32('2.0')
-        for op in binary16.addition, binary16.subtraction, binary16.multiplication, binary16.division:
+        for op in operations:
             result = op(source1, source2)
             self.assertEqual(result.format, binary16)
             self.assertEqual(result._payload, 2 ** 9 - 1)

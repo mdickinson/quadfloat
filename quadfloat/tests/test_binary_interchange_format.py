@@ -41,7 +41,8 @@ class TestBinaryIntegerchangeFormat(unittest.TestCase):
 
         for width in range(128, 100000, 32):
             format = BinaryInterchangeFormat(width=width)
-            expected_precision = width - round(4.0 * math.log(width) / math.log(2)) + 13
+            expected_precision = 13 + width - round(
+                4.0 * math.log(width) / math.log(2))
             actual_precision = format.precision
             self.assertEqual(actual_precision, expected_precision)
 

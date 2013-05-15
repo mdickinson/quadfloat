@@ -10,8 +10,9 @@ class Attributes(object):
                  tininess_detection,
                  ):
         if tininess_detection not in (BEFORE_ROUNDING, AFTER_ROUNDING):
-            raise ValueError("tininess_detection should be one of {} or {}".format(
-                BEFORE_ROUNDING, AFTER_ROUNDING))
+            raise ValueError(
+                "tininess_detection should be one of {} or {}".format(
+                    BEFORE_ROUNDING, AFTER_ROUNDING))
 
         self.rounding_direction = rounding_direction
         self.tininess_detection = tininess_detection

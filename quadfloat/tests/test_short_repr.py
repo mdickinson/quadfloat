@@ -14,10 +14,11 @@ class TestShortRepr(unittest.TestCase):
         # all for binary16, binary32, binary64 or binary128.
 
         # An example where this does occur is for binary256:  the 4th smallest
-        # subnormal value is 2**-262376, or approx. 8.9920e-78984.  The interval
-        # of values that rounds to this contains (7.869e-78984, 10.11e-78984).
-        # The closest 1-digit value that works is clearly 9e-78984, but the
-        # naive algorithm can come up with 1e-78983 instead.
+        # subnormal value is 2**-262376, or approx. 8.9920e-78984.  The
+        # interval of values that rounds to this contains
+        # (7.869e-78984, 10.11e-78984). The closest 1-digit value that works
+        # is clearly 9e-78984, but the naive algorithm can come up with
+        # 1e-78983 instead.
 
         # Smallest representable positive binary256 value (subnormal).
         binary256 = BinaryInterchangeFormat(256)

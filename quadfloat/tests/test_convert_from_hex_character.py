@@ -298,7 +298,8 @@ def test_lines(iterable):
             results = results.split()
             # XXX Check that conversion is exact.
             # Result type should be encoded in test file.
-            result = binary16.convert_from_hex_character(results[0], READ_ATTRIBUTES)
+            result = binary16.convert_from_hex_character(
+                results[0], READ_ATTRIBUTES)
             flags = set(results[1:])
             yield ArithmeticTestCase(
                 args=args,

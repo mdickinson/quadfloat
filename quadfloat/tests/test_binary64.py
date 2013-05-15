@@ -1,6 +1,6 @@
 """
-Random test for the binary64 type, comparing results with the hardware-generated
-values.
+Random test for the binary64 type, comparing results with the
+hardware-generated values.
 
 """
 
@@ -17,21 +17,21 @@ binary64 = BinaryInterchangeFormat(width=64)
 
 
 class TestBinary64(BaseTestCase):
-    def random_float(self):
+    def random_finite_float(self):
         """
         Return a random hardware float, avoiding infinities and NaNs.
 
         """
-        exponent_bits = random.randrange(2 ** 11 - 1)
-        sign_bit = random.randrange(2)
-        significand_bits = random.randrange(2 ** 52)
-        equivalent_integer = ((sign_bit << 11) + exponent_bits << 52) + significand_bits
+        sign = random.randrange(2) << 63
+        exponent = random.randrange(2 ** 11 - 1) << 52
+        significand = random.randrange(2 ** 52)
+        equivalent_integer = sign + exponent + significand
         return struct.unpack('<d', struct.pack('<Q', equivalent_integer))[0]
 
     def test_random_additions(self):
         for i in range(10000):
-            x = self.random_float()
-            y = self.random_float()
+            x = self.random_finite_float()
+            y = self.random_finite_float()
 
             # binary64 addition.
             result1 = binary64(x) + binary64(y)
@@ -41,8 +41,8 @@ class TestBinary64(BaseTestCase):
 
     def test_random_subtractions(self):
         for i in range(10000):
-            x = self.random_float()
-            y = self.random_float()
+            x = self.random_finite_float()
+            y = self.random_finite_float()
 
             # binary64 addition.
             result1 = binary64(x) - binary64(y)
@@ -52,8 +52,8 @@ class TestBinary64(BaseTestCase):
 
     def test_random_multiplications(self):
         for i in range(10000):
-            x = self.random_float()
-            y = self.random_float()
+            x = self.random_finite_float()
+            y = self.random_finite_float()
 
             # binary64 addition.
             result1 = binary64(x) - binary64(y)
@@ -63,8 +63,8 @@ class TestBinary64(BaseTestCase):
 
     def test_random_divisions(self):
         for i in range(10000):
-            x = self.random_float()
-            y = self.random_float()
+            x = self.random_finite_float()
+            y = self.random_finite_float()
 
             # binary64 addition.
             result1 = binary64(x) - binary64(y)
@@ -74,7 +74,7 @@ class TestBinary64(BaseTestCase):
 
     def test_random_sqrt(self):
         for i in range(10000):
-            x = self.random_float()
+            x = self.random_finite_float()
             result1 = binary64.square_root(binary64(x))
             try:
                 sqrtx = math.sqrt(x)

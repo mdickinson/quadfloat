@@ -146,7 +146,8 @@ class TestScaleB(unittest.TestCase):
                 actual = source1.scale_b(exp)
 
             expect_overflow = 'overflow' in flags
-            got_overflow = any(isinstance(exc, OverflowException) for exc in exceptions)
+            got_overflow = any(
+                isinstance(exc, OverflowException) for exc in exceptions)
             self.assertEqual(expect_overflow, got_overflow)
 
             # Check that actual and expected are interchangeable.
