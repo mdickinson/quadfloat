@@ -786,8 +786,12 @@ class BinaryInterchangeFormat(object):
             attributes = get_current_attributes()
 
         # Deal with any NaNs.
-        if (source1._type == _NAN or source2._type == _NAN or
-            source3._type == _NAN):
+        any_nans = (
+            source1._type == _NAN or
+            source2._type == _NAN or
+            source3._type == _NAN
+        )
+        if any_nans:
             return self._handle_nans(source1, source2, source3)
 
         sign12 = source1._sign ^ source2._sign
@@ -1102,7 +1106,7 @@ class _BinaryFloat(object):
         is_boundary_case = (
             self._significand == 1 << (self._format.precision - 1) and
             self._exponent > self._format.qmin
-            )
+        )
 
         if is_boundary_case:
             shift = self._exponent - 2

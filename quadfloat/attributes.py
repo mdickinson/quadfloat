@@ -49,7 +49,7 @@ class Attributes(object):
             raise ValueError(
                 "tininess_detection should be one of {!r} or {!r}".format(
                     BEFORE_ROUNDING, AFTER_ROUNDING
-                 )
+                )
             )
 
         self._rounding_direction = rounding_direction
