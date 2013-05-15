@@ -15,7 +15,7 @@ from quadfloat.exceptions import (
     OverflowException,
     UnderflowException,
 )
-from quadfloat.rounding_direction import round_ties_to_even
+from quadfloat.rounding_direction import round_ties_to_away, round_ties_to_even
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
 
@@ -64,7 +64,7 @@ test16 = """\
 attribute rounding-direction: round-ties-to-even
 attribute tininess-detection: after-rounding
 
-# Testing round-half-to-even, tiny numbers.
+# Tiny numbers.
 0x0p-26 -> 0x0p-24
 0x0p-1000 -> 0x0p-24
 0x0.8p-26 -> 0x0p-24 inexact underflow
@@ -181,6 +181,36 @@ attribute tininess-detection: before-rounding
 0x1.00200000001p-14 -> 0x1.004p-14 inexact
 0x1.003p-14 -> 0x1.004p-14 inexact
 0x1.004p-14 -> 0x1.004p-14
+
+# Now some of the same tests with round-ties-to-away.
+attribute rounding-direction: round-ties-to-away
+attribute tininess-detection: after-rounding
+
+# Tiny numbers.
+0x0p-26 -> 0x0p-24
+0x0p-1000 -> 0x0p-24
+0x0.8p-26 -> 0x0p-24 inexact underflow
+0x1p-26 -> 0x0p-24 inexact underflow
+0x1.8p-26 -> 0x0p-24 inexact underflow
+0x2p-26 -> 0x1p-24 inexact underflow
+0x2.0000000000000000001p-26 -> 0x1p-24 inexact underflow
+0x2.8p-26 -> 0x1p-24 inexact underflow
+0x3p-26 -> 0x1p-24 inexact underflow
+0x3.8p-26 -> 0x1p-24 inexact underflow
+0x4p-26 -> 0x1p-24 underflow
+0x4.8p-26 -> 0x1p-24 inexact underflow
+0x5p-26 -> 0x1p-24 inexact underflow
+0x5.8p-26 -> 0x1p-24 inexact underflow
+0x5.fffffffffffffffffffp-26 -> 0x1p-24 inexact underflow
+0x6p-26 -> 0x2p-24 inexact underflow
+0x6.8p-26 -> 0x2p-24 inexact underflow
+0x7p-26 -> 0x2p-24 inexact underflow
+0x7.8p-26 -> 0x2p-24 inexact underflow
+0x8p-26 -> 0x2p-24 underflow
+0x9p-26 -> 0x2p-24 inexact underflow
+0xap-26 -> 0x3p-24 inexact underflow
+0xbp-26 -> 0x3p-24 inexact underflow
+
 """
 
 
@@ -217,10 +247,15 @@ READ_ATTRIBUTES = Attributes(
 
 
 tininess_detection_modes = {
-    'before-rounding': BEFORE_ROUNDING,
     'after-rounding': AFTER_ROUNDING,
+    'before-rounding': BEFORE_ROUNDING,
 }
 
+
+rounding_directions = {
+    'round-ties-to-away': round_ties_to_away,
+    'round-ties-to-even': round_ties_to_even,
+}
 
 
 def test_lines(iterable):
@@ -247,7 +282,7 @@ def test_lines(iterable):
 
             if lhs == 'rounding-direction':
                 attributes = Attributes(
-                    rounding_direction=rhs,
+                    rounding_direction=rounding_directions[rhs],
                     tininess_detection=attributes.tininess_detection,
                 )
             elif lhs == 'tininess-detection':
