@@ -138,23 +138,24 @@ def _decimal_format(sign, exponent, digits):
 _round_ties_to_even_offsets = [0, -1, -2, 1, 0, -1, 2, 1]
 
 
-# Round-to-odd is a useful primitive rounding mode for performing general
+# Round-to-odd is a useful primitive rounding direction for performing general
 # rounding operations while avoiding problems from double rounding.
 #
 # The general pattern is: we want to compute a correctly rounded output for
 # some mathematical function f, given zero or more inputs x1, x2, ...., and a
-# rounding mode rnd, and a precision p.  Then:
+# rounding direction rnd, and a precision p.  Then:
 #
 #   (1) compute the correctly rounded output to precision p + 2 using
 #       rounding-mode round-to-odd.
 #
-#   (2) round the result of step 1 to the desired rounding mode `rnd` with
+#   (2) round the result of step 1 to the desired rounding direction `rnd` with
 #   precision p.
 #
-# The round-to-odd rounding mode has the property that for all the rounding
-# modes we care about, the p + 2-bit result captures all the information
-# necessary to rounding to any other rounding mode with p bits.  See the
-# _divide_nearest function below for a nice example of this in practice.
+# The round-to-odd rounding direction has the property that for all the
+# rounding directions we care about, the p + 2-bit result captures all the
+# information necessary to rounding to any other rounding direction with p
+# bits.  See the _divide_nearest function below for a nice example of this in
+# practice.
 
 
 class BinaryInterchangeFormat(object):
@@ -466,7 +467,7 @@ class BinaryInterchangeFormat(object):
 
     def _final_round(self, sign, e, q, attributes):
         """
-        Make final rounding adjustment, using the rounding mode from the
+        Make final rounding adjustment, using the rounding direction from the
         current context.  For now, only round-ties-to-even is supported.
 
         """
@@ -504,7 +505,7 @@ class BinaryInterchangeFormat(object):
         else:
             assert False, "never get here"  # pragma no cover
 
-        # Remove extra bit in the subnormal case.
+        # Remove extra bit in the subnormal case, using round-to-odd.
         if e == self.qmin - 3:
             q, e = (q >> 1) | (q & 1), e + 1
 
