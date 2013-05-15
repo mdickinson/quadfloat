@@ -509,9 +509,11 @@ class BinaryInterchangeFormat(object):
         if e == self.qmin - 3:
             q, e = (q >> 1) | (q & 1), e + 1
 
-        # Do the round ties to even, get rid of the 2 excess rounding bits.
-        adj = _round_ties_to_even_offsets[q & 7]
-        q, e = (q + adj) >> 2, e + 2
+        # Round
+        rounding_direction = attributes.rounding_direction
+        q2 = rounding_direction.round_quarters(q, sign)
+        adj = (q2 << 2) - q
+        q, e = q2, e + 2
 
         # Check whether we need to adjust the exponent.
         if q.bit_length() == self.precision + 1:

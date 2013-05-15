@@ -7,6 +7,13 @@ class RoundingDirection(object):
     def __init__(self, _rounder):
         self._rounder = _rounder
 
+    def round_quarters(self, n, sign):
+        """
+        Round n / 4 to the nearest integer using this rounding mode.
+
+        """
+        return self._rounder(n, sign)
+
 
 round_ties_to_even = RoundingDirection(
     _rounder=lambda q, sign: q + _round_ties_to_even_offsets[q & 7] >> 2
