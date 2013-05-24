@@ -3,6 +3,8 @@ import unittest
 
 from quadfloat import binary16
 from quadfloat.tests.base_test_case import BaseTestCase
+from quadfloat.tests.arithmetic_test_case import ArithmeticTestCase
+from quadfloat.tests.arithmetic_test_case import formats, operations
 from quadfloat.attributes import Attributes
 from quadfloat.attributes import (
     inexact_handler,
@@ -61,6 +63,9 @@ infinityy
 
 # 16-bit test values, round-half-to-even
 test16 = """\
+operation: convertFromHexCharacter
+operation destination: binary16
+
 attribute rounding-direction: round-ties-to-even
 attribute tininess-detection: after-rounding
 
@@ -214,24 +219,6 @@ attribute tininess-detection: after-rounding
 """
 
 
-class ArithmeticTestCase(object):
-    def __init__(self, args, result, flags, callable, attributes):
-        self.args = args
-        self.result = result
-        self.flags = flags
-        self.callable = callable
-        self.attributes = attributes
-
-    def __repr__(self):
-        return "{} {} -> {} {} {}".format(
-            self.callable.__name__,
-            self.args,
-            self.result,
-            self.flags,
-            self.attributes,
-        )
-
-
 def default_test_attributes():
     return Attributes(
         rounding_direction=round_ties_to_even,
@@ -265,6 +252,9 @@ def test_lines(iterable):
     Generate ArithmeticTestCase instances containing test details.
 
     """
+    current_operation = None
+    current_operation_attributes = {}
+
     attributes = default_test_attributes()
 
     for line in iterable:
@@ -275,38 +265,57 @@ def test_lines(iterable):
         if not line:
             continue
 
-        # Deal with attributes.
-        if line.startswith('attribute'):
-            line = line[len('attribute'):]
-            lhs, rhs = [piece.strip() for piece in line.split(':')]
+        # Directives.
+        if ':' in line:
 
-            if lhs == 'rounding-direction':
-                attributes = Attributes(
-                    rounding_direction=rounding_directions[rhs],
-                    tininess_detection=attributes.tininess_detection,
-                )
-            elif lhs == 'tininess-detection':
-                attributes = Attributes(
-                    rounding_direction=attributes.rounding_direction,
-                    tininess_detection=tininess_detection_modes[rhs],
-                )
+            # Deal with attributes.
+            if line.startswith('attribute'):
+                line = line[len('attribute'):]
+                lhs, rhs = [piece.strip() for piece in line.split(':')]
+
+                if lhs == 'rounding-direction':
+                    attributes = Attributes(
+                        rounding_direction=rounding_directions[rhs],
+                        tininess_detection=attributes.tininess_detection,
+                    )
+                elif lhs == 'tininess-detection':
+                    attributes = Attributes(
+                        rounding_direction=attributes.rounding_direction,
+                        tininess_detection=tininess_detection_modes[rhs],
+                    )
+                else:
+                    raise ValueError("Unrecognized attribute: {}".format(lhs))
+            elif line.startswith('operation'):
+                line = line[len('operation'):]
+                lhs, rhs = [piece.strip() for piece in line.split(':')]
+                if not lhs:
+                    current_operation = rhs
+                    current_operation_attributes = {}
+                elif current_operation is None:
+                    raise ValueError("Can't specify attribute before "
+                                     "operation")
+                else:
+                    current_operation_attributes[lhs] = rhs
             else:
-                raise ValueError("Unrecognized attribute: {}".format(lhs))
+                raise ValueError("Unsupported directive: {}".format(line))
         else:
             args, results = line.split('->')
             args = args.split()
             results = results.split()
             # XXX Check that conversion is exact.
-            # Result type should be encoded in test file.
-            result = binary16.convert_from_hex_character(
+            result_format = formats[
+                current_operation_attributes['destination']]
+            result = result_format.convert_from_hex_character(
                 results[0], READ_ATTRIBUTES)
             flags = set(results[1:])
+            operation_factory = operations[current_operation]
+            operation = operation_factory(**current_operation_attributes)
             yield ArithmeticTestCase(
                 args=args,
                 result=result,
                 flags=flags,
                 # Function to call should be encoded in test file.
-                callable=binary16.convert_from_hex_character,
+                callable=operation,
                 attributes=attributes,
             )
 
