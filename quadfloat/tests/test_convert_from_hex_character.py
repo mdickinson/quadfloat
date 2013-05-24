@@ -3,9 +3,7 @@ import unittest
 
 from quadfloat import binary16
 from quadfloat.tests.base_test_case import BaseTestCase
-from quadfloat.tests.arithmetic_test_case import ArithmeticTestCase
-from quadfloat.tests.arithmetic_test_case import formats, operations
-from quadfloat.attributes import Attributes
+from quadfloat.tests.arithmetic_test_case import parse_test_data
 from quadfloat.attributes import (
     inexact_handler,
     invalid_operation_handler,
@@ -17,8 +15,6 @@ from quadfloat.exceptions import (
     OverflowException,
     UnderflowException,
 )
-from quadfloat.rounding_direction import round_ties_to_away, round_ties_to_even
-from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
 
 @contextlib.contextmanager
@@ -219,110 +215,9 @@ attribute tininess-detection: after-rounding
 """
 
 
-def default_test_attributes():
-    return Attributes(
-        rounding_direction=round_ties_to_even,
-        tininess_detection=AFTER_ROUNDING,
-    )
-
-
-# Attributes used when reading a RHS.
-READ_ATTRIBUTES = Attributes(
-    rounding_direction=round_ties_to_even,
-    tininess_detection=AFTER_ROUNDING,
-)
-
-
-tininess_detection_modes = {
-    'after-rounding': AFTER_ROUNDING,
-    'before-rounding': BEFORE_ROUNDING,
-}
-
-
-rounding_directions = {
-    'round-ties-to-away': round_ties_to_away,
-    'round-ties-to-even': round_ties_to_even,
-}
-
-
-def test_lines(iterable):
-    """Given an iterable of strings representing individual tests,
-    remove blank lines and comment lines.
-
-    Generate ArithmeticTestCase instances containing test details.
-
-    """
-    current_operation = None
-    current_operation_attributes = {}
-
-    attributes = default_test_attributes()
-
-    for line in iterable:
-        # Strip comments; skip blank lines.
-        if '#' in line:
-            line = line[:line.index('#')]
-        line = line.strip()
-        if not line:
-            continue
-
-        # Directives.
-        if ':' in line:
-
-            # Deal with attributes.
-            if line.startswith('attribute'):
-                line = line[len('attribute'):]
-                lhs, rhs = [piece.strip() for piece in line.split(':')]
-
-                if lhs == 'rounding-direction':
-                    attributes = Attributes(
-                        rounding_direction=rounding_directions[rhs],
-                        tininess_detection=attributes.tininess_detection,
-                    )
-                elif lhs == 'tininess-detection':
-                    attributes = Attributes(
-                        rounding_direction=attributes.rounding_direction,
-                        tininess_detection=tininess_detection_modes[rhs],
-                    )
-                else:
-                    raise ValueError("Unrecognized attribute: {}".format(lhs))
-            elif line.startswith('operation'):
-                line = line[len('operation'):]
-                lhs, rhs = [piece.strip() for piece in line.split(':')]
-                if not lhs:
-                    current_operation = rhs
-                    current_operation_attributes = {}
-                elif current_operation is None:
-                    raise ValueError("Can't specify attribute before "
-                                     "operation")
-                else:
-                    current_operation_attributes[lhs] = rhs
-            else:
-                raise ValueError("Unsupported directive: {}".format(line))
-        else:
-            args, results = line.split('->')
-            args = args.split()
-            results = results.split()
-            # XXX Check that conversion is exact.
-            result_format = formats[
-                current_operation_attributes['destination']]
-            result = result_format.convert_from_hex_character(
-                results[0], READ_ATTRIBUTES)
-            flags = set(results[1:])
-            operation_factory = operations[current_operation]
-            operation = operation_factory(**current_operation_attributes)
-            yield ArithmeticTestCase(
-                args=args,
-                result=result,
-                flags=flags,
-                # Function to call should be encoded in test file.
-                callable=operation,
-                attributes=attributes,
-            )
-
-
 class TestConvertFromHexCharacter(BaseTestCase):
     def test_16(self):
-        for arithmetic_test_case in test_lines(test16.splitlines()):
+        for arithmetic_test_case in parse_test_data(test16):
             with catch_exceptions() as exceptions:
                 fn = arithmetic_test_case.callable
                 kwargs = {'attributes': arithmetic_test_case.attributes}

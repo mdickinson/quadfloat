@@ -3,6 +3,9 @@ Helper class for representing a single test.
 
 """
 from quadfloat import binary16, binary32, binary64, binary128
+from quadfloat.attributes import Attributes
+from quadfloat.rounding_direction import round_ties_to_away, round_ties_to_even
+from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
 
 class ArithmeticTestCase(object):
@@ -25,6 +28,11 @@ class ArithmeticTestCase(object):
 
 # Mapping from operations to callables.
 
+def convertFromHexCharacter(destination):
+    destination_format = formats[destination]
+    return destination_format.convert_from_hex_character
+
+
 formats = {
     'binary16': binary16,
     'binary32': binary32,
@@ -33,11 +41,107 @@ formats = {
 }
 
 
-def convertFromHexCharacter(destination):
-    destination_format = formats[destination]
-    return destination_format.convert_from_hex_character
-
-
 operations = {
     'convertFromHexCharacter': convertFromHexCharacter,
 }
+
+
+tininess_detection_modes = {
+    'after-rounding': AFTER_ROUNDING,
+    'before-rounding': BEFORE_ROUNDING,
+}
+
+
+rounding_directions = {
+    'round-ties-to-away': round_ties_to_away,
+    'round-ties-to-even': round_ties_to_even,
+}
+
+
+def default_test_attributes():
+    return Attributes(
+        rounding_direction=round_ties_to_even,
+        tininess_detection=AFTER_ROUNDING,
+    )
+
+
+# Attributes used when reading a RHS.
+READ_ATTRIBUTES = Attributes(
+    rounding_direction=round_ties_to_even,
+    tininess_detection=AFTER_ROUNDING,
+)
+
+
+def parse_test_data(test_content):
+    """Given a string containing test data, generate ArithmeticTestCase objects
+    representing the individual tests.
+
+    """
+    lines = test_content.splitlines()
+
+    current_operation = None
+    current_operation_attributes = {}
+
+    attributes = default_test_attributes()
+
+    for line in lines:
+        # Strip comments; skip blank lines.
+        if '#' in line:
+            line = line[:line.index('#')]
+        line = line.strip()
+        if not line:
+            continue
+
+        # Directives.
+        if ':' in line:
+
+            # Deal with attributes.
+            if line.startswith('attribute'):
+                line = line[len('attribute'):]
+                lhs, rhs = [piece.strip() for piece in line.split(':')]
+
+                if lhs == 'rounding-direction':
+                    attributes = Attributes(
+                        rounding_direction=rounding_directions[rhs],
+                        tininess_detection=attributes.tininess_detection,
+                    )
+                elif lhs == 'tininess-detection':
+                    attributes = Attributes(
+                        rounding_direction=attributes.rounding_direction,
+                        tininess_detection=tininess_detection_modes[rhs],
+                    )
+                else:
+                    raise ValueError("Unrecognized attribute: {}".format(lhs))
+            elif line.startswith('operation'):
+                line = line[len('operation'):]
+                lhs, rhs = [piece.strip() for piece in line.split(':')]
+                if not lhs:
+                    current_operation = rhs
+                    current_operation_attributes = {}
+                elif current_operation is None:
+                    raise ValueError("Can't specify attribute before "
+                                     "operation")
+                else:
+                    current_operation_attributes[lhs] = rhs
+            else:
+                raise ValueError("Unsupported directive: {}".format(line))
+        else:
+            args, results = line.split('->')
+            args = args.split()
+            results = results.split()
+            # XXX Check that conversion is exact.
+            result_format = formats[
+                current_operation_attributes['destination']]
+            result = result_format.convert_from_hex_character(
+                results[0], READ_ATTRIBUTES)
+            flags = set(results[1:])
+            operation_factory = operations[current_operation]
+            operation = operation_factory(**current_operation_attributes)
+            yield ArithmeticTestCase(
+                args=args,
+                result=result,
+                flags=flags,
+                # Function to call should be encoded in test file.
+                callable=operation,
+                attributes=attributes,
+            )
