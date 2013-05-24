@@ -277,7 +277,8 @@ class TestBinary16(BaseTestCase):
         # With binary16, it's feasible to test *all* the values.
         for high_byte in range(256):
             for low_byte in range(256):
-                value = binary16.decode(_bytes_from_iterable([low_byte, high_byte]))
+                value = binary16.decode(
+                    _bytes_from_iterable([low_byte, high_byte]))
                 test_values.append(value)
 
         for value in test_values:
@@ -457,36 +458,37 @@ class TestBinary16(BaseTestCase):
 
     def test_rich_comparison_operators(self):
         # Test overloads for __eq__, __lt__, etc.
+        msgfmt = '{!r} {!r} {!r}'
         for x, y, reln in self._comparison_test_values():
             if reln == 'EQ':
-                self.assertTrue(x == y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertFalse(x != y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertFalse(x < y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertFalse(x > y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertTrue(x <= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertTrue(x >= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertTrue(x == y, msg=msgfmt.format(x, y, reln))
+                self.assertFalse(x != y, msg=msgfmt.format(x, y, reln))
+                self.assertFalse(x < y, msg=msgfmt.format(x, y, reln))
+                self.assertFalse(x > y, msg=msgfmt.format(x, y, reln))
+                self.assertTrue(x <= y, msg=msgfmt.format(x, y, reln))
+                self.assertTrue(x >= y, msg=msgfmt.format(x, y, reln))
                 self.assertEqual(hash(x), hash(y))
             elif reln == 'LT':
-                self.assertFalse(x == y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertTrue(x != y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertTrue(x < y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertFalse(x > y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertTrue(x <= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertFalse(x >= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertFalse(x == y, msg=msgfmt.format(x, y, reln))
+                self.assertTrue(x != y, msg=msgfmt.format(x, y, reln))
+                self.assertTrue(x < y, msg=msgfmt.format(x, y, reln))
+                self.assertFalse(x > y, msg=msgfmt.format(x, y, reln))
+                self.assertTrue(x <= y, msg=msgfmt.format(x, y, reln))
+                self.assertFalse(x >= y, msg=msgfmt.format(x, y, reln))
             elif reln == 'GT':
-                self.assertFalse(x == y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertTrue(x != y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertFalse(x < y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertTrue(x > y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertFalse(x <= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertTrue(x >= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertFalse(x == y, msg=msgfmt.format(x, y, reln))
+                self.assertTrue(x != y, msg=msgfmt.format(x, y, reln))
+                self.assertFalse(x < y, msg=msgfmt.format(x, y, reln))
+                self.assertTrue(x > y, msg=msgfmt.format(x, y, reln))
+                self.assertFalse(x <= y, msg=msgfmt.format(x, y, reln))
+                self.assertTrue(x >= y, msg=msgfmt.format(x, y, reln))
             elif reln == 'UN':
-                self.assertFalse(x == y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertTrue(x != y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertFalse(x < y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertFalse(x > y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertFalse(x <= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
-                self.assertFalse(x >= y, msg='{!r} {!r} {!r}'.format(x, y, reln))
+                self.assertFalse(x == y, msg=msgfmt.format(x, y, reln))
+                self.assertTrue(x != y, msg=msgfmt.format(x, y, reln))
+                self.assertFalse(x < y, msg=msgfmt.format(x, y, reln))
+                self.assertFalse(x > y, msg=msgfmt.format(x, y, reln))
+                self.assertFalse(x <= y, msg=msgfmt.format(x, y, reln))
+                self.assertFalse(x >= y, msg=msgfmt.format(x, y, reln))
             elif reln == 'SI':
                 with self.assertRaises(ValueError):
                     x == y
@@ -506,7 +508,10 @@ class TestBinary16(BaseTestCase):
                         '1.0', '0.125', '-1.0', '-2.0', '-1024.0']
 
         for test_string in test_strings:
-            self.assertEqual(hash(binary16(test_string)), hash(float(test_string)))
+            self.assertEqual(
+                hash(binary16(test_string)),
+                hash(float(test_string)),
+            )
 
         # Signaling NaNs can't be hashed.
         snan = binary16('snan')
@@ -1158,7 +1163,11 @@ class TestBinary16(BaseTestCase):
             source2 = binary16(source2)
             expected = binary16(expected)
             actual = source1.min_num_mag(source2)
-            self.assertInterchangeable(actual, expected, 'min_num_mag({}, {})'.format(source1, source2))
+            self.assertInterchangeable(
+                actual,
+                expected,
+                'min_num_mag({}, {})'.format(source1, source2),
+            )
 
     def test_max_num_mag(self):
         x = binary16('2.3')
@@ -1197,7 +1206,11 @@ class TestBinary16(BaseTestCase):
             source2 = binary16(source2)
             expected = binary16(expected)
             actual = source1.max_num_mag(source2)
-            self.assertInterchangeable(actual, expected, 'max_num_mag({}, {})'.format(source1, source2))
+            self.assertInterchangeable(
+                actual,
+                expected,
+                'max_num_mag({}, {})'.format(source1, source2),
+            )
 
     def test_scale_b(self):
         test_triples = [
@@ -1265,7 +1278,11 @@ class TestBinary16(BaseTestCase):
             n = int(n)
             expected = binary16(expected)
             actual = source1.scale_b(n)
-            self.assertInterchangeable(actual, expected, 'scale_b({}, {})'.format(source1, n))
+            self.assertInterchangeable(
+                actual,
+                expected,
+                'scale_b({}, {})'.format(source1, n),
+            )
 
     def test_log_b(self):
         # NaNs
@@ -1307,12 +1324,22 @@ class TestBinary16(BaseTestCase):
             source1 = binary16(str_source1)
             expected = int(expected)
             actual = source1.log_b()
-            self.assertEqual(actual, expected, 'log_b({}): expected {}, got {}'.format(source1, expected, actual))
+            self.assertEqual(
+                actual,
+                expected,
+                'log_b({}): expected {}, got {}'.format(
+                    source1, expected, actual),
+            )
 
             # Same test with negative values.
             source1 = binary16('-' + str_source1)
             actual = source1.log_b()
-            self.assertEqual(actual, expected, 'log_b({}): expected {}, got {}'.format(source1, expected, actual))
+            self.assertEqual(
+                actual,
+                expected,
+                'log_b({}): expected {}, got {}'.format(
+                    source1, expected, actual)
+            )
 
 
 if __name__ == '__main__':
