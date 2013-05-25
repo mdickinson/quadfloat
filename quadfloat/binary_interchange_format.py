@@ -19,6 +19,17 @@ from quadfloat.attributes import (
     _signal_underflow,
     _current_rounding_direction,
 )
+from quadfloat.compat import (
+    _int_from_bytes,
+    _int_to_bytes,
+    _PyHASH_INF,
+    _PyHASH_NINF,
+    _PyHASH_NAN,
+    _PyHASH_2INV,
+    _PyHASH_MODULUS,
+    STRING_TYPES,
+    INTEGER_TYPES,
+)
 from quadfloat.exceptions import (
     InexactException,
     InvalidBooleanOperationException,
@@ -58,48 +69,6 @@ def get_default_attributes():
 def get_current_attributes():
     # Current attributes are not currently modifiable...
     return _default_attributes
-
-
-# Python 2 / 3 compatibility code.
-
-if _sys.version_info.major == 2:
-    _STRING_TYPES = basestring,
-    _INTEGER_TYPES = (int, long)
-
-    import binascii as _binascii
-
-    def _int_to_bytes(n, length):
-        return _binascii.unhexlify(format(n, '0{}x'.format(2 * length)))[::-1]
-
-    def _int_from_bytes(bs):
-        return int(_binascii.hexlify(bs[::-1]), 16)
-
-    def _bytes_from_iterable(ns):
-        """
-        Create a bytestring from an iterable of integers.
-
-        Each element of the iterable should be in range(256).
-
-        """
-        return ''.join(chr(n) for n in ns)
-
-    # Values used to compute hashes.
-    _PyHASH_INF = hash(float('inf'))
-    _PyHASH_NINF = hash(float('-inf'))
-    _PyHASH_NAN = hash(float('nan'))
-
-else:
-    _STRING_TYPES = str,
-    _INTEGER_TYPES = int,
-    _int_to_bytes = lambda n, length: n.to_bytes(length, byteorder='little')
-    _int_from_bytes = lambda bs: int.from_bytes(bs, byteorder='little')
-    _bytes_from_iterable = bytes
-
-    _PyHASH_MODULUS = _sys.hash_info.modulus
-    _PyHASH_2INV = pow(2, _PyHASH_MODULUS - 2, _PyHASH_MODULUS)
-    _PyHASH_INF = _sys.hash_info.inf
-    _PyHASH_NINF = -_sys.hash_info.inf
-    _PyHASH_NAN = _sys.hash_info.nan
 
 
 # Constants, utility functions.
@@ -191,7 +160,7 @@ class BinaryInterchangeFormat(object):
 
     """
     def __new__(cls, width):
-        valid_width = width in {16, 32, 64} or width >= 128 and width % 32 == 0
+        valid_width = width in (16, 32, 64) or width >= 128 and width % 32 == 0
         if not valid_width:
             raise ValueError(
                 "Invalid width: {}.  "
@@ -299,11 +268,11 @@ class BinaryInterchangeFormat(object):
             # Initialize from a float.
             return self._from_float(value, attributes)[1]
 
-        elif isinstance(value, _INTEGER_TYPES):
+        elif isinstance(value, INTEGER_TYPES):
             # Initialize from an integer.
             return self._from_int(value, attributes)[1]
 
-        elif isinstance(value, _STRING_TYPES):
+        elif isinstance(value, STRING_TYPES):
             # Initialize from a string.
             return self._from_str(value, attributes)
 
@@ -1739,7 +1708,7 @@ class _BinaryFloat(object):
             pass
         elif isinstance(other, float):
             other = _binary64._from_float(other, attributes)[1]
-        elif isinstance(other, _INTEGER_TYPES):
+        elif isinstance(other, INTEGER_TYPES):
             other = self._format._from_int(other, attributes)[1]
         else:
             raise TypeError(
@@ -1848,7 +1817,7 @@ class _BinaryFloat(object):
         """
         attributes = get_default_attributes()
 
-        if isinstance(other, _INTEGER_TYPES):
+        if isinstance(other, INTEGER_TYPES):
             inexact, other = self._format._from_int(other, attributes)
 
         elif isinstance(other, float):

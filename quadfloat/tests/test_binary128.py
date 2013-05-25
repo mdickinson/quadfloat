@@ -1668,18 +1668,18 @@ class TestBinary128(BaseTestCase):
 
     def test_quiet_comparisons(self):
         functions = [
-            (compare_quiet_equal, {'EQ'}),
-            (compare_quiet_not_equal, {'LT', 'GT', 'UN'}),
-            (compare_quiet_greater, {'GT'}),
-            (compare_quiet_greater_equal, {'GT', 'EQ'}),
-            (compare_quiet_less, {'LT'}),
-            (compare_quiet_unordered, {'UN'}),
-            (compare_quiet_less_equal, {'LT', 'EQ'}),
-            (compare_quiet_not_greater, {'LT', 'EQ', 'UN'}),
-            (compare_quiet_less_unordered, {'LT', 'UN'}),
-            (compare_quiet_not_less, {'GT', 'EQ', 'UN'}),
-            (compare_quiet_greater_unordered, {'GT', 'UN'}),
-            (compare_quiet_ordered, {'LT', 'GT', 'EQ'}),
+            (compare_quiet_equal, ('EQ')),
+            (compare_quiet_not_equal, ('LT', 'GT', 'UN')),
+            (compare_quiet_greater, ('GT')),
+            (compare_quiet_greater_equal, ('GT', 'EQ')),
+            (compare_quiet_less, ('LT')),
+            (compare_quiet_unordered, ('UN')),
+            (compare_quiet_less_equal, ('LT', 'EQ')),
+            (compare_quiet_not_greater, ('LT', 'EQ', 'UN')),
+            (compare_quiet_less_unordered, ('LT', 'UN')),
+            (compare_quiet_not_less, ('GT', 'EQ', 'UN')),
+            (compare_quiet_greater_unordered, ('GT', 'UN')),
+            (compare_quiet_ordered, ('LT', 'GT', 'EQ')),
         ]
         for function, true_relations in functions:
             self._check_quiet_compare_function(function, true_relations)
@@ -1710,16 +1710,16 @@ class TestBinary128(BaseTestCase):
 
     def test_signaling_comparisons(self):
         functions = [
-            (compare_signaling_equal, {'EQ'}),
-            (compare_signaling_greater, {'GT'}),
-            (compare_signaling_greater_equal, {'GT', 'EQ'}),
-            (compare_signaling_less, {'LT'}),
-            (compare_signaling_less_equal, {'LT', 'EQ'}),
-            (compare_signaling_not_equal, {'LT', 'GT', 'UN'}),
-            (compare_signaling_not_greater, {'LT', 'EQ', 'UN'}),
-            (compare_signaling_less_unordered, {'LT', 'UN'}),
-            (compare_signaling_not_less, {'GT', 'EQ', 'UN'}),
-            (compare_signaling_greater_unordered, {'GT', 'UN'}),
+            (compare_signaling_equal, ('EQ')),
+            (compare_signaling_greater, ('GT')),
+            (compare_signaling_greater_equal, ('GT', 'EQ')),
+            (compare_signaling_less, ('LT')),
+            (compare_signaling_less_equal, ('LT', 'EQ')),
+            (compare_signaling_not_equal, ('LT', 'GT', 'UN')),
+            (compare_signaling_not_greater, ('LT', 'EQ', 'UN')),
+            (compare_signaling_less_unordered, ('LT', 'UN')),
+            (compare_signaling_not_less, ('GT', 'EQ', 'UN')),
+            (compare_signaling_greater_unordered, ('GT', 'UN')),
         ]
         for function, true_relations in functions:
             self._check_signaling_compare_function(function, true_relations)
