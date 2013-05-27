@@ -148,7 +148,7 @@ attribute tininess-detection: after-rounding
 0x0.ffcp16 -> 0x0.ffcp16
 0x0.ffdp16 -> 0x0.ffcp16 inexact
 0x0.ffep16 -> 0x0.ffep16
-0x0.ffe8p16 -> 0x0.ffe8p16 inexact
+0x0.ffe8p16 -> 0x0.ffep16 inexact
 0x0.ffefffffffffp16 -> 0x0.ffep16 inexact
 0x0.fffp16 -> Infinity inexact overflow
 0x0.fff8p16 -> Infinity inexact overflow
