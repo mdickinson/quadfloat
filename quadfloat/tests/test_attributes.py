@@ -4,7 +4,7 @@ Tests for attribute mechanism.
 """
 import unittest
 
-from quadfloat.new_attributes import get_current_attributes, partial_attributes
+from quadfloat.attributes import get_current_attributes, partial_attributes
 
 RED, GREEN, BLUE = 'red', 'green', 'blue'
 ARTHUR, LANCELOT = 'arthur', 'lancelot'
