@@ -31,7 +31,7 @@ class ArithmeticTestCase(object):
         self.attributes = attributes
 
     def __repr__(self):
-        return "{} {} -> {} {} {}".format(
+        return "{0} {1} -> {2} {3} {4}".format(
             self.callable.__name__,
             self.args,
             self.result,
@@ -125,7 +125,7 @@ rounding_directions = {
 
 def raising_inexact_handler(exc):
     raise ValueError(
-        "Got inexact value; rounded value is {}".format(exc.rounded)
+        "Got inexact value; rounded value is {0}".format(exc.rounded)
     )
 
 
@@ -177,7 +177,7 @@ def parse_test_data(test_content):
                         tininess_detection=tininess_detection_modes[rhs]
                     )
                 else:
-                    raise ValueError("Unrecognized attribute: {}".format(lhs))
+                    raise ValueError("Unrecognized attribute: {0}".format(lhs))
             elif line.startswith('operation'):
                 line = line[len('operation'):]
                 lhs, rhs = [piece.strip() for piece in line.split(':')]
@@ -190,7 +190,7 @@ def parse_test_data(test_content):
                 else:
                     current_operation_attributes[lhs] = rhs
             else:
-                raise ValueError("Unsupported directive: {}".format(line))
+                raise ValueError("Unsupported directive: {0}".format(line))
         else:
             args, results = line.split('->')
             args = args.split()

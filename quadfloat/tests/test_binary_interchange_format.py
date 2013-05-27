@@ -2,9 +2,10 @@ import math
 import unittest
 
 from quadfloat.binary_interchange_format import BinaryInterchangeFormat
+from quadfloat.tests.base_test_case import BaseTestCase
 
 
-class TestBinaryInterchangeFormat(unittest.TestCase):
+class TestBinaryInterchangeFormat(BaseTestCase):
     def test_parameters(self):
         binary128 = BinaryInterchangeFormat(width=128)
         self.assertEqual(binary128.width, 128)

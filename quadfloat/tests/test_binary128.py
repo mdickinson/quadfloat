@@ -76,7 +76,7 @@ class TestBinary128(BaseTestCase):
         input = binary16('-nan(123)')
         self.assertInterchangeable(binary128(input), binary128('-nan(123)'))
 
-        input_string = 'nan({})'.format(2 ** 230)
+        input_string = 'nan({0})'.format(2 ** 230)
         input = binary256(input_string)
         self.assertInterchangeable(binary128(input), binary128(input_string))
 
@@ -1198,7 +1198,7 @@ class TestBinary128(BaseTestCase):
         self.assertEqual(int(binary128(1.5)), 1)
         self.assertEqual(int(binary128(1.75)), 1)
 
-    if sys.version_info.major == 2:
+    if sys.version_info[0] == 2:
         def test_long(self):
             self.assertIsInstance(long(binary128(-1.75)), long)
             self.assertEqual(long(binary128(-1.75)), long(-1))
@@ -1657,7 +1657,7 @@ class TestBinary128(BaseTestCase):
             self.assertEqual(
                 actual,
                 expected,
-                msg="{}({}, {}):  got {!r}, expected {}.".format(
+                msg="{0}({1}, {2}):  got {3!r}, expected {4}.".format(
                     testfn.__name__,
                     x,
                     y,
@@ -1699,7 +1699,7 @@ class TestBinary128(BaseTestCase):
                 self.assertEqual(
                     actual,
                     expected,
-                    msg="{}({}, {}):  got {!r}, expected {}.".format(
+                    msg="{0}({1}, {2}):  got {3!r}, expected {4}.".format(
                         testfn.__name__,
                         x,
                         y,

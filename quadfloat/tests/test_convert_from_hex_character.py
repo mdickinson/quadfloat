@@ -204,9 +204,9 @@ class TestConvertFromHexCharacter(BaseTestCase):
                 actual_flags,
                 expected_flags,
                 msg="""\
-Flags don't match for failed test: {!r}
-Actual flags: {!r}
-Expected flags: {!r}
+Flags don't match for failed test: {0!r}
+Actual flags: {1!r}
+Expected flags: {2!r}
 """.format(arithmetic_test_case, actual_flags, expected_flags)
             )
 

@@ -51,7 +51,7 @@ class Attributes(object):
             else:
                 return result
         raise AttributeError(
-            "No value is currently set for the attribute {!r}.".format(key))
+            "No value is currently set for the attribute {0!r}.".format(key))
 
 
 # Private global holding the current attribute stack.

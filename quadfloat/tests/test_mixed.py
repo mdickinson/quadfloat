@@ -25,16 +25,16 @@ class TestMixed(BaseTestCase):
         # Payloads larger than that allowed should be clipped to be within
         # range. XXX As an implementation choice, this needs documenting.
 
-        source1 = binary32('nan({})'.format(2 ** 22))
+        source1 = binary32('nan({0})'.format(2 ** 22))
         self.assertEqual(source1._payload, 2 ** 22 - 1)
 
         source1 = binary32('snan(0)')
         self.assertEqual(source1._payload, 1)
 
-        source1 = binary32('snan({})'.format(2 ** 22))
+        source1 = binary32('snan({0})'.format(2 ** 22))
         self.assertEqual(source1._payload, 2 ** 22 - 1)
 
-        source1 = binary16('snan({})'.format(2 ** 22))
+        source1 = binary16('snan({0})'.format(2 ** 22))
         self.assertEqual(source1._payload, 2 ** 9 - 1)
 
         # Now combine two binary32 instances with a binary16 result; NaN should

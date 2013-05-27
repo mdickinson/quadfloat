@@ -4,7 +4,7 @@ Python 2 / 3 compatibility code.
 """
 import sys
 
-if sys.version_info.major == 2:
+if sys.version_info[0] == 2:
     from future_builtins import map as _map
     from future_builtins import zip as _zip
     STRING_TYPES = str, unicode
@@ -13,7 +13,7 @@ if sys.version_info.major == 2:
     import binascii as _binascii
 
     def _int_to_bytes(n, length):
-        return _binascii.unhexlify(format(n, '0{}x'.format(2 * length)))[::-1]
+        return _binascii.unhexlify(format(n, '0{0}x'.format(2 * length)))[::-1]
 
     def _int_from_bytes(bs):
         return int(_binascii.hexlify(bs[::-1]), 16)
@@ -33,6 +33,30 @@ if sys.version_info.major == 2:
     _PyHASH_INF = hash(float('inf'))
     _PyHASH_NINF = hash(float('-inf'))
     _PyHASH_NAN = hash(float('nan'))
+
+    try:
+        int.bit_length
+    except AttributeError:
+        def bit_length(n, correction={
+                '0': 4, '1': 3, '2': 2, '3': 2,
+                '4': 1, '5': 1, '6': 1, '7': 1,
+                '8': 0, '9': 0, 'a': 0, 'b': 0,
+                'c': 0, 'd': 0, 'e': 0, 'f': 0}):
+            """
+            Number of bits in binary representation of the positive integer n,
+            or 0 if n == 0.
+
+            """
+            if n < 0:
+                raise ValueError(
+                    "The argument to _nbits should be nonnegative.")
+            hex_n = "%x" % n
+            return 4*len(hex_n) - correction[hex_n[0]]
+    else:
+        def bit_length(n):
+            return n.bit_length()
+
+
 else:
     _map = map
     _zip = zip
@@ -48,3 +72,5 @@ else:
     _PyHASH_INF = sys.hash_info.inf
     _PyHASH_NINF = -sys.hash_info.inf
     _PyHASH_NAN = sys.hash_info.nan
+
+    bit_length = int.bit_length

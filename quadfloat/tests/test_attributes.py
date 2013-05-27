@@ -11,13 +11,15 @@ from quadfloat.attributes import (
     partial_attributes,
     temporary_attributes,
 )
+from quadfloat.tests.base_test_case import BaseTestCase
+
 
 RED, GREEN, BLUE = 'red', 'green', 'blue'
 ARTHUR, LANCELOT, MERLIN = 'arthur', 'lancelot', 'merlin'
 HOLY_GRAIL = 'to find the holy grail'
 
 
-class TestAttributes(unittest.TestCase):
+class TestAttributes(BaseTestCase):
     def test_creation(self):
         Attributes()
 
@@ -71,7 +73,7 @@ class TestAttributes(unittest.TestCase):
                     get_current_attributes().name
 
 
-class TestPartialAttributes(unittest.TestCase):
+class TestPartialAttributes(BaseTestCase):
     def setUp(self):
         self.old_attributes = get_current_attributes()
         set_current_attributes(Attributes())

@@ -21,6 +21,7 @@ from quadfloat.attributes import (
     Attributes,
 )
 from quadfloat.compat import (
+    bit_length,
     _int_from_bytes,
     _int_to_bytes,
     _PyHASH_INF,
@@ -169,7 +170,7 @@ class BinaryInterchangeFormat(object):
         valid_width = width in (16, 32, 64) or width >= 128 and width % 32 == 0
         if not valid_width:
             raise ValueError(
-                "Invalid width: {}.  "
+                "Invalid width: {0}.  "
                 "For an interchange format, width should be 16, 32, 64, "
                 "or a multiple of 32 that's greater than 128.".format(width)
             )
@@ -178,15 +179,15 @@ class BinaryInterchangeFormat(object):
         return self
 
     def __repr__(self):
-        return "BinaryInterchangeFormat(width={})".format(self.width)
+        return "BinaryInterchangeFormat(width={0})".format(self.width)
 
     def __str__(self):
-        return "binary{}".format(self.width)
+        return "binary{0}".format(self.width)
 
     def __eq__(self, other):
         return self.width == other.width
 
-    if _sys.version_info.major == 2:
+    if _sys.version_info[0] == 2:
         # != is automatically inferred from == for Python 3.
         def __ne__(self, other):
             return not (self == other)
@@ -210,7 +211,7 @@ class BinaryInterchangeFormat(object):
             # width - round(4 * log2(width)) + 13, where 'round' rounds to the
             # nearest integer.  The value of round(4 * log2(width)) can be
             # inferred from the number of bits needed to represent width ** 8.
-            return self.width - (self.width ** 8).bit_length() // 2 + 13
+            return self.width - bit_length(self.width ** 8) // 2 + 13
 
     @property
     def emax(self):
@@ -285,7 +286,7 @@ class BinaryInterchangeFormat(object):
         else:
             raise TypeError(
                 "Cannot construct a Float<nnn> instance from a "
-                "value of type {}".format(type(value))
+                "value of type {0}".format(type(value))
             )
 
     def _from_binary_float(self, b, attributes):
@@ -348,7 +349,7 @@ class BinaryInterchangeFormat(object):
             a = significand * 5 ** max(exponent, 0)
             b = 5 ** max(0, -exponent)
             exp_diff = exponent
-            d = a.bit_length() - b.bit_length()
+            d = bit_length(a) - bit_length(b)
             d += (a >> d if d >= 0 else a << -d) >= b
             d += exp_diff
 
@@ -388,7 +389,7 @@ class BinaryInterchangeFormat(object):
                 payload=payload,
             )
 
-        raise ValueError('invalid numeric string: {}'.format(s))
+        raise ValueError('invalid numeric string: {0}'.format(s))
 
     def _from_float(self, value, attributes):
         """
@@ -420,7 +421,7 @@ class BinaryInterchangeFormat(object):
             # Express absolute value of incoming float in format a / b;
             # find d such that 2 ** (d - 1) <= a / b < 2 ** d.
             a, b = abs(value).as_integer_ratio()
-            d = a.bit_length() - b.bit_length()
+            d = bit_length(a) - bit_length(b)
             d += (a >> d if d >= 0 else a << -d) >= b
 
             # Approximate a / b by number of the form q * 2 ** e.  We compute
@@ -455,11 +456,11 @@ class BinaryInterchangeFormat(object):
 
         assert (
             # normal in both auxiliary and output format; 2 extra bits
-            e > self.qmin - 3 and q.bit_length() == self.precision + 2 or
+            e > self.qmin - 3 and bit_length(q) == self.precision + 2 or
             # normal in auxiliary, subnormal in output; 3 extra bits
-            e == self.qmin - 3 and q.bit_length() == self.precision + 2 or
+            e == self.qmin - 3 and bit_length(q) == self.precision + 2 or
             # subnormal in both auxiliary and output format; 3 extra bits
-            e == self.qmin - 3 and q.bit_length() < self.precision + 2
+            e == self.qmin - 3 and bit_length(q) < self.precision + 2
         )
 
         if attributes.tininess_detection == BEFORE_ROUNDING:
@@ -491,7 +492,7 @@ class BinaryInterchangeFormat(object):
         q, e = q2, e + 2
 
         # Check whether we need to adjust the exponent.
-        if q.bit_length() == self.precision + 1:
+        if bit_length(q) == self.precision + 1:
             q, e = q >> 1, e + 1
 
         # Signal the overflow exception when appropriate.
@@ -523,7 +524,7 @@ class BinaryInterchangeFormat(object):
         if significand == 0:
             return 0, self._zero(sign)
 
-        d = exponent + significand.bit_length()
+        d = exponent + bit_length(significand)
 
         # Find q such that q * 2 ** e approximates significand * 2 ** exponent.
         # Allow two extra bits for the final round.
@@ -689,7 +690,7 @@ class BinaryInterchangeFormat(object):
         a = source1._significand
         b = source2._significand
         exp_diff = source1._exponent - source2._exponent
-        d = a.bit_length() - b.bit_length()
+        d = bit_length(a) - bit_length(b)
         d += (a >> d if d >= 0 else a << -d) >= b
         d += exp_diff
 
@@ -728,7 +729,7 @@ class BinaryInterchangeFormat(object):
         exponent = source1._exponent
 
         # Exponent of result.
-        d = (sig.bit_length() + exponent + 1) // 2
+        d = (bit_length(sig) + exponent + 1) // 2
         e = max(d - self.precision - 2, self.qmin - 3)
 
         # Now find integer square root of sig, and add 1 if inexact.
@@ -879,7 +880,7 @@ class BinaryInterchangeFormat(object):
                 payload=payload,
             )
 
-        raise ValueError('invalid numeric string: {}'.format(s))
+        raise ValueError('invalid numeric string: {0}'.format(s))
 
     def _zero(self, sign):
         """
@@ -1116,7 +1117,7 @@ class _BinaryFloat(object):
         return _decimal_format(sign, exponent, digits)
 
     def __repr__(self):
-        return "{!r}({!r})".format(self._format, self._to_short_str())
+        return "{0!r}({1!r})".format(self._format, self._to_short_str())
 
     def __str__(self):
         return self._to_short_str()
@@ -1163,7 +1164,7 @@ class _BinaryFloat(object):
         if q == 0:
             rounded = self._format._zero(self._sign)
         else:
-            shift = self._format.precision - q.bit_length()
+            shift = self._format.precision - bit_length(q)
             rounded = self._format._finite(self._sign, -shift, q << shift)
 
         if inexact:
@@ -1331,7 +1332,7 @@ class _BinaryFloat(object):
         if significand == 0:
             return self._format._zero(sign)
         adjust = min(
-            self._format.precision - significand.bit_length(),
+            self._format.precision - bit_length(significand),
             exponent - self._format.qmin,
         )
         return self._format._finite(
@@ -1492,7 +1493,7 @@ class _BinaryFloat(object):
             return _handle_invalid_int('log_b(zero)')
 
         # Finite nonzero case.
-        return self._exponent + self._significand.bit_length() - 1
+        return self._exponent + bit_length(self._significand) - 1
 
     # IEEE 754 5.7.2: General operations.
 
@@ -1709,7 +1710,7 @@ class _BinaryFloat(object):
             other = self._format._from_int(other, attributes)[1]
         else:
             raise TypeError(
-                "Can't convert operand {} of type {} to "
+                "Can't convert operand {0} of type {1} to "
                 "_BinaryFloat.".format(
                     other,
                     type(other),
@@ -1721,7 +1722,7 @@ class _BinaryFloat(object):
     def __int__(self):
         return self.convert_to_integer_toward_zero()
 
-    if _sys.version_info.major == 2:
+    if _sys.version_info[0] == 2:
         def __long__(self):
             return long(int(self))
 
@@ -1790,7 +1791,7 @@ class _BinaryFloat(object):
         common_format = self._format._common_format(other._format)
         return common_format.division(other, self)
 
-    if _sys.version_info.major == 2:
+    if _sys.version_info[0] == 2:
         # Make sure that Python 2 divisions involving these types behave the
         # same way regardless of whether the division __future__ import is in
         # effect or not.
@@ -1824,7 +1825,7 @@ class _BinaryFloat(object):
 
         else:
             raise TypeError(
-                "Can't convert operand {} of type {} to "
+                "Can't convert operand {0} of type {1} to "
                 "_BinaryFloat.".format(
                     other,
                     type(other),
@@ -1839,7 +1840,7 @@ class _BinaryFloat(object):
             result = _compare_ordered(self, other) or inexact
             return operator(result, 0)
 
-    if _sys.version_info.major == 2:
+    if _sys.version_info[0] == 2:
         def __hash__(self):
             """
             Return hash value compatible with ints and floats.

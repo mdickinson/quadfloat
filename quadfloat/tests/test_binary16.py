@@ -326,12 +326,12 @@ class TestBinary16(BaseTestCase):
         def input_strings():
             for exp in range(-7, 2):
                 for n in range(1000):
-                    yield '{}e{}'.format(n, exp)
-                    yield '-{}e{}'.format(n, exp)
+                    yield '{0}e{1}'.format(n, exp)
+                    yield '-{0}e{1}'.format(n, exp)
             for exp in range(2, 3):
                 for n in range(656):
-                    yield '{}e{}'.format(n, exp)
-                    yield '-{}e{}'.format(n, exp)
+                    yield '{0}e{1}'.format(n, exp)
+                    yield '-{0}e{1}'.format(n, exp)
 
         for input_string in input_strings():
             output_string = str(binary16(input_string))
@@ -377,7 +377,7 @@ class TestBinary16(BaseTestCase):
             assert b <= a < 10 * b
             best_digit = _divide_nearest(a, b)
             assert 1 <= best_digit <= 10
-            best_str = '{}e{}'.format(best_digit, n - 1)
+            best_str = '{0}e{1}'.format(best_digit, n - 1)
 
             # If the returned string has only one digit, it should be
             # equal to the closest string.
@@ -455,7 +455,7 @@ class TestBinary16(BaseTestCase):
 
     def test_rich_comparison_operators(self):
         # Test overloads for __eq__, __lt__, etc.
-        msgfmt = '{!r} {!r} {!r}'
+        msgfmt = '{0!r} {1!r} {2!r}'
         for x, y, reln in self._comparison_test_values():
             if reln == 'EQ':
                 self.assertTrue(x == y, msg=msgfmt.format(x, y, reln))
@@ -1163,7 +1163,7 @@ class TestBinary16(BaseTestCase):
             self.assertInterchangeable(
                 actual,
                 expected,
-                'min_num_mag({}, {})'.format(source1, source2),
+                'min_num_mag({0}, {1})'.format(source1, source2),
             )
 
     def test_max_num_mag(self):
@@ -1206,7 +1206,7 @@ class TestBinary16(BaseTestCase):
             self.assertInterchangeable(
                 actual,
                 expected,
-                'max_num_mag({}, {})'.format(source1, source2),
+                'max_num_mag({0}, {1})'.format(source1, source2),
             )
 
     def test_scale_b(self):
@@ -1278,7 +1278,7 @@ class TestBinary16(BaseTestCase):
             self.assertInterchangeable(
                 actual,
                 expected,
-                'scale_b({}, {})'.format(source1, n),
+                'scale_b({0}, {1})'.format(source1, n),
             )
 
     def test_log_b(self):
@@ -1324,7 +1324,7 @@ class TestBinary16(BaseTestCase):
             self.assertEqual(
                 actual,
                 expected,
-                'log_b({}): expected {}, got {}'.format(
+                'log_b({0}): expected {1}, got {2}'.format(
                     source1, expected, actual),
             )
 
@@ -1334,7 +1334,7 @@ class TestBinary16(BaseTestCase):
             self.assertEqual(
                 actual,
                 expected,
-                'log_b({}): expected {}, got {}'.format(
+                'log_b({0}): expected {1}, got {2}'.format(
                     source1, expected, actual)
             )
 

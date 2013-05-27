@@ -6,9 +6,10 @@ from quadfloat.parsing import (
     parse_infinity,
     parse_nan,
 )
+from quadfloat.tests.base_test_case import BaseTestCase
 
 
-class TestParsing(unittest.TestCase):
+class TestParsing(BaseTestCase):
     def test_parse_finite_decimal(self):
         self.assertEqual(parse_finite_decimal('0'), (False, 0, 0))
         self.assertEqual(parse_finite_decimal('-0'), (True, 0, 0))
