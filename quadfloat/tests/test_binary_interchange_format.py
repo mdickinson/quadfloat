@@ -4,7 +4,7 @@ import unittest
 from quadfloat.binary_interchange_format import BinaryInterchangeFormat
 
 
-class TestBinaryIntegerchangeFormat(unittest.TestCase):
+class TestBinaryInterchangeFormat(unittest.TestCase):
     def test_parameters(self):
         binary128 = BinaryInterchangeFormat(width=128)
         self.assertEqual(binary128.width, 128)
