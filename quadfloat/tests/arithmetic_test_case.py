@@ -3,7 +3,8 @@ Helper class for representing a single test.
 
 """
 from quadfloat import binary16, binary32, binary64, binary128
-from quadfloat.attributes import Attributes
+from quadfloat.attributes import Attributes, temporary_attributes
+from quadfloat.exceptions import UnderflowException
 from quadfloat.rounding_direction import round_ties_to_away, round_ties_to_even
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
@@ -62,6 +63,7 @@ rounding_directions = {
 READ_ATTRIBUTES = Attributes(
     rounding_direction=round_ties_to_even,
     tininess_detection=AFTER_ROUNDING,
+    underflow_handler=UnderflowException.default_handler,
 )
 
 
@@ -126,8 +128,8 @@ def parse_test_data(test_content):
             # XXX Check that conversion is exact.
             result_format = formats[
                 current_operation_attributes['destination']]
-            result = result_format.convert_from_hex_character(
-                results[0], READ_ATTRIBUTES)
+            with temporary_attributes(READ_ATTRIBUTES):
+                result = result_format.convert_from_hex_character(results[0])
             flags = set(results[1:])
             operation_factory = operations[current_operation]
             operation = operation_factory(**current_operation_attributes)

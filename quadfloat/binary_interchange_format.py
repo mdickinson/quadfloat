@@ -851,13 +851,12 @@ class BinaryInterchangeFormat(object):
         else:
             assert False, "never get here"  # pragma no cover
 
-    def convert_from_hex_character(self, s, attributes=None):
+    def convert_from_hex_character(self, s):
         """
         Convert the string s to this format.
 
         """
-        if attributes is None:
-            attributes = get_current_attributes()
+        attributes = get_current_attributes()
 
         try:
             sign, exponent, significand = parse_finite_hexadecimal(s)

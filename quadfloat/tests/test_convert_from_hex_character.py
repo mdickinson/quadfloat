@@ -5,6 +5,7 @@ from quadfloat import binary16
 from quadfloat.tests.base_test_case import BaseTestCase
 from quadfloat.tests.arithmetic_test_case import parse_test_data
 from quadfloat.attributes import (
+    temporary_attributes,
     inexact_handler,
     invalid_operation_handler,
     overflow_handler,
@@ -218,10 +219,11 @@ attribute tininess-detection: after-rounding
 class TestConvertFromHexCharacter(BaseTestCase):
     def test_16(self):
         for arithmetic_test_case in parse_test_data(test16):
-            with catch_exceptions() as exceptions:
-                fn = arithmetic_test_case.callable
-                kwargs = {'attributes': arithmetic_test_case.attributes}
-                actual = fn(*arithmetic_test_case.args, **kwargs)
+            with temporary_attributes(arithmetic_test_case.attributes):
+                with catch_exceptions() as exceptions:
+                    fn = arithmetic_test_case.callable
+                    kwargs = {}
+                    actual = fn(*arithmetic_test_case.args, **kwargs)
             self.assertInterchangeable(
                 actual,
                 arithmetic_test_case.result,
