@@ -568,13 +568,12 @@ class BinaryInterchangeFormat(object):
     # Section 5.4.1: Arithmetic operations
 
     # 5.4.1 addition
-    def addition(self, source1, source2, attributes=None):
+    def addition(self, source1, source2):
         """
         Return 'source1 + source2', rounded to the format given by 'self'.
 
         """
-        if attributes is None:
-            attributes = get_current_attributes()
+        attributes = get_current_attributes()
 
         if source1._type == _NAN or source2._type == _NAN:
             return self._handle_nans(source1, source2)
@@ -606,29 +605,25 @@ class BinaryInterchangeFormat(object):
         )[1]
 
     # 5.4.1 subtraction
-    def subtraction(self, source1, source2, attributes=None):
+    def subtraction(self, source1, source2):
         """
         Return 'source1 - source2', rounded to the format given by 'self'.
 
         """
-        if attributes is None:
-            attributes = get_current_attributes()
-
         if source1._type == _NAN or source2._type == _NAN:
             return self._handle_nans(source1, source2)
 
         # For non-NaNs, subtraction(a, b) is equivalent to
         # addition(a, b.negate())
-        return self.addition(source1, source2.negate(), attributes)
+        return self.addition(source1, source2.negate())
 
     # 5.4.1 multiplication
-    def multiplication(self, source1, source2, attributes=None):
+    def multiplication(self, source1, source2):
         """
         Return 'source1 * source2', rounded to the format given by 'self'.
 
         """
-        if attributes is None:
-            attributes = get_current_attributes()
+        attributes = get_current_attributes()
 
         if source1._type == _NAN or source2._type == _NAN:
             return self._handle_nans(source1, source2)
@@ -657,13 +652,12 @@ class BinaryInterchangeFormat(object):
         )[1]
 
     # 5.4.1 division
-    def division(self, source1, source2, attributes=None):
+    def division(self, source1, source2):
         """
         Return 'source1 / source2', rounded to the format given by 'self'.
 
         """
-        if attributes is None:
-            attributes = get_current_attributes()
+        attributes = get_current_attributes()
 
         if source1._type == _NAN or source2._type == _NAN:
             return self._handle_nans(source1, source2)
@@ -708,13 +702,12 @@ class BinaryInterchangeFormat(object):
         return self._final_round(sign, exponent, significand, attributes)[1]
 
     # 5.4.1 squareRoot
-    def square_root(self, source1, attributes=None):
+    def square_root(self, source1):
         """
         Return the square root of source1 in format 'self'.
 
         """
-        if attributes is None:
-            attributes = get_current_attributes()
+        attributes = get_current_attributes()
 
         if source1._type == _NAN:
             return self._handle_nans(source1)
@@ -752,13 +745,12 @@ class BinaryInterchangeFormat(object):
         return self._final_round(False, e, q, attributes)[1]
 
     # 5.4.1 fusedMultiplyAdd
-    def fused_multiply_add(self, source1, source2, source3, attributes=None):
+    def fused_multiply_add(self, source1, source2, source3):
         """
         Return source1 * source2 + source3, rounding once to format 'self'.
 
         """
-        if attributes is None:
-            attributes = get_current_attributes()
+        attributes = get_current_attributes()
 
         # Deal with any NaNs.
         any_nans = (
@@ -813,13 +805,12 @@ class BinaryInterchangeFormat(object):
         )[1]
 
     # 5.4.1 convertFromInt
-    def convert_from_int(self, n, attributes=None):
+    def convert_from_int(self, n):
         """
         Convert the integer n to this format.
 
         """
-        if attributes is None:
-            attributes = get_current_attributes()
+        attributes = get_current_attributes()
         return self._from_int(n, attributes)[1]
 
     def convert_to_hex_character(self, source):
@@ -1462,13 +1453,12 @@ class _BinaryFloat(object):
         return other if cmp <= 0 else self
 
     # IEEE 754 5.3.3: logBFormat operations
-    def scale_b(self, n, attributes=None):
+    def scale_b(self, n):
         """
         self * 2**n
 
         """
-        if attributes is None:
-            attributes = get_current_attributes()
+        attributes = get_current_attributes()
 
         # NaNs follow the usual rules.
         if self._type == _NAN:
@@ -1755,10 +1745,8 @@ class _BinaryFloat(object):
     def __add__(self, other):
         attributes = get_current_attributes()
         other = self._convert_other(other, attributes)
-        # XXX attributes may play a role in determining what this common format
-        # should be.  See e.g. 10.3 on preferredWidth attributes.
         common_format = self._format._common_format(other._format)
-        return common_format.addition(self, other, attributes)
+        return common_format.addition(self, other)
 
     def __radd__(self, other):
         attributes = get_current_attributes()
