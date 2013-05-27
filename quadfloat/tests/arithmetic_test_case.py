@@ -3,7 +3,7 @@ Helper class for representing a single test.
 
 """
 from quadfloat import binary16, binary32, binary64, binary128
-from quadfloat.attributes import Attributes
+from quadfloat.attributes import _AttributesStack, _PartialAttributes
 from quadfloat.rounding_direction import round_ties_to_away, round_ties_to_even
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
@@ -66,7 +66,7 @@ def default_test_attributes():
 
 
 # Attributes used when reading a RHS.
-READ_ATTRIBUTES = Attributes(
+READ_ATTRIBUTES = _AttributesStack(
     rounding_direction=round_ties_to_even,
     tininess_detection=AFTER_ROUNDING,
 )
@@ -82,7 +82,10 @@ def parse_test_data(test_content):
     current_operation = None
     current_operation_attributes = {}
 
-    attributes = default_test_attributes()
+    attributes = _AttributesStack(
+        rounding_direction=round_ties_to_even,
+        tininess_detection=AFTER_ROUNDING,
+    )
 
     for line in lines:
         # Strip comments; skip blank lines.
@@ -101,14 +104,16 @@ def parse_test_data(test_content):
                 lhs, rhs = [piece.strip() for piece in line.split(':')]
 
                 if lhs == 'rounding-direction':
-                    attributes = Attributes(
-                        rounding_direction=rounding_directions[rhs],
-                        tininess_detection=attributes.tininess_detection,
-                    )
+                    attributes.push(
+                        _PartialAttributes(
+                            rounding_direction=rounding_directions[rhs]
+                        )
+                    )   
                 elif lhs == 'tininess-detection':
-                    attributes = Attributes(
-                        rounding_direction=attributes.rounding_direction,
-                        tininess_detection=tininess_detection_modes[rhs],
+                    attributes.push(
+                        _PartialAttributes(
+                            tininess_detection=tininess_detection_modes[rhs]
+                        )
                     )
                 else:
                     raise ValueError("Unrecognized attribute: {}".format(lhs))

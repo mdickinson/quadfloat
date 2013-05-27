@@ -1,57 +1,70 @@
+"""
+Tests for attribute mechanism.
+
+"""
 import unittest
 
-from quadfloat.rounding_direction import round_ties_to_away, round_ties_to_even
-from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
+from quadfloat.new_attributes import current_attributes, partial_attributes
+
+RED, GREEN, BLUE = 'red', 'green', 'blue'
+ARTHUR, LANCELOT = 'arthur', 'lancelot'
 
 
-class Attributes(object):
-    def __init__(self,
-                 rounding_direction,
-                 tininess_detection,
-                 ):
-        if tininess_detection not in (BEFORE_ROUNDING, AFTER_ROUNDING):
-            raise ValueError(
-                "tininess_detection should be one of {} or {}".format(
-                    BEFORE_ROUNDING, AFTER_ROUNDING))
+class TestPartialAttributes(unittest.TestCase):
+    def setUp(self):
+        self.attributes = current_attributes()
 
-        self.rounding_direction = rounding_direction
-        self.tininess_detection = tininess_detection
+    def test_attributes_context(self):
+        with partial_attributes(favourite_colour=RED):
+            self.assertEqual(self.attributes.favourite_colour, RED)
 
+        with partial_attributes(favourite_colour=BLUE):
+            self.assertEqual(self.attributes.favourite_colour, BLUE)
 
-class TestAttributes(unittest.TestCase):
-    def test_creation(self):
-        attr = Attributes(
-            rounding_direction=round_ties_to_even,
-            tininess_detection=AFTER_ROUNDING
-        )
-        self.assertEqual(
-            attr.rounding_direction,
-            round_ties_to_even,
-        )
-        self.assertEqual(
-            attr.tininess_detection,
-            AFTER_ROUNDING,
-        )
+        with partial_attributes(name=ARTHUR):
+            self.assertEqual(self.attributes.name, ARTHUR)
 
-        attr = Attributes(
-            rounding_direction=round_ties_to_away,
-            tininess_detection=BEFORE_ROUNDING
-        )
-        self.assertEqual(
-            attr.rounding_direction,
-            round_ties_to_away,
-        )
-        self.assertEqual(
-            attr.tininess_detection,
-            BEFORE_ROUNDING,
-        )
+    def test_nonexistent_attribute(self):
+        with self.assertRaises(AttributeError):
+            self.attributes.favourite_colour
 
-    def test_bad_tininess(self):
-        with self.assertRaises(ValueError):
-            Attributes(
-                rounding_direction=round_ties_to_even,
-                tininess_detection="before"
-            )
+    def test_set_more_than_one_attribute_at_once(self):
+        with partial_attributes(name=ARTHUR, favourite_colour=BLUE):
+            self.assertEqual(self.attributes.name, ARTHUR)
+            self.assertEqual(self.attributes.favourite_colour, BLUE)
+
+    def test_non_overlapping_nested_contexts(self):
+        with partial_attributes(name=ARTHUR):
+            with partial_attributes(favourite_colour=BLUE):
+                self.assertEqual(self.attributes.name, ARTHUR)
+                self.assertEqual(self.attributes.favourite_colour, BLUE)
+
+    def test_overlapping_nested_contexts(self):
+        with partial_attributes(favourite_colour=BLUE):
+            self.assertEqual(self.attributes.favourite_colour, BLUE)
+            with partial_attributes(favourite_colour=RED):
+                self.assertEqual(self.attributes.favourite_colour, RED)
+            # Favourite colour should now be BLUE again.
+            self.assertEqual(self.attributes.favourite_colour, BLUE)
+
+        # After we leave the with block, favourite_colour is undefined.
+        with self.assertRaises(AttributeError):
+            self.attributes.favourite_colour
+
+    def test_reversion_on_exception(self):
+        with self.assertRaises(ZeroDivisionError):
+            with partial_attributes(favourite_colour=BLUE):
+                self.assertEqual(self.attributes.favourite_colour, BLUE)
+                1 / 0
+        with self.assertRaises(AttributeError):
+            self.attributes.favourite_colour
+
+        with partial_attributes(favourite_colour=RED):
+            with self.assertRaises(ZeroDivisionError):
+                with partial_attributes(favourite_colour=BLUE):
+                    self.assertEqual(self.attributes.favourite_colour, BLUE)
+                    1 / 0
+            self.assertEqual(self.attributes.favourite_colour, RED)
 
 
 if __name__ == '__main__':

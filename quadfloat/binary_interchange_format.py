@@ -12,12 +12,13 @@ from quadfloat.arithmetic import (
     _rshift_to_odd,
 )
 from quadfloat.attributes import (
-    Attributes,
     _signal_invalid_operation,
     _signal_inexact,
     _signal_overflow,
     _signal_underflow,
-    _current_rounding_direction,
+    get_current_attributes,
+    _AttributesStack,
+    _PartialAttributes,
 )
 from quadfloat.compat import (
     _int_from_bytes,
@@ -31,6 +32,10 @@ from quadfloat.compat import (
     INTEGER_TYPES,
 )
 from quadfloat.exceptions import (
+    default_inexact_handler,
+    default_invalid_operation_handler,
+    default_overflow_handler,
+    default_underflow_handler,
     InexactException,
     InvalidBooleanOperationException,
     InvalidIntegerOperationException,
@@ -56,19 +61,23 @@ from quadfloat.rounding_direction import (
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
 
-_default_attributes = Attributes(
+_default_attributes = _PartialAttributes(
+    rounding_direction=round_ties_to_even,
+    tininess_detection=AFTER_ROUNDING,
+    inexact_handler=default_inexact_handler,
+    invalid_operation_handler=default_invalid_operation_handler,
+    overflow_handler=default_overflow_handler,
+    underflow_handler=default_underflow_handler,
+)
+
+get_current_attributes().push(_default_attributes)
+
+
+# Attributes to use for conversions during comparison.
+comparison_attributes = _AttributesStack(
     rounding_direction=round_ties_to_even,
     tininess_detection=AFTER_ROUNDING,
 )
-
-
-def get_default_attributes():
-    return _default_attributes
-
-
-def get_current_attributes():
-    # Current attributes are not currently modifiable...
-    return _default_attributes
 
 
 # Constants, utility functions.
@@ -1240,8 +1249,10 @@ class _BinaryFloat(object):
         attribute.  Signal the 'inexact' exception if this changes the value.
 
         """
+        rounding_direction = get_current_attributes().rounding_direction
+
         return self._round_to_integral_general(
-            rounding_direction=_current_rounding_direction(),
+            rounding_direction=rounding_direction,
             quiet=False,
         )
 
@@ -1815,16 +1826,14 @@ class _BinaryFloat(object):
         that the comparison result is 'unordered', in the sense of 5.11.
 
         """
-        attributes = get_default_attributes()
-
         if isinstance(other, INTEGER_TYPES):
-            inexact, other = self._format._from_int(other, attributes)
+            inexact, other = self._format._from_int(other, comparison_attributes)
 
         elif isinstance(other, float):
-            inexact, other = self._format._from_float(other, attributes)
+            inexact, other = self._format._from_float(other, comparison_attributes)
 
         elif isinstance(other, _BinaryFloat):
-            inexact, other = self._format._from_binary_float(other, attributes)
+            inexact, other = self._format._from_binary_float(other, comparison_attributes)
 
         else:
             raise TypeError(
@@ -2050,9 +2059,8 @@ def _compare_quiet_general(source1, source2, operator, unordered_result):
     elif source1._type == _NAN or source2._type == _NAN:
         return unordered_result
     else:
-        attributes = get_default_attributes()
         fmt = source1._format
-        inexact, source2 = fmt._from_binary_float(source2, attributes)
+        inexact, source2 = fmt._from_binary_float(source2, comparison_attributes)
         result = _compare_ordered(source1, source2) or inexact
         return operator(result, 0)
 
@@ -2068,9 +2076,8 @@ def _compare_signaling_general(source1, source2, operator, unordered_result):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(unordered_result)
     else:
-        attributes = get_default_attributes()
         fmt = source1._format
-        inexact, source2 = fmt._from_binary_float(source2, attributes)
+        inexact, source2 = fmt._from_binary_float(source2, comparison_attributes)
         result = _compare_ordered(source1, source2) or inexact
         return operator(result, 0)
 
