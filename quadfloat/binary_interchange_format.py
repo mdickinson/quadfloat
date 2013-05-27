@@ -18,7 +18,7 @@ from quadfloat.attributes import (
     _signal_underflow,
     get_current_attributes,
     set_current_attributes,
-    _AttributesStack,
+    AttributesStack,
 )
 from quadfloat.compat import (
     _int_from_bytes,
@@ -61,7 +61,7 @@ from quadfloat.rounding_direction import (
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
 
-_default_attributes = _AttributesStack(
+_default_attributes = AttributesStack(
     rounding_direction=round_ties_to_even,
     tininess_detection=AFTER_ROUNDING,
     inexact_handler=default_inexact_handler,
@@ -74,7 +74,7 @@ set_current_attributes(_default_attributes)
 
 
 # Attributes to use for conversions during comparison.
-comparison_attributes = _AttributesStack(
+comparison_attributes = AttributesStack(
     rounding_direction=round_ties_to_even,
     tininess_detection=AFTER_ROUNDING,
 )

@@ -24,7 +24,7 @@ We add one more attribute not included in the standard:
 import contextlib
 
 
-class _AttributesStack(object):
+class AttributesStack(object):
     def __init__(self, **attrs):
         self._attributes_stack = [attrs]
 
@@ -47,7 +47,7 @@ class _AttributesStack(object):
 
 
 # Private global holding the current attribute stack.
-_current_attributes = _AttributesStack()
+_current_attributes = AttributesStack()
 
 
 def get_current_attributes():
