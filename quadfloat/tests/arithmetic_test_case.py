@@ -3,7 +3,7 @@ Helper class for representing a single test.
 
 """
 from quadfloat import binary16, binary32, binary64, binary128
-from quadfloat.attributes import AttributesStack
+from quadfloat.attributes import Attributes
 from quadfloat.rounding_direction import round_ties_to_away, round_ties_to_even
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
@@ -59,7 +59,7 @@ rounding_directions = {
 
 
 # Attributes used when reading a RHS.
-READ_ATTRIBUTES = AttributesStack(
+READ_ATTRIBUTES = Attributes(
     rounding_direction=round_ties_to_even,
     tininess_detection=AFTER_ROUNDING,
 )
@@ -75,7 +75,7 @@ def parse_test_data(test_content):
     current_operation = None
     current_operation_attributes = {}
 
-    attributes = AttributesStack(
+    attributes = Attributes(
         rounding_direction=round_ties_to_even,
         tininess_detection=AFTER_ROUNDING,
     )

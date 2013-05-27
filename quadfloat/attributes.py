@@ -24,7 +24,7 @@ We add one more attribute not included in the standard:
 import contextlib
 
 
-class AttributesStack(object):
+class Attributes(object):
     def __new__(cls, **attrs):
         return cls._from_stack([attrs])
 
@@ -35,7 +35,12 @@ class AttributesStack(object):
         return self
 
     def push(self, **attrs):
-        return AttributesStack._from_stack(self._attributes_stack + [attrs])
+        """
+        Return a new AttributeStack with the given
+        attributes overriding those of this one.
+
+        """
+        return Attributes._from_stack(self._attributes_stack + [attrs])
 
     def __getattr__(self, key):
         for partials in reversed(self._attributes_stack):
@@ -50,7 +55,7 @@ class AttributesStack(object):
 
 
 # Private global holding the current attribute stack.
-_current_attributes = AttributesStack()
+_current_attributes = Attributes()
 
 
 def get_current_attributes():
@@ -75,7 +80,7 @@ def temporary_attributes(attrs):
     """
     Context manager to temporarily use a different attributes stack.
 
-    `attrs` is an AttributesStack object.
+    `attrs` is an `Attributes` object.
 
     """
     stored = get_current_attributes()
