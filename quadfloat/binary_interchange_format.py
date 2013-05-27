@@ -113,9 +113,6 @@ def _decimal_format(sign, exponent, digits):
     return ('-' if sign else '') + coefficient
 
 
-_round_ties_to_even_offsets = [0, -1, -2, 1, 0, -1, 2, 1]
-
-
 # Round-to-odd is a useful primitive rounding direction for performing general
 # rounding operations while avoiding problems from double rounding.
 #
