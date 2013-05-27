@@ -1827,13 +1827,16 @@ class _BinaryFloat(object):
 
         """
         if isinstance(other, INTEGER_TYPES):
-            inexact, other = self._format._from_int(other, comparison_attributes)
+            inexact, other = self._format._from_int(
+                other, comparison_attributes)
 
         elif isinstance(other, float):
-            inexact, other = self._format._from_float(other, comparison_attributes)
+            inexact, other = self._format._from_float(
+                other, comparison_attributes)
 
         elif isinstance(other, _BinaryFloat):
-            inexact, other = self._format._from_binary_float(other, comparison_attributes)
+            inexact, other = self._format._from_binary_float(
+                other, comparison_attributes)
 
         else:
             raise TypeError(
@@ -2060,7 +2063,8 @@ def _compare_quiet_general(source1, source2, operator, unordered_result):
         return unordered_result
     else:
         fmt = source1._format
-        inexact, source2 = fmt._from_binary_float(source2, comparison_attributes)
+        inexact, source2 = fmt._from_binary_float(
+            source2, comparison_attributes)
         result = _compare_ordered(source1, source2) or inexact
         return operator(result, 0)
 
@@ -2077,7 +2081,8 @@ def _compare_signaling_general(source1, source2, operator, unordered_result):
         return _handle_invalid_bool(unordered_result)
     else:
         fmt = source1._format
-        inexact, source2 = fmt._from_binary_float(source2, comparison_attributes)
+        inexact, source2 = fmt._from_binary_float(
+            source2, comparison_attributes)
         result = _compare_ordered(source1, source2) or inexact
         return operator(result, 0)
 

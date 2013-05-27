@@ -4,17 +4,105 @@ Tests for attribute mechanism.
 """
 import unittest
 
-from quadfloat.attributes import get_current_attributes, partial_attributes
+from quadfloat.attributes import (
+    AttributesStack,
+    get_current_attributes,
+    set_current_attributes,
+    partial_attributes,
+    attributes,
+)
 
 RED, GREEN, BLUE = 'red', 'green', 'blue'
-ARTHUR, LANCELOT = 'arthur', 'lancelot'
+ARTHUR, LANCELOT, MERLIN = 'arthur', 'lancelot', 'merlin'
+HOLY_GRAIL = 'to find the holy grail'
+
+
+class TestAttributesStack(unittest.TestCase):
+    def test_creation(self):
+        AttributesStack()
+
+    def test_creation_from_attributes(self):
+        attributes = AttributesStack(
+            name=MERLIN,
+            favourite_colour=BLUE,
+        )
+        self.assertEqual(attributes.name, MERLIN)
+        self.assertEqual(attributes.favourite_colour, BLUE)
+        with self.assertRaises(AttributeError):
+            attributes.quest
+
+    def test_attributes_context_manager(self):
+        first_stack = AttributesStack(name=MERLIN)
+        second_stack = AttributesStack(quest=HOLY_GRAIL)
+
+        with attributes(first_stack):
+            self.assertEqual(get_current_attributes(), first_stack)
+            self.assertEqual(get_current_attributes().name, MERLIN)
+            with self.assertRaises(AttributeError):
+                get_current_attributes().quest
+
+        with attributes(second_stack):
+            self.assertEqual(get_current_attributes(), second_stack)
+            self.assertEqual(get_current_attributes().quest, HOLY_GRAIL)
+            with self.assertRaises(AttributeError):
+                get_current_attributes().name
 
 
 class TestPartialAttributes(unittest.TestCase):
     def setUp(self):
-        self.attributes = get_current_attributes()
+        self.old_attributes = get_current_attributes()
+        self.attributes = AttributesStack()
+        set_current_attributes(self.attributes)
 
-    def test_attributes_context(self):
+    def tearDown(self):
+        set_current_attributes(self.old_attributes)
+
+    def test_push_and_pop(self):
+        with self.assertRaises(AttributeError):
+            self.attributes.favourite_colour
+
+        self.attributes.push(favourite_colour=GREEN)
+        self.assertEqual(self.attributes.favourite_colour, GREEN)
+
+        self.attributes.pop()
+        with self.assertRaises(AttributeError):
+            self.attributes.favourite_colour
+
+        self.attributes.push(favourite_colour=RED)
+        self.assertEqual(self.attributes.favourite_colour, RED)
+
+        self.attributes.pop()
+        with self.assertRaises(AttributeError):
+            self.attributes.favourite_colour
+
+    def test_multiple_push(self):
+        self.attributes.push(favourite_colour=GREEN, name=MERLIN)
+        self.assertEqual(self.attributes.favourite_colour, GREEN)
+        self.assertEqual(self.attributes.name, MERLIN)
+        self.attributes.pop()
+        with self.assertRaises(AttributeError):
+            self.attributes.favourite_colour
+        with self.assertRaises(AttributeError):
+            self.attributes.name
+
+    def test_nested_push_and_pop(self):
+        with self.assertRaises(AttributeError):
+            self.attributes.favourite_colour
+
+        self.attributes.push(favourite_colour=GREEN)
+        self.assertEqual(self.attributes.favourite_colour, GREEN)
+
+        self.attributes.push(favourite_colour=RED)
+        self.assertEqual(self.attributes.favourite_colour, RED)
+
+        self.attributes.pop()
+        self.assertEqual(self.attributes.favourite_colour, GREEN)
+
+        self.attributes.pop()
+        with self.assertRaises(AttributeError):
+            self.attributes.favourite_colour
+
+    def test_partial_attributes_context(self):
         with partial_attributes(favourite_colour=RED):
             self.assertEqual(self.attributes.favourite_colour, RED)
 

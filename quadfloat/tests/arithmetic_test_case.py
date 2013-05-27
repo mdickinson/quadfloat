@@ -58,13 +58,6 @@ rounding_directions = {
 }
 
 
-def default_test_attributes():
-    return Attributes(
-        rounding_direction=round_ties_to_even,
-        tininess_detection=AFTER_ROUNDING,
-    )
-
-
 # Attributes used when reading a RHS.
 READ_ATTRIBUTES = AttributesStack(
     rounding_direction=round_ties_to_even,
