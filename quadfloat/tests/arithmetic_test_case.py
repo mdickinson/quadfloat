@@ -2,9 +2,22 @@
 Helper class for representing a single test.
 
 """
+import contextlib
+
 from quadfloat import binary16, binary32, binary64, binary128
-from quadfloat.attributes import Attributes, temporary_attributes
-from quadfloat.exceptions import UnderflowException
+from quadfloat.attributes import (
+    Attributes,
+    temporary_attributes,
+    inexact_handler,
+    invalid_operation_handler,
+    overflow_handler,
+    underflow_handler,
+)
+from quadfloat.exceptions import (
+    InexactException,
+    OverflowException,
+    UnderflowException,
+)
 from quadfloat.rounding_direction import round_ties_to_away, round_ties_to_even
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
@@ -25,6 +38,54 @@ class ArithmeticTestCase(object):
             self.flags,
             self.attributes,
         )
+
+    def execute(self):
+        """
+        Execute the call represented by this testcase, returning
+        the results and resulting signals.
+
+        """
+        with temporary_attributes(self.attributes):
+            with catch_exceptions() as exceptions:
+                actual_result = self.callable(*self.args)
+        actual_flags = set()
+        actual_inexact = any(
+            isinstance(exc, InexactException)
+            for exc in exceptions)
+        if actual_inexact:
+            actual_flags.add('inexact')
+
+        actual_overflow = any(
+            isinstance(exc, OverflowException)
+            for exc in exceptions)
+        if actual_overflow:
+            actual_flags.add('overflow')
+
+        actual_underflow = any(
+            isinstance(exc, UnderflowException)
+            for exc in exceptions)
+        if actual_underflow:
+            actual_flags.add('underflow')
+
+        return actual_result, actual_flags
+
+
+# Context manager for catching all the exceptions that are signaled under
+# default handling.
+
+@contextlib.contextmanager
+def catch_exceptions():
+    signal_list = []
+
+    def my_handler(exc):
+        signal_list.append(exc)
+        return exc.default_handler()
+
+    with invalid_operation_handler(my_handler):
+        with inexact_handler(my_handler):
+            with overflow_handler(my_handler):
+                with underflow_handler(my_handler):
+                    yield signal_list
 
 
 # Mapping from operations to callables.

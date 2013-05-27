@@ -1,36 +1,8 @@
-import contextlib
 import unittest
 
 from quadfloat import binary16
 from quadfloat.tests.base_test_case import BaseTestCase
 from quadfloat.tests.arithmetic_test_case import parse_test_data
-from quadfloat.attributes import (
-    temporary_attributes,
-    inexact_handler,
-    invalid_operation_handler,
-    overflow_handler,
-    underflow_handler,
-)
-from quadfloat.exceptions import (
-    InexactException,
-    OverflowException,
-    UnderflowException,
-)
-
-
-@contextlib.contextmanager
-def catch_exceptions():
-    signal_list = []
-
-    def my_handler(exc):
-        signal_list.append(exc)
-        return exc.default_handler()
-
-    with invalid_operation_handler(my_handler):
-        with inexact_handler(my_handler):
-            with overflow_handler(my_handler):
-                with underflow_handler(my_handler):
-                    yield signal_list
 
 
 binary16_inputs = """\
@@ -219,36 +191,14 @@ attribute tininess-detection: after-rounding
 class TestConvertFromHexCharacter(BaseTestCase):
     def test_16(self):
         for arithmetic_test_case in parse_test_data(test16):
-            with temporary_attributes(arithmetic_test_case.attributes):
-                with catch_exceptions() as exceptions:
-                    fn = arithmetic_test_case.callable
-                    kwargs = {}
-                    actual = fn(*arithmetic_test_case.args, **kwargs)
-            self.assertInterchangeable(
-                actual,
-                arithmetic_test_case.result,
-                msg=str(arithmetic_test_case))
-
+            expected_result = arithmetic_test_case.result
             expected_flags = arithmetic_test_case.flags
+            actual_result, actual_flags = arithmetic_test_case.execute()
 
-            actual_flags = set()
-            actual_inexact = any(
-                isinstance(exc, InexactException)
-                for exc in exceptions)
-            if actual_inexact:
-                actual_flags.add('inexact')
-
-            actual_overflow = any(
-                isinstance(exc, OverflowException)
-                for exc in exceptions)
-            if actual_overflow:
-                actual_flags.add('overflow')
-
-            actual_underflow = any(
-                isinstance(exc, UnderflowException)
-                for exc in exceptions)
-            if actual_underflow:
-                actual_flags.add('underflow')
+            self.assertInterchangeable(
+                actual_result,
+                expected_result,
+                msg=str(arithmetic_test_case))
 
             self.assertEqual(
                 actual_flags,
