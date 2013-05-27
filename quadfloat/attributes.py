@@ -25,14 +25,17 @@ import contextlib
 
 
 class AttributesStack(object):
-    def __init__(self, **attrs):
-        self._attributes_stack = [attrs]
+    def __new__(cls, **attrs):
+        return cls._from_stack([attrs])
+
+    @classmethod
+    def _from_stack(cls, stack):
+        self = object.__new__(cls)
+        self._attributes_stack = stack
+        return self
 
     def push(self, **attrs):
-        self._attributes_stack.append(attrs)
-
-    def pop(self):
-        self._attributes_stack.pop()
+        return AttributesStack._from_stack(self._attributes_stack + [attrs])
 
     def __getattr__(self, key):
         for partials in reversed(self._attributes_stack):
@@ -68,9 +71,11 @@ def set_current_attributes(attrs):
 
 
 @contextlib.contextmanager
-def attributes(attrs):
+def temporary_attributes(attrs):
     """
     Context manager to temporarily use a different attributes stack.
+
+    `attrs` is an AttributesStack object.
 
     """
     stored = get_current_attributes()
@@ -87,15 +92,12 @@ def partial_attributes(**attrs):
     Context manager to temporarily apply given attributes to the current stack.
 
     """
-    attribute_stack = get_current_attributes()
-    attribute_stack.push(**attrs)
-    try:
+    new_attribute_stack = get_current_attributes().push(**attrs)
+    with temporary_attributes(new_attribute_stack):
         yield
-    finally:
-        attribute_stack.pop()
 
 
-# Helper functions.
+# Helper functions for specific attributes.
 
 def _current_inexact_handler():
     return get_current_attributes().inexact_handler

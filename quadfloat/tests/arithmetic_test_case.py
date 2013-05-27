@@ -97,11 +97,11 @@ def parse_test_data(test_content):
                 lhs, rhs = [piece.strip() for piece in line.split(':')]
 
                 if lhs == 'rounding-direction':
-                    attributes.push(
+                    attributes = attributes.push(
                         rounding_direction=rounding_directions[rhs]
                     )
                 elif lhs == 'tininess-detection':
-                    attributes.push(
+                    attributes = attributes.push(
                         tininess_detection=tininess_detection_modes[rhs]
                     )
                 else:
