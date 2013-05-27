@@ -134,7 +134,6 @@ def parse_test_data(test_content):
             args, results = line.split('->')
             args = args.split()
             results = results.split()
-            # XXX Check that conversion is exact.
             result_format = formats[
                 current_operation_attributes['destination']]
             with temporary_attributes(READ_ATTRIBUTES):
@@ -146,7 +145,6 @@ def parse_test_data(test_content):
                 args=args,
                 result=result,
                 flags=flags,
-                # Function to call should be encoded in test file.
                 callable=operation,
                 attributes=attributes,
             )
