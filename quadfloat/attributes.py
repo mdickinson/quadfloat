@@ -26,9 +26,9 @@ import contextlib
 
 from quadfloat.new_attributes import (
     get_current_attributes,
+    set_current_attributes,
     partial_attributes,
     _AttributesStack,
-    _PartialAttributes,
 )
 
 

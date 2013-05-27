@@ -3,7 +3,7 @@ Helper class for representing a single test.
 
 """
 from quadfloat import binary16, binary32, binary64, binary128
-from quadfloat.attributes import _AttributesStack, _PartialAttributes
+from quadfloat.attributes import _AttributesStack
 from quadfloat.rounding_direction import round_ties_to_away, round_ties_to_even
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
@@ -105,15 +105,11 @@ def parse_test_data(test_content):
 
                 if lhs == 'rounding-direction':
                     attributes.push(
-                        _PartialAttributes(
-                            rounding_direction=rounding_directions[rhs]
-                        )
-                    )   
+                        rounding_direction=rounding_directions[rhs]
+                    )
                 elif lhs == 'tininess-detection':
                     attributes.push(
-                        _PartialAttributes(
-                            tininess_detection=tininess_detection_modes[rhs]
-                        )
+                        tininess_detection=tininess_detection_modes[rhs]
                     )
                 else:
                     raise ValueError("Unrecognized attribute: {}".format(lhs))

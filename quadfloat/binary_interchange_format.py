@@ -17,8 +17,8 @@ from quadfloat.attributes import (
     _signal_overflow,
     _signal_underflow,
     get_current_attributes,
+    set_current_attributes,
     _AttributesStack,
-    _PartialAttributes,
 )
 from quadfloat.compat import (
     _int_from_bytes,
@@ -61,7 +61,7 @@ from quadfloat.rounding_direction import (
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
 
-_default_attributes = _PartialAttributes(
+_default_attributes = _AttributesStack(
     rounding_direction=round_ties_to_even,
     tininess_detection=AFTER_ROUNDING,
     inexact_handler=default_inexact_handler,
@@ -70,7 +70,7 @@ _default_attributes = _PartialAttributes(
     underflow_handler=default_underflow_handler,
 )
 
-get_current_attributes().push(_default_attributes)
+set_current_attributes(_default_attributes)
 
 
 # Attributes to use for conversions during comparison.

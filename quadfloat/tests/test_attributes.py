@@ -4,7 +4,7 @@ Tests for attribute mechanism.
 """
 import unittest
 
-from quadfloat.new_attributes import current_attributes, partial_attributes
+from quadfloat.new_attributes import get_current_attributes, partial_attributes
 
 RED, GREEN, BLUE = 'red', 'green', 'blue'
 ARTHUR, LANCELOT = 'arthur', 'lancelot'
@@ -12,7 +12,7 @@ ARTHUR, LANCELOT = 'arthur', 'lancelot'
 
 class TestPartialAttributes(unittest.TestCase):
     def setUp(self):
-        self.attributes = current_attributes()
+        self.attributes = get_current_attributes()
 
     def test_attributes_context(self):
         with partial_attributes(favourite_colour=RED):
