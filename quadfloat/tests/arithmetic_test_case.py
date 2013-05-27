@@ -60,9 +60,18 @@ rounding_directions = {
 
 
 # Attributes used when reading a RHS.
+
+
+def raising_inexact_handler(exc):
+    raise ValueError(
+        "Got inexact value; rounded value is {}".format(exc.rounded)
+    )
+
+
 READ_ATTRIBUTES = Attributes(
     rounding_direction=round_ties_to_even,
     tininess_detection=AFTER_ROUNDING,
+    inexact_handler=raising_inexact_handler,
     underflow_handler=UnderflowException.default_handler,
 )
 
