@@ -18,7 +18,13 @@ from quadfloat.exceptions import (
     OverflowException,
     UnderflowException,
 )
-from quadfloat.rounding_direction import round_ties_to_away, round_ties_to_even
+from quadfloat.rounding_direction import (
+    round_ties_to_away,
+    round_ties_to_even,
+    round_toward_positive,
+    round_toward_negative,
+    round_toward_zero,
+)
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
 
@@ -117,6 +123,9 @@ tininess_detection_modes = {
 rounding_directions = {
     'round-ties-to-away': round_ties_to_away,
     'round-ties-to-even': round_ties_to_even,
+    'round-toward-positive': round_toward_positive,
+    'round-toward-negative': round_toward_negative,
+    'round-toward-zero': round_toward_zero,
 }
 
 

@@ -257,6 +257,15 @@ class BinaryInterchangeFormat(object):
         """
         return (1 << self.precision - 2) - 1
 
+    def _largest_finite(self, sign):
+        """
+        Largest representable finite value in this format, with the given sign.
+
+        """
+        exponent = self.qmax
+        significand = (1 << self.precision) - 1
+        return self._finite(sign, exponent, significand)
+
     def _from_value(self, value=0, attributes=None):
         """
         Float<nnn>([value])
@@ -498,7 +507,11 @@ class BinaryInterchangeFormat(object):
         # Signal the overflow exception when appropriate.
         if e > self.qmax:
             inexact = -1 if sign else 1
-            rounded = _signal_overflow(OverflowException(self._infinite(sign)))
+            if rounding_direction.overflow_to_infinity(sign):
+                rounded = self._infinite(sign)
+            else:
+                rounded = self._largest_finite(sign)
+            rounded = _signal_overflow(OverflowException(rounded))
         else:
             inexact = (adj < 0) - (adj > 0) if sign else (adj > 0) - (adj < 0)
             rounded = self._finite(

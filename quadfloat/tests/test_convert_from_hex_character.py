@@ -185,6 +185,27 @@ attribute tininess-detection: after-rounding
 0xap-26 -> 0x3p-24 inexact underflow
 0xbp-26 -> 0x3p-24 inexact underflow
 
+# Out of range values, under various rounding modes.
+attribute rounding-direction: round-ties-to-even
+-0x1p17 -> -Infinity inexact overflow
+0x1p17 -> Infinity inexact overflow
+
+attribute rounding-direction: round-ties-to-away
+-0x1p17 -> -Infinity inexact overflow
+0x1p17 -> Infinity inexact overflow
+
+attribute rounding-direction: round-toward-positive
+-0x1p17 -> -0x0.ffep16 inexact overflow
+0x1p17 -> Infinity inexact overflow
+
+attribute rounding-direction: round-toward-negative
+-0x1p17 -> -Infinity inexact overflow
+0x1p17 -> 0x0.ffep16 inexact overflow
+
+attribute rounding-direction: round-toward-zero
+-0x1p17 -> -0x0.ffep16 inexact overflow
+0x1p17 -> 0x0.ffep16 inexact overflow
+
 """
 
 
