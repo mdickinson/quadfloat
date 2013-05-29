@@ -147,10 +147,8 @@ def parse_test_data(test_content):
     current_operation = None
     current_operation_attributes = {}
 
-    attributes = Attributes(
-        rounding_direction=round_ties_to_even,
-        tininess_detection=AFTER_ROUNDING,
-    )
+    # Attributes to apply to tests.
+    attributes = Attributes()
 
     for line in lines:
         # Strip comments; skip blank lines.
