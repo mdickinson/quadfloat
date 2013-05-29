@@ -452,8 +452,8 @@ class BinaryInterchangeFormat(object):
 
     def _final_round(self, sign, e, q, attributes):
         """
-        Make final rounding adjustment, using the rounding direction from the
-        current context.  For now, only round-ties-to-even is supported.
+        Make final rounding adjustment, using the current rounding-direction
+        attribute.
 
         """
         # Debugging checks.  What's coming in should be in the auxiliary /

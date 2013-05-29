@@ -35,8 +35,8 @@ test16 = """\
 operation: convertFromHexCharacter
 operation destination: binary16
 
-attribute rounding-direction: round-ties-to-even
-attribute tininess-detection: after-rounding
+attribute rounding-direction: roundTiesToEven
+attribute tininess-detection: afterRounding
 
 # Tiny numbers.
 0x0p-26 -> 0x0p-24
@@ -143,7 +143,7 @@ INF -> Infinity
 -INF -> -Infinity
 
 # Tests for underflow before rounding.
-attribute tininess-detection: before-rounding
+attribute tininess-detection: beforeRounding
 0x0.ffcp-14 -> 0x0.ffcp-14 underflow
 0x0.ffep-14 -> 0x1p-14 inexact underflow
 0x0.ffefffffffp-14 -> 0x1p-14 inexact underflow
@@ -156,9 +156,9 @@ attribute tininess-detection: before-rounding
 0x1.003p-14 -> 0x1.004p-14 inexact
 0x1.004p-14 -> 0x1.004p-14
 
-# Now some of the same tests with round-ties-to-away.
-attribute rounding-direction: round-ties-to-away
-attribute tininess-detection: after-rounding
+# Now some of the same tests with roundTiesToAway.
+attribute rounding-direction: roundTiesToAway
+attribute tininess-detection: afterRounding
 
 # Tiny numbers.
 0x0p-26 -> 0x0p-24
@@ -186,7 +186,7 @@ attribute tininess-detection: after-rounding
 0xbp-26 -> 0x3p-24 inexact underflow
 
 # Out of range values, under various rounding modes.
-attribute rounding-direction: round-ties-to-even
+attribute rounding-direction: roundTiesToEven
 -0x1p17 -> -Infinity inexact overflow
 -0x0.fffp16 -> -Infinity inexact overflow
 -0x0.ffefffffffffp16 -> -0x0.ffep16 inexact
@@ -196,7 +196,7 @@ attribute rounding-direction: round-ties-to-even
 0x0.fffp16 -> Infinity inexact overflow
 0x1p17 -> Infinity inexact overflow
 
-attribute rounding-direction: round-ties-to-away
+attribute rounding-direction: roundTiesToAway
 -0x1p17 -> -Infinity inexact overflow
 -0x0.fffp16 -> -Infinity inexact overflow
 -0x0.ffefffffffffp16 -> -0x0.ffep16 inexact
@@ -206,7 +206,7 @@ attribute rounding-direction: round-ties-to-away
 0x0.fffp16 -> Infinity inexact overflow
 0x1p17 -> Infinity inexact overflow
 
-attribute rounding-direction: round-toward-positive
+attribute rounding-direction: roundTowardPositive
 -0x1p17 -> -0x0.ffep16 inexact overflow
 -0x0.ffe000000001p16 -> -0x0.ffep16 inexact
 -0x0.ffep16 -> -0x0.ffep16
@@ -216,7 +216,7 @@ attribute rounding-direction: round-toward-positive
 0x0.ffe000000001p16 -> Infinity inexact overflow
 0x1p17 -> Infinity inexact overflow
 
-attribute rounding-direction: round-toward-negative
+attribute rounding-direction: roundTowardNegative
 -0x1p17 -> -Infinity inexact overflow
 -0x0.ffe000000001p16 -> -Infinity inexact overflow
 -0x0.ffep16 -> -0x0.ffep16
@@ -226,7 +226,7 @@ attribute rounding-direction: round-toward-negative
 0x0.ffe000000001p16 -> 0x0.ffep16 inexact
 0x1p17 -> 0x0.ffep16 inexact overflow
 
-attribute rounding-direction: round-toward-zero
+attribute rounding-direction: roundTowardZero
 -0x1p17 -> -0x0.ffep16 inexact overflow
 -0x0.ffe000000001p16 -> -0x0.ffep16 inexact
 -0x0.ffep16 -> -0x0.ffep16

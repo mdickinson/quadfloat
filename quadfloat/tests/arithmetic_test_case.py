@@ -115,17 +115,17 @@ operations = {
 
 
 tininess_detection_modes = {
-    'after-rounding': AFTER_ROUNDING,
-    'before-rounding': BEFORE_ROUNDING,
+    'afterRounding': AFTER_ROUNDING,
+    'beforeRounding': BEFORE_ROUNDING,
 }
 
 
 rounding_directions = {
-    'round-ties-to-away': round_ties_to_away,
-    'round-ties-to-even': round_ties_to_even,
-    'round-toward-positive': round_toward_positive,
-    'round-toward-negative': round_toward_negative,
-    'round-toward-zero': round_toward_zero,
+    'roundTiesToAway': round_ties_to_away,
+    'roundTiesToEven': round_ties_to_even,
+    'roundTowardPositive': round_toward_positive,
+    'roundTowardNegative': round_toward_negative,
+    'roundTowardZero': round_toward_zero,
 }
 
 
