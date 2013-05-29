@@ -474,19 +474,22 @@ class BinaryInterchangeFormat(object):
 
         if attributes.tininess_detection == BEFORE_ROUNDING:
             # Underflow *before* rounding.
+            # XXX This looks wrong for zeros.
             underflow = e == self.qmin - 3
         elif attributes.tininess_detection == AFTER_ROUNDING:
-            # Underflow *after* rounding. The boundary is:
-            #
-            #    2**qmin * 2**(p - 1) * (1 - 2**(-p-1))
-            #    = 2**qmin * (2**(p - 1) - 2**-2)
-            #    = 2**(qmin - 3) * (2**(p + 2) - 2)
-            #
-            # Values *strictly* smaller than this trigger underflow.
-            underflow = (
-                e == self.qmin - 3 and
-                0 < q < (1 << self.precision + 2) - 2
-            )
+            # Underflow *after* rounding.
+            if e > self.qmin - 3 or q == 0:
+                underflow = False
+            elif bit_length(q) < self.precision + 2:
+                underflow = True
+            else:
+                assert e == self.qmin - 3
+                assert bit_length(q) == self.precision + 2
+                # Problem case.  We have a full self.precision + 2 bits.
+                # Round using the usual rounding mode.
+                rounding_direction = attributes.rounding_direction
+                q2 = rounding_direction.round_quarters(q, sign)
+                underflow = bit_length(q2) <= self.precision
         else:
             assert False, "never get here"  # pragma no cover
 

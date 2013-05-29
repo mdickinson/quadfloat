@@ -130,6 +130,15 @@ attribute tininess-detection: afterRounding
 0x1.0018p16 -> Infinity inexact overflow
 0x1.002p16 -> Infinity inexact overflow
 
+-0x1p17 -> -Infinity inexact overflow
+-0x0.fffp16 -> -Infinity inexact overflow
+-0x0.ffefffffffffp16 -> -0x0.ffep16 inexact
+-0x0.ffep16 -> -0x0.ffep16
+0x0.ffep16 -> 0x0.ffep16
+0x0.ffefffffffffp16 -> 0x0.ffep16 inexact
+0x0.fffp16 -> Infinity inexact overflow
+0x1p17 -> Infinity inexact overflow
+
 # Infinities
 inf -> Infinity
 infinity -> Infinity
@@ -185,8 +194,61 @@ attribute tininess-detection: afterRounding
 0xap-26 -> 0x3p-24 inexact underflow
 0xbp-26 -> 0x3p-24 inexact underflow
 
-# Out of range values, under various rounding modes.
-attribute rounding-direction: roundTiesToEven
+# Subnormal / normal boundary (tininess detected after rounding)
+0x0.ffcp-14 -> 0x0.ffcp-14 underflow
+0x0.ffep-14 -> 0x1p-14 inexact underflow
+0x0.ffefffffffp-14 -> 0x1p-14 inexact underflow
+0x0.fffp-14 -> 0x1p-14 inexact
+0x0.ffffffffffp-14 -> 0x1p-14 inexact
+0x1p-14 -> 0x1p-14
+0x1.001p-14 -> 0x1p-14 inexact
+0x1.002p-14 -> 0x1.004p-14 inexact
+0x1.00200000001p-14 -> 0x1.004p-14 inexact
+0x1.003p-14 -> 0x1.004p-14 inexact
+0x1.004p-14 -> 0x1.004p-14
+0x1.005p-14 -> 0x1.004p-14 inexact
+0x1.005fffffffp-14 -> 0x1.004p-14 inexact
+0x1.006p-14 -> 0x1.008p-14 inexact
+0x1.007p-14 -> 0x1.008p-14 inexact
+0x1.008p-14 -> 0x1.008p-14
+
+# Subnormal / normal boundary (tininess detected before rounding)
+attribute tininess-detection: beforeRounding
+
+0x0.ffcp-14 -> 0x0.ffcp-14 underflow
+0x0.ffep-14 -> 0x1p-14 inexact underflow
+0x0.ffefffffffp-14 -> 0x1p-14 inexact underflow
+0x0.fffp-14 -> 0x1p-14 inexact underflow
+0x0.ffffffffffp-14 -> 0x1p-14 inexact underflow
+0x1p-14 -> 0x1p-14
+
+# Numbers near 1.
+0x0.ffap0 -> 0x0.ffap0
+0x0.ffa8p0 -> 0x0.ffap0 inexact
+0x0.ffbp0 -> 0x0.ffcp0 inexact
+0x0.ffb8p0 -> 0x0.ffcp0 inexact
+0x0.ffcp0 -> 0x0.ffcp0
+0x0.ffc8p0 -> 0x0.ffcp0 inexact
+0x0.ffdp0 -> 0x0.ffep0 inexact
+0x0.ffd8p0 -> 0x0.ffep0 inexact
+0x0.ffep0 -> 0x0.ffep0
+0x0.ffe8p0 -> 0x0.ffep0 inexact
+0x0.fffp0 -> 0x1p0 inexact
+0x0.fff8p0 -> 0x1p0 inexact
+0x0.ffffffffp0 -> 0x1p0 inexact
+0x1p0 -> 0x1p0
+0x1.001p0 -> 0x1p0 inexact
+0x1.002p0 -> 0x1.004p0 inexact
+0x1.00200000001p0 -> 0x1.004p0 inexact
+0x1.003p0 -> 0x1.004p0 inexact
+0x1.004p0 -> 0x1.004p0
+0x1.005p0 -> 0x1.004p0 inexact
+0x1.005fffffffp0 -> 0x1.004p0 inexact
+0x1.006p0 -> 0x1.008p0 inexact
+0x1.007p0 -> 0x1.008p0 inexact
+0x1.008p0 -> 0x1.008p0
+
+# Overflow boundary.
 -0x1p17 -> -Infinity inexact overflow
 -0x0.fffp16 -> -Infinity inexact overflow
 -0x0.ffefffffffffp16 -> -0x0.ffep16 inexact
@@ -196,17 +258,64 @@ attribute rounding-direction: roundTiesToEven
 0x0.fffp16 -> Infinity inexact overflow
 0x1p17 -> Infinity inexact overflow
 
-attribute rounding-direction: roundTiesToAway
--0x1p17 -> -Infinity inexact overflow
--0x0.fffp16 -> -Infinity inexact overflow
--0x0.ffefffffffffp16 -> -0x0.ffep16 inexact
--0x0.ffep16 -> -0x0.ffep16
-0x0.ffep16 -> 0x0.ffep16
-0x0.ffefffffffffp16 -> 0x0.ffep16 inexact
-0x0.fffp16 -> Infinity inexact overflow
-0x1p17 -> Infinity inexact overflow
-
+### Tests for roundTowardPositive
 attribute rounding-direction: roundTowardPositive
+
+# Subnormal / normal boundary, with tininess detected after rounding.
+attribute tininess-detection: afterRounding
+-0x1.004p-14 -> -0x1.004p-14
+-0x1.002p-14 -> -0x1p-14 inexact
+-0x1p-14 -> -0x1p-14
+-0x0.ffffffffffffp-14 -> -0x0.ffcp-14 inexact underflow
+-0x0.fffp-14 -> -0x0.ffcp-14 inexact underflow
+-0x0.ffep-14 -> -0x0.ffcp-14 inexact underflow
+-0x0.ffcp-14 -> -0x0.ffcp-14 underflow
+
+0x0.ffcp-14 -> 0x0.ffcp-14 underflow
+0x0.ffc000000001p-14 -> 0x1p-14 inexact underflow
+0x0.ffep-14 -> 0x1p-14 inexact underflow
+0x0.ffe000000001p-14 -> 0x1p-14 inexact
+0x0.fffp-14 -> 0x1p-14 inexact
+0x1p-14 -> 0x1p-14
+0x1.002p-14 -> 0x1.004p-14 inexact
+0x1.004p-14 -> 0x1.004p-14
+
+# Subnormal / normal boundary, with tininess detected before rounding.
+attribute tininess-detection: beforeRounding
+-0x1.004p-14 -> -0x1.004p-14
+-0x1.002p-14 -> -0x1p-14 inexact
+-0x1p-14 -> -0x1p-14
+-0x0.ffffffffffffp-14 -> -0x0.ffcp-14 inexact underflow
+-0x0.fffp-14 -> -0x0.ffcp-14 inexact underflow
+-0x0.ffep-14 -> -0x0.ffcp-14 inexact underflow
+-0x0.ffcp-14 -> -0x0.ffcp-14 underflow
+
+0x0.ffcp-14 -> 0x0.ffcp-14 underflow
+0x0.ffc000000001p-14 -> 0x1p-14 inexact underflow
+0x0.ffep-14 -> 0x1p-14 inexact underflow
+0x0.ffe000000001p-14 -> 0x1p-14 inexact underflow
+0x0.fffp-14 -> 0x1p-14 inexact underflow
+0x1p-14 -> 0x1p-14
+0x1.002p-14 -> 0x1.004p-14 inexact
+0x1.004p-14 -> 0x1.004p-14
+
+# Values near +/-1.
+-0x1.004p0 -> -0x1.004p0
+-0x1.002p0 -> -0x1p0 inexact
+-0x1p0 -> -0x1p0
+-0x0.ffffffffffffp0 -> -0x0.ffep0 inexact
+-0x0.fffp0 -> -0x0.ffep0 inexact
+-0x0.ffep0 -> -0x0.ffep0
+
+0x0.ffep0 -> 0x0.ffep0
+0x0.ffe000000001p0 -> 0x1p0 inexact
+0x0.fffp0 -> 0x1p0 inexact
+0x1p0 -> 0x1p0
+0x1.000000001p0 -> 0x1.004p0 inexact
+0x1.002p0 -> 0x1.004p0 inexact
+0x1.004p0 -> 0x1.004p0
+
+# Overflow boundary.
 -0x1p17 -> -0x0.ffep16 inexact overflow
 -0x0.ffe000000001p16 -> -0x0.ffep16 inexact
 -0x0.ffep16 -> -0x0.ffep16
@@ -216,7 +325,11 @@ attribute rounding-direction: roundTowardPositive
 0x0.ffe000000001p16 -> Infinity inexact overflow
 0x1p17 -> Infinity inexact overflow
 
+### Tests for roundTowardNegative
 attribute rounding-direction: roundTowardNegative
+attribute tininess-detection: afterRounding
+
+# Overflow boundary.
 -0x1p17 -> -Infinity inexact overflow
 -0x0.ffe000000001p16 -> -Infinity inexact overflow
 -0x0.ffep16 -> -0x0.ffep16
@@ -226,7 +339,11 @@ attribute rounding-direction: roundTowardNegative
 0x0.ffe000000001p16 -> 0x0.ffep16 inexact
 0x1p17 -> 0x0.ffep16 inexact overflow
 
+### Tests for roundTowardZero
 attribute rounding-direction: roundTowardZero
+attribute tininess-detection: afterRounding
+
+# Overflow boundary.
 -0x1p17 -> -0x0.ffep16 inexact overflow
 -0x0.ffe000000001p16 -> -0x0.ffep16 inexact
 -0x0.ffep16 -> -0x0.ffep16
