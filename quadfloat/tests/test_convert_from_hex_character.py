@@ -188,22 +188,52 @@ attribute tininess-detection: after-rounding
 # Out of range values, under various rounding modes.
 attribute rounding-direction: round-ties-to-even
 -0x1p17 -> -Infinity inexact overflow
+-0x0.fffp16 -> -Infinity inexact overflow
+-0x0.ffefffffffffp16 -> -0x0.ffep16 inexact
+-0x0.ffep16 -> -0x0.ffep16
+0x0.ffep16 -> 0x0.ffep16
+0x0.ffefffffffffp16 -> 0x0.ffep16 inexact
+0x0.fffp16 -> Infinity inexact overflow
 0x1p17 -> Infinity inexact overflow
 
 attribute rounding-direction: round-ties-to-away
 -0x1p17 -> -Infinity inexact overflow
+-0x0.fffp16 -> -Infinity inexact overflow
+-0x0.ffefffffffffp16 -> -0x0.ffep16 inexact
+-0x0.ffep16 -> -0x0.ffep16
+0x0.ffep16 -> 0x0.ffep16
+0x0.ffefffffffffp16 -> 0x0.ffep16 inexact
+0x0.fffp16 -> Infinity inexact overflow
 0x1p17 -> Infinity inexact overflow
 
 attribute rounding-direction: round-toward-positive
 -0x1p17 -> -0x0.ffep16 inexact overflow
+-0x0.ffe000000001p16 -> -0x0.ffep16 inexact
+-0x0.ffep16 -> -0x0.ffep16
+-0x0.ffdfffffffffp16 -> -0x0.ffcp16 inexact
+0x0.ffdfffffffffp16 -> 0x0.ffep16 inexact
+0x0.ffep16 -> 0x0.ffep16
+0x0.ffe000000001p16 -> Infinity inexact overflow
 0x1p17 -> Infinity inexact overflow
 
 attribute rounding-direction: round-toward-negative
 -0x1p17 -> -Infinity inexact overflow
+-0x0.ffe000000001p16 -> -Infinity inexact overflow
+-0x0.ffep16 -> -0x0.ffep16
+-0x0.ffdfffffffffp16 -> -0x0.ffep16 inexact
+0x0.ffdfffffffffp16 -> 0x0.ffcp16 inexact
+0x0.ffep16 -> 0x0.ffep16
+0x0.ffe000000001p16 -> 0x0.ffep16 inexact
 0x1p17 -> 0x0.ffep16 inexact overflow
 
 attribute rounding-direction: round-toward-zero
 -0x1p17 -> -0x0.ffep16 inexact overflow
+-0x0.ffe000000001p16 -> -0x0.ffep16 inexact
+-0x0.ffep16 -> -0x0.ffep16
+-0x0.ffdfffffffffp16 -> -0x0.ffcp16 inexact
+0x0.ffdfffffffffp16 -> 0x0.ffcp16 inexact
+0x0.ffep16 -> 0x0.ffep16
+0x0.ffe000000001p16 -> 0x0.ffep16 inexact
 0x1p17 -> 0x0.ffep16 inexact overflow
 
 """
