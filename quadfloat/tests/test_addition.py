@@ -25,6 +25,12 @@ operation source2: binary16
 -0x0p0 0x0p0 -> 0x0p0
 0x1p0 -0x1p0 -> 0x0p0
 
+# Infinities
+Infinity Infinity -> Infinity
+-Infinity -Infinity -> -Infinity
+Infinity -Infinity -> NaN invalid
+-Infinity Infinity -> NaN invalid
+
 attribute rounding-direction: roundTiesToAway
 
 # Zeros

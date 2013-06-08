@@ -25,6 +25,12 @@ attribute rounding-direction: roundTiesToEven
 -0x0p0 -0x0p0 -> 0x0p0
 0x1p0 0x1p0 -> 0x0p0
 
+# Infinities
+Infinity Infinity -> NaN invalid
+-Infinity -Infinity -> NaN invalid
+Infinity -Infinity -> Infinity
+-Infinity Infinity -> -Infinity
+
 attribute rounding-direction: roundTiesToAway
 
 # Zeros
