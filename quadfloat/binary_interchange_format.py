@@ -114,20 +114,20 @@ def _decimal_format(sign, exponent, digits):
     return ('-' if sign else '') + coefficient
 
 
-# Round-to-odd is a useful primitive rounding direction for performing general
-# rounding operations while avoiding problems from double rounding.
+# roundInexactToOdd is a useful primitive rounding direction for performing
+# general rounding operations while avoiding problems from double rounding.
 #
 # The general pattern is: we want to compute a correctly rounded output for
 # some mathematical function f, given zero or more inputs x1, x2, ...., and a
 # rounding direction rnd, and a precision p.  Then:
 #
 #   (1) compute the correctly rounded output to precision p + 2 using
-#       rounding-mode round-to-odd.
+#       rounding-direction roundInexactToOdd.
 #
 #   (2) round the result of step 1 to the desired rounding direction `rnd` with
 #   precision p.
 #
-# The round-to-odd rounding direction has the property that for all the
+# The roundInexactToOdd rounding direction has the property that for all the
 # rounding directions we care about, the p + 2-bit result captures all the
 # information necessary to rounding to any other rounding direction with p
 # bits.  See the _divide_nearest function below for a nice example of this in
@@ -363,8 +363,8 @@ class BinaryInterchangeFormat(object):
             d += exp_diff
 
             # Approximate a / b by number of the form q * 2 ** e.  We compute
-            # two extra bits (hence the '- 2' below) of the result and round to
-            # odd.
+            # two extra bits (hence the '- 2' below) of the result and use
+            # roundInexactToOdd.
             exponent = max(d - self.precision - 2, self.qmin - 3)
             shift = exponent - exp_diff
             significand = _divide_to_odd(
@@ -434,8 +434,8 @@ class BinaryInterchangeFormat(object):
             d += (a >> d if d >= 0 else a << -d) >= b
 
             # Approximate a / b by number of the form q * 2 ** e.  We compute
-            # two extra bits (hence the '- 2' below) of the result and round to
-            # odd.
+            # two extra bits (hence the '- 2' below) of the result and use
+            # roundInexactToOdd.
             exponent = max(d - self.precision - 2, self.qmin - 3)
             significand = _divide_to_odd(
                 a << max(-exponent, 0),
@@ -461,7 +461,7 @@ class BinaryInterchangeFormat(object):
 
         # Auxiliary format: qmin = self.qmin - 3, precision = self.precision +
         # 2, no qmax, no infinities, no nans, conversion to this format always
-        # does round-to-odd.  Negative zero and subnormals are supported.
+        # does roundInexactToOdd.  Negative zero and subnormals are supported.
 
         assert (
             # normal in both auxiliary and output format; 2 extra bits
@@ -492,7 +492,7 @@ class BinaryInterchangeFormat(object):
         else:
             assert False, "never get here"  # pragma no cover
 
-        # Remove extra bit in the subnormal case, using round-to-odd.
+        # Remove extra bit in the subnormal case, using roundInexactToOdd.
         if e == self.qmin - 3:
             q, e = (q >> 1) | (q & 1), e + 1
 
@@ -1171,7 +1171,7 @@ class _BinaryFloat(object):
         if self._type == _INFINITE or self.is_zero() or self._exponent >= 0:
             return self
 
-        # Round to a number of the form n / 4 using round-to-odd.
+        # Round to a number of the form n / 4 using roundInexactToOdd.
         to_quarter = _rshift_to_odd(self._significand, -self._exponent - 2)
 
         # Then round to the nearest integer, using the prescribed rounding
@@ -1942,7 +1942,7 @@ class _BinaryFloat(object):
             # seem right.
             raise ValueError("Cannot convert an infinity to an integer.")
 
-        # Round to odd, with 2 extra bits.
+        # Round using roundInexactToOdd, with 2 extra bits.
         q = _rshift_to_odd(self._significand, -self._exponent - 2)
         q = rounding_direction._rounder(q, self._sign)
 
