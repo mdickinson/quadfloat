@@ -482,8 +482,8 @@ class BinaryInterchangeFormat(object):
             elif bit_length(q) < self.precision + 2:
                 underflow = True
             elif e == self.qmin - 3:
-                # Determine whether the result computed as though the exponent range
-                # were unbounded would underflow.
+                # Determine whether the result computed as though the exponent
+                # range were unbounded would underflow.
                 q2 = attributes.rounding_direction.round_quarters(q, sign)
                 underflow = bit_length(q2) <= self.precision
             else:
