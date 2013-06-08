@@ -19,7 +19,7 @@ class RoundingDirection(object):
 
     def round_quarters(self, n, sign):
         """
-        Round n / 4 to the nearest integer using this rounding mode.
+        Round n / 4 to the nearest integer using this rounding direction.
 
         """
         return self._rounder(n, sign)

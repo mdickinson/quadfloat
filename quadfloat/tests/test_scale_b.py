@@ -25,7 +25,7 @@ from quadfloat.exceptions import OverflowException
 #
 # There's no need for an underflow-after flag: if we've got underflow according
 # to the 'after rounding' definition, we've also got underflow according to the
-# 'before rounding' definition (regardless of rounding mode).
+# 'before rounding' definition (regardless of rounding direction).
 #
 # 'underflow' may be combined with 'inexact';  for 'overflow', the result is
 # always inexact, and we leave it out since it's redundant.
