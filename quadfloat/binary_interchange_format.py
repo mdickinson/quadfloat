@@ -609,8 +609,16 @@ class BinaryInterchangeFormat(object):
             (source2._significand * (-1) ** source2._sign <<
              source2._exponent - exponent)
         )
-        sign = (significand < 0 or
-                significand == 0 and source1._sign and source2._sign)
+        if significand > 0:
+            sign = False
+        elif significand < 0:
+            sign = True
+        elif source1._sign == source2._sign:
+            sign = source1._sign
+        else:
+            # For a zero result arising from different signs, the sign is
+            # determined by the current rounding direction.
+            sign = attributes.rounding_direction.exact_zero_sum_sign()
 
         return self._from_triple(
             sign=sign,
