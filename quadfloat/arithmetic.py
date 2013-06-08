@@ -35,6 +35,36 @@ def _rshift_to_odd(a, shift):
     """
     Compute a / 2**shift. Round inexact results to the nearest *odd* integer.
 
+    >>> _rshift_to_odd(-9, 2)
+    -3
+    >>> _rshift_to_odd(-8, 2)
+    -2
+    >>> _rshift_to_odd(-7, 2)
+    -1
+    >>> _rshift_to_odd(-6, 2)
+    -1
+    >>> _rshift_to_odd(-5, 2)
+    -1
+    >>> _rshift_to_odd(-4, 2)
+    -1
+    >>> _rshift_to_odd(-3, 2)
+    -1
+    >>> _rshift_to_odd(-3, 2)
+    -1
+    >>> _rshift_to_odd(-2, 2)
+    -1
+    >>> _rshift_to_odd(-1, 2)
+    -1
+    >>> _rshift_to_odd(0, 2)
+    0
+    >>> _rshift_to_odd(1, 2)
+    1
+    >>> _rshift_to_odd(2, 2)
+    1
+    >>> _rshift_to_odd(3, 2)
+    1
+    >>> _rshift_to_odd(4, 2)
+    1
     >>> _rshift_to_odd(5, 2)
     1
     >>> _rshift_to_odd(6, 2)
@@ -45,14 +75,49 @@ def _rshift_to_odd(a, shift):
     2
     >>> _rshift_to_odd(9, 2)
     3
+
+    Negative shifts behave like multiplications by 2**-shift.
+
     >>> _rshift_to_odd(5, -2)
     20
 
+    A huge negative shift of 0 should be fine.
+
+    >>> _rshift_to_odd(0, -10**8)
+    0
+
+    Shift by zero should work as expected.
+
+    >>> _rshift_to_odd(4, 0)
+    4
+    >>> _rshift_to_odd(-5, 0)
+    -5
+
+    Huge positive shifts should not present a problem.
+
+    >>> _rshift_to_odd(0, 10**8)
+    0
+    >>> _rshift_to_odd(1, 10**8)
+    1
+    >>> _rshift_to_odd(-1, 10**8)
+    -1
+
     """
+    if a == 0:
+        return 0
+
     if shift <= 0:
         return a << -shift
     else:
-        return (a >> shift) | bool(a & ~(-1 << shift))
+        floor_shift = a >> shift
+        # Special case -2**shift <= a < 2**shift, to avoid gross inefficiency
+        # for cases like _rshift_to_odd(3, 10**9).
+        if floor_shift == -1:
+            return -1
+        elif floor_shift == 0:
+            return 1
+        else:
+            return floor_shift | bool(a & ~(-1 << shift))
 
 
 def _divide_nearest(a, b):
