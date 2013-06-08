@@ -1,6 +1,6 @@
 from quadfloat import binary16
 from quadfloat.tests.base_test_case import BaseTestCase
-from quadfloat.tests.arithmetic_test_case import parse_test_data
+from quadfloat.tests.parse_test_data import parse_test_data
 
 
 binary16_inputs = """\

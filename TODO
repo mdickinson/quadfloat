@@ -61,3 +61,5 @@ Tests
 
 * Use assertSignalsInvalidOperation where appropriate (replace older
   invalid_operation_handler(signal_list.append) mechanism.
+
+* Convert test_scale_b to use ArithmeticTestCase machinery.
