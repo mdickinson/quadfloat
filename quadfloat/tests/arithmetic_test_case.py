@@ -29,16 +29,16 @@ from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
 
 class ArithmeticTestCase(object):
-    def __init__(self, args, result, flags, callable, attributes):
+    def __init__(self, args, result, flags, operation, attributes):
         self.args = args
         self.result = result
         self.flags = flags
-        self.callable = callable
+        self.operation = operation
         self.attributes = attributes
 
     def __repr__(self):
         return "{0} {1} -> {2} {3} {4}".format(
-            self.callable.__name__,
+            self.operation.__name__,
             self.args,
             self.result,
             self.flags,
@@ -53,7 +53,7 @@ class ArithmeticTestCase(object):
         """
         with temporary_attributes(self.attributes):
             with catch_exceptions() as exceptions:
-                actual_result = self.callable(*self.args)
+                actual_result = self.operation(*self.args)
         actual_flags = set()
         actual_inexact = any(
             isinstance(exc, InexactException)
@@ -94,23 +94,11 @@ def catch_exceptions():
                     yield signal_list
 
 
-# Mapping from operations to callables.
-
-def convertFromHexCharacter(destination):
-    destination_format = formats[destination]
-    return destination_format.convert_from_hex_character
-
-
 formats = {
     'binary16': binary16,
     'binary32': binary32,
     'binary64': binary64,
     'binary128': binary128,
-}
-
-
-operations = {
-    'convertFromHexCharacter': convertFromHexCharacter,
 }
 
 
@@ -127,6 +115,13 @@ rounding_directions = {
     'roundTowardNegative': round_toward_negative,
     'roundTowardZero': round_toward_zero,
 }
+
+
+def binary_conversion(format):
+    def convert(hex_character_sequence):
+        with temporary_attributes(READ_ATTRIBUTES):
+            return format.convert_from_hex_character(hex_character_sequence)
+    return convert
 
 
 # Attributes used when reading a RHS.
@@ -199,20 +194,65 @@ def parse_test_data(test_content):
             else:
                 raise ValueError("Unsupported directive: {0}".format(line))
         else:
-            args, results = line.split('->')
-            args = args.split()
-            results = results.split()
-            result_format = formats[
-                current_operation_attributes['destination']]
-            with temporary_attributes(READ_ATTRIBUTES):
-                result = result_format.convert_from_hex_character(results[0])
-            flags = set(results[1:])
             operation_factory = operations[current_operation]
             operation = operation_factory(**current_operation_attributes)
+
+            args, results = line.split('->')
+
+            arguments = args.split()
+            results = results.split()
+
+            #with temporary_attributes(READ_ATTRIBUTES):
+            #    result = result_format.convert_from_hex_character(results[0])
             yield ArithmeticTestCase(
-                args=args,
-                result=result,
-                flags=flags,
-                callable=operation,
+                args=[
+                    argument_conversion(argument)
+                    for argument_conversion, argument in zip(
+                        operation.argument_conversions,
+                        arguments,
+                    )
+                ],
+                result=operation.result_conversion(results[0]),
+                flags=set(results[1:]),
+                operation=operation,
                 attributes=attributes,
             )
+
+
+# Specific operations.
+
+class addition(object):
+    def __init__(self, destination, source1, source2):
+        self.destination = destination
+        self.source1 = source1
+        self.source2 = source2
+        self._destination_format = formats[self.destination]
+        self.argument_conversions = [
+            binary_conversion(formats[self.source1]),
+            binary_conversion(formats[self.source2]),
+        ]
+        self.result_conversion = binary_conversion(formats[self.destination])
+        self.__name__ = "addition"
+
+    def __call__(self, *args):
+        return self._destination_format.addition(*args)
+
+
+class convertFromHexCharacter(object):
+    def __init__(self, destination):
+        self.destination = destination
+        self._destination_format = formats[self.destination]
+        # Strings do not need to be converted.
+        self.argument_conversions = [lambda x: x]
+        # XXX Use .name, not .__name__
+        self.__name__ = '{}-convertFromHexCharacter'.format(destination)
+        self.result_conversion = binary_conversion(formats[self.destination])
+
+    def __call__(self, *args):
+        return self._destination_format.convert_from_hex_character(*args)
+
+
+operations = {
+    'addition': addition,
+    'convertFromHexCharacter': convertFromHexCharacter,
+}
