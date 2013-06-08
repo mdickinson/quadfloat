@@ -159,7 +159,3 @@ class TestScaleB(unittest.TestCase):
                 binary16.convert_to_hex_character(actual),
                 binary16.convert_to_hex_character(expected),
             )
-
-
-if __name__ == '__main__':
-    unittest.main()

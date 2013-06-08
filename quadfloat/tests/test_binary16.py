@@ -1337,7 +1337,3 @@ class TestBinary16(BaseTestCase):
                 'log_b({0}): expected {1}, got {2}'.format(
                     source1, expected, actual)
             )
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -67,5 +67,3 @@ Tests
 
 * Use assertSignalsInvalidOperation where appropriate (replace older
   invalid_operation_handler(signal_list.append) mechanism.
-
-* Remove uses of unittest.main.

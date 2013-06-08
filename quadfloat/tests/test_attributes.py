@@ -144,7 +144,3 @@ class TestPartialAttributes(BaseTestCase):
                     )
                     1 / 0
             self.assertEqual(get_current_attributes().favourite_colour, RED)
-
-
-if __name__ == '__main__':
-    unittest.main()

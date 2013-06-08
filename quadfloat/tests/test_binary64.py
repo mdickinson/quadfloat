@@ -82,7 +82,3 @@ class TestBinary64(BaseTestCase):
                 sqrtx = float('nan')
             result2 = binary64(sqrtx)
             self.assertInterchangeable(result1, result2)
-
-
-if __name__ == '__main__':
-    unittest.main()

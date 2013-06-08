@@ -130,7 +130,3 @@ class TestParsing(BaseTestCase):
         for input in bad_inputs:
             with self.assertRaises(ValueError):
                 parse_infinity(input)
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -284,7 +284,3 @@ class TestMixed(BaseTestCase):
 
         with self.assertRaises(TypeError):
             binary64(3.2) == '3.2'
-
-
-if __name__ == '__main__':
-    unittest.main()

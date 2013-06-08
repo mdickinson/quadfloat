@@ -429,7 +429,3 @@ Expected flags: {2!r}
             binary16.convert_from_hex_character('0x1.8p0'),
             binary16(1.5),
         )
-
-
-if __name__ == '__main__':
-    unittest.main()

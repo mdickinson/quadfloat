@@ -1723,7 +1723,3 @@ class TestBinary128(BaseTestCase):
         ]
         for function, true_relations in functions:
             self._check_signaling_compare_function(function, true_relations)
-
-
-if __name__ == '__main__':
-    unittest.main()

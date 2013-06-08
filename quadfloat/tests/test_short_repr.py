@@ -36,7 +36,3 @@ class TestShortRepr(unittest.TestCase):
                 decimal.Decimal(input_string),
                 decimal.Decimal(output_string),
             )
-
-
-if __name__ == '__main__':
-    unittest.main()

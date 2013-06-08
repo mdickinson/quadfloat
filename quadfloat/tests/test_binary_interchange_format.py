@@ -63,7 +63,3 @@ class TestBinaryInterchangeFormat(BaseTestCase):
         self.assertFalse(binary128 != binary128)
         self.assertFalse(binary128 != binary128_copy)
         self.assertTrue(binary128 != binary256)
-
-
-if __name__ == '__main__':
-    unittest.main()
