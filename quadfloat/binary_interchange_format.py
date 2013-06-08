@@ -474,8 +474,7 @@ class BinaryInterchangeFormat(object):
 
         if attributes.tininess_detection == BEFORE_ROUNDING:
             # Underflow *before* rounding.
-            # XXX This looks wrong for zeros.
-            underflow = e == self.qmin - 3
+            underflow = q != 0 and e == self.qmin - 3
         elif attributes.tininess_detection == AFTER_ROUNDING:
             # Underflow *after* rounding.
             if e > self.qmin - 3 or q == 0:
@@ -538,13 +537,12 @@ class BinaryInterchangeFormat(object):
 
         """
         if significand == 0:
-            return 0, self._zero(sign)
-
-        d = exponent + bit_length(significand)
-
-        # Find q such that q * 2 ** e approximates significand * 2 ** exponent.
-        # Allow two extra bits for the final round.
-        e = max(d - self.precision - 2, self.qmin - 3)
+            e = self.qmin - 3
+        else:
+            e = max(
+                self.qmin - 3,
+                exponent + bit_length(significand) - self.precision - 2,
+            )
         q = _rshift_to_odd(significand, e - exponent)
         return self._final_round(sign, e, q, attributes)
 
