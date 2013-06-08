@@ -238,6 +238,23 @@ class addition(object):
         return self._destination_format.addition(*args)
 
 
+class subtraction(object):
+    def __init__(self, destination, source1, source2):
+        self.destination = destination
+        self.source1 = source1
+        self.source2 = source2
+        self._destination_format = formats[self.destination]
+        self.argument_conversions = [
+            binary_conversion(formats[self.source1]),
+            binary_conversion(formats[self.source2]),
+        ]
+        self.result_conversion = binary_conversion(formats[self.destination])
+        self.__name__ = "subtraction"
+
+    def __call__(self, *args):
+        return self._destination_format.subtraction(*args)
+
+
 class convertFromHexCharacter(object):
     def __init__(self, destination):
         self.destination = destination
@@ -254,5 +271,6 @@ class convertFromHexCharacter(object):
 
 operations = {
     'addition': addition,
+    'subtraction': subtraction,
     'convertFromHexCharacter': convertFromHexCharacter,
 }
