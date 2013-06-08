@@ -8,31 +8,35 @@ from quadfloat.attributes import (
     partial_attributes,
     temporary_attributes,
 )
-from quadfloat.exceptions import (
-    InexactException,
-    OverflowException,
-    UnderflowException,
-)
 
 
-# Context manager for catching all the exceptions that are signaled under
-# default handling.
+class SignalCollector(object):
+    def __init__(self):
+        self.flags = set()
+
+    def set_flag(self, flag):
+        def exception_handler(exc):
+            self.flags.add(flag)
+            return exc.default_handler()
+        return exception_handler
+
 
 @contextlib.contextmanager
 def catch_exceptions():
-    signal_list = []
+    """
+    Context manager for catching all the exceptions that are signaled under
+    default handling.
 
-    def my_handler(exc):
-        signal_list.append(exc)
-        return exc.default_handler()
+    """
+    collector = SignalCollector()
 
     with partial_attributes(
-            invalid_operation_handler=my_handler,
-            inexact_handler=my_handler,
-            overflow_handler=my_handler,
-            underflow_handler=my_handler,
+            inexact_handler=collector.set_flag('inexact'),
+            invalid_operation_handler=collector.set_flag('invalid'),
+            overflow_handler=collector.set_flag('overflow'),
+            underflow_handler=collector.set_flag('underflow'),
     ):
-        yield signal_list
+        yield collector.flags
 
 
 class ArithmeticTestCase(object):
@@ -59,25 +63,6 @@ class ArithmeticTestCase(object):
 
         """
         with temporary_attributes(self.attributes):
-            with catch_exceptions() as exceptions:
+            with catch_exceptions() as actual_flags:
                 actual_result = self.operation(*self.args)
-        actual_flags = set()
-        actual_inexact = any(
-            isinstance(exc, InexactException)
-            for exc in exceptions)
-        if actual_inexact:
-            actual_flags.add('inexact')
-
-        actual_overflow = any(
-            isinstance(exc, OverflowException)
-            for exc in exceptions)
-        if actual_overflow:
-            actual_flags.add('overflow')
-
-        actual_underflow = any(
-            isinstance(exc, UnderflowException)
-            for exc in exceptions)
-        if actual_underflow:
-            actual_flags.add('underflow')
-
         return actual_result, actual_flags
