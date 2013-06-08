@@ -217,7 +217,7 @@ attribute tininess-detection: afterRounding
 
 # Subnormal / normal boundary (tininess detected before rounding)
 attribute tininess-detection: beforeRounding
--0x0p0 -> 0x0p0
+-0x0p0 -> -0x0p0
 0x0p0 -> 0x0p0
 0x0.ffcp-14 -> 0x0.ffcp-14 underflow
 0x0.ffep-14 -> 0x1p-14 inexact underflow
@@ -274,7 +274,7 @@ attribute tininess-detection: afterRounding
 -0x0.fffp-14 -> -0x0.ffcp-14 inexact underflow
 -0x0.ffep-14 -> -0x0.ffcp-14 inexact underflow
 -0x0.ffcp-14 -> -0x0.ffcp-14 underflow
--0x0p0 -> 0x0p0
+-0x0p0 -> -0x0p0
 0x0p0 -> 0x0p0
 0x0.ffcp-14 -> 0x0.ffcp-14 underflow
 0x0.ffc000000001p-14 -> 0x1p-14 inexact underflow
@@ -294,7 +294,7 @@ attribute tininess-detection: beforeRounding
 -0x0.fffp-14 -> -0x0.ffcp-14 inexact underflow
 -0x0.ffep-14 -> -0x0.ffcp-14 inexact underflow
 -0x0.ffcp-14 -> -0x0.ffcp-14 underflow
--0x0p0 -> 0x0p0
+-0x0p0 -> -0x0p0
 0x0p0 -> 0x0p0
 0x0.ffcp-14 -> 0x0.ffcp-14 underflow
 0x0.ffc000000001p-14 -> 0x1p-14 inexact underflow
