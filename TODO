@@ -27,21 +27,15 @@ Documentation
 Features
 --------
 
-* Fill out the rest of the IEEE 754 *required* functionality, excluding rounding modes,
-  exceptions, signals.
+* Fill out the rest of the IEEE 754 *required* operations.
 
-* Implement rounding modes.
-
-  * Addition and subtraction results need to give the correct sign for zero
-    results, depending on the rounding mode.
-
-* Implement exceptions, flags, etc.
+* Implement flags.
 
 * Look at the rest of the recommended functionality (e.g., correctly-rounded
   math operations; could take some time!)
 
-* Support earlier versions of Python (e.g., 3.1, 2.6, 2.5) in addition to the current
-  versions (>= 2.7, >= 3.2).
+* Support earlier versions of Python (e.g., 3.1, 2.5) in addition to the current
+  versions (>= 2.6, >= 3.2).
 
 
 Internal refactoring
