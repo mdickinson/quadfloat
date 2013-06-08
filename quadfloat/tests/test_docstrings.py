@@ -1,5 +1,4 @@
 import doctest
-import unittest
 
 import quadfloat.arithmetic
 import quadfloat.binary_interchange_format

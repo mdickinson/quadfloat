@@ -1,6 +1,5 @@
 import math
 import sys
-import unittest
 
 from quadfloat import BinaryInterchangeFormat
 from quadfloat import binary16, binary32, binary64, binary128

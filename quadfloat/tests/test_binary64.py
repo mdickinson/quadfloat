@@ -3,11 +3,9 @@ Random test for the binary64 type, comparing results with the
 hardware-generated values.
 
 """
-
 import math
 import random
 import struct
-import unittest
 
 from quadfloat.binary_interchange_format import BinaryInterchangeFormat
 from quadfloat.tests.base_test_case import BaseTestCase

@@ -1,5 +1,3 @@
-import unittest
-
 from quadfloat.parsing import (
     parse_finite_decimal,
     parse_finite_hexadecimal,

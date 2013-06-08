@@ -1,6 +1,5 @@
 import contextlib
 import decimal
-import unittest
 
 from quadfloat import binary16, binary32, binary64
 from quadfloat.arithmetic import _divide_nearest

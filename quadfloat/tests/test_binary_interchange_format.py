@@ -1,5 +1,4 @@
 import math
-import unittest
 
 from quadfloat.binary_interchange_format import BinaryInterchangeFormat
 from quadfloat.tests.base_test_case import BaseTestCase

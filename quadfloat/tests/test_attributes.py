@@ -2,8 +2,6 @@
 Tests for attribute mechanism.
 
 """
-import unittest
-
 from quadfloat.attributes import (
     Attributes,
     get_current_attributes,

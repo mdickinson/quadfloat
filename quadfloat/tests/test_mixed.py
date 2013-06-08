@@ -2,9 +2,6 @@
 Tests for mixed-precision arithmetic.
 
 """
-
-import unittest
-
 from quadfloat import binary16, binary32, binary64, binary128
 from quadfloat.tests.base_test_case import BaseTestCase
 
