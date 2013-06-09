@@ -56,5 +56,3 @@ Tests
 
 * The operation should not contain information about argument formats; that's
   only necessary for parsing the test data, not for executing the operation.
-
-* Move test_data into separate files.
