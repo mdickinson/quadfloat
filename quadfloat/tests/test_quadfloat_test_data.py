@@ -11,7 +11,6 @@ class QuadfloatTestDataCase(unittest.TestCase):
 
         for test_case in parse_test_data(test_data):
             if test_case.actual_result != test_case.expected_result:
-                print "Diffrent"
                 self.fail(
                     "Error in test case:\n{0!r}".format(test_case)
                 )
