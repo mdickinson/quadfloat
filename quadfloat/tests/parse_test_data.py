@@ -183,6 +183,18 @@ class subtraction(object):
         return self._destination_format.subtraction(*args)
 
 
+class roundToIntegralTiesToAway(object):
+    def __init__(self, source):
+        self.source = source
+        self.argument_conversions = [binary_conversion(formats[self.source])]
+        self.result_conversion = binary_conversion(formats[self.source])
+        self.__name__ = "roundToIntegralTiesToAway"
+
+    def __call__(self, *args):
+        arg, = args
+        return arg.round_to_integral_ties_to_away()
+
+
 class convertFromHexCharacter(object):
     def __init__(self, destination):
         self.destination = destination
@@ -201,4 +213,5 @@ operations = {
     'addition': addition,
     'subtraction': subtraction,
     'convertFromHexCharacter': convertFromHexCharacter,
+    'roundToIntegralTiesToAway': roundToIntegralTiesToAway
 }
