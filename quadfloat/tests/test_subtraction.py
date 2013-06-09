@@ -1,4 +1,5 @@
-from quadfloat.tests.base_test_case import BaseTestCase
+import unittest
+
 from quadfloat.tests.parse_test_data import parse_test_data
 
 
@@ -70,24 +71,10 @@ attribute rounding-direction: roundTowardZero
 """
 
 
-class TestSubtraction(BaseTestCase):
+class TestSubtraction(unittest.TestCase):
     def test_data(self):
-        for arithmetic_test_case in parse_test_data(test_data):
-            expected_result = arithmetic_test_case.result
-            expected_flags = arithmetic_test_case.flags
-            actual_result, actual_flags = arithmetic_test_case.execute()
-
-            self.assertInterchangeable(
-                actual_result,
-                expected_result,
-                msg=str(arithmetic_test_case))
-
-            self.assertEqual(
-                actual_flags,
-                expected_flags,
-                msg=FAILURE_MSG_TEMPLATE.format(
-                    arithmetic_test_case,
-                    actual_flags,
-                    expected_flags,
-                ),
-            )
+        for test_case in parse_test_data(test_data):
+            if test_case.actual_result != test_case.expected_result:
+                self.fail(
+                    "Error in test case:\n{0!r}".format(test_case)
+                )

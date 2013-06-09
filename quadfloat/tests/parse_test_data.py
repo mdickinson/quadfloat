@@ -19,7 +19,10 @@ from quadfloat.rounding_direction import (
 )
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
-from quadfloat.tests.arithmetic_test_case import ArithmeticTestCase
+from quadfloat.tests.arithmetic_test_case import (
+    ArithmeticTestCase,
+    ArithmeticTestResult,
+)
 
 formats = {
     'binary16': binary16,
@@ -125,23 +128,21 @@ def parse_test_data(test_content):
             operation_factory = operations[current_operation]
             operation = operation_factory(**current_operation_attributes)
 
-            args, results = line.split('->')
-
-            arguments = args.split()
-            results = results.split()
-
-            #with temporary_attributes(READ_ATTRIBUTES):
-            #    result = result_format.convert_from_hex_character(results[0])
+            lhs, rhs = line.split('->')
+            arguments = lhs.split()
+            results = rhs.split()
             yield ArithmeticTestCase(
-                args=[
+                operands=[
                     argument_conversion(argument)
                     for argument_conversion, argument in zip(
                         operation.argument_conversions,
                         arguments,
                     )
                 ],
-                result=operation.result_conversion(results[0]),
-                flags=set(results[1:]),
+                expected_result=ArithmeticTestResult(
+                    result=operation.result_conversion(results[0]),
+                    flags=set(results[1:]),
+                ),
                 operation=operation,
                 attributes=attributes,
             )
@@ -160,7 +161,6 @@ class addition(object):
             binary_conversion(formats[self.source2]),
         ]
         self.result_conversion = binary_conversion(formats[self.destination])
-        self.__name__ = "addition"
 
     def __call__(self, *args):
         return self._destination_format.addition(*args)
@@ -177,7 +177,6 @@ class subtraction(object):
             binary_conversion(formats[self.source2]),
         ]
         self.result_conversion = binary_conversion(formats[self.destination])
-        self.__name__ = "subtraction"
 
     def __call__(self, *args):
         return self._destination_format.subtraction(*args)
@@ -188,7 +187,6 @@ class roundToIntegralTiesToAway(object):
         self.source = source
         self.argument_conversions = [binary_conversion(formats[self.source])]
         self.result_conversion = binary_conversion(formats[self.source])
-        self.__name__ = "roundToIntegralTiesToAway"
 
     def __call__(self, *args):
         arg, = args
@@ -201,8 +199,6 @@ class convertFromHexCharacter(object):
         self._destination_format = formats[self.destination]
         # Strings do not need to be converted.
         self.argument_conversions = [lambda x: x]
-        # XXX Use .name, not .__name__
-        self.__name__ = '{}-convertFromHexCharacter'.format(destination)
         self.result_conversion = binary_conversion(formats[self.destination])
 
     def __call__(self, *args):
