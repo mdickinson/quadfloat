@@ -11,13 +11,6 @@ Bugs
 * Missing documentation.
 
 
-Nitpicks / consistency
-----------------------
-
-Don't talk about 'halfway' cases in docstrings; use 'ties' for consistency with
-the standard.
-
-
 Documentation
 -------------
 
@@ -63,3 +56,7 @@ Tests
   invalid_operation_handler(signal_list.append) mechanism.
 
 * Convert test_scale_b to use ArithmeticTestCase machinery.
+
+* Don't use operation.__name__.  In addition, the operation should not
+  contain information about argument formats;  that's only necessary
+  for parsing the test data, not for executing the operation.

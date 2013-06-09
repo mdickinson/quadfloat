@@ -58,9 +58,7 @@ class TestBinary16(BaseTestCase):
         self.assertInterchangeable(binary16(0.9), binary16('0.89990234375'))
 
         # Test round-half-to-even
-
         self.assertEqual(binary16(2048.0).encode(), b'\x00\x68')
-        # halfway case
         self.assertEqual(binary16(2048.9999999999).encode(), b'\x00\x68')
         self.assertEqual(binary16(2049.0).encode(), b'\x00\x68')
         self.assertEqual(binary16(2049.0000000001).encode(), b'\x01\x68')

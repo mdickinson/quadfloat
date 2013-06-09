@@ -1195,8 +1195,8 @@ class _BinaryFloat(object):
 
     def round_to_integral_ties_to_even(self):
         """
-        Round self to an integral value in the same format,
-        with halfway cases rounding to even.
+        Round self to an integral value in the same format, using
+        the roundTiesToEven rounding direction.
 
         """
         return self._round_to_integral_general(
@@ -1206,8 +1206,8 @@ class _BinaryFloat(object):
 
     def round_to_integral_ties_to_away(self):
         """
-        Round self to an integral value in the same format,
-        with halfway cases rounding away from zero.
+        Round self to an integral value in the same format, using
+        the roundTiesToAway rounding direction.
 
         """
         return self._round_to_integral_general(
@@ -1217,8 +1217,8 @@ class _BinaryFloat(object):
 
     def round_to_integral_toward_zero(self):
         """
-        Round self to an integral value in the same format,
-        truncating any fractional part.
+        Round self to an integral value in the same format, using
+        the roundTowardZero rounding direction.
 
         """
         return self._round_to_integral_general(
@@ -1228,8 +1228,8 @@ class _BinaryFloat(object):
 
     def round_to_integral_toward_positive(self):
         """
-        Round self to an integral value in the same format,
-        rounding non-exact integers to the next higher integer.
+        Round self to an integral value in the same format, using
+        the roundTowardPositive rounding direction.
 
         In other words, this is the ceiling operation.
 
@@ -1241,8 +1241,8 @@ class _BinaryFloat(object):
 
     def round_to_integral_toward_negative(self):
         """
-        Round self to an integral value in the same format,
-        rounding non-exact integers to the next lower integer.
+        Round self to an integral value in the same format, using
+        the roundTowardNegative rounding direction.
 
         In other words, this is the floor operation.
 
@@ -1950,8 +1950,8 @@ class _BinaryFloat(object):
 
     def convert_to_integer_ties_to_even(self):
         """
-        Round 'self' to the nearest Python integer, with halfway cases rounded
-        to even.
+        Round 'self' to the nearest Python integer, using the roundTiesToEven
+        rounding direction.
 
         """
         return self._convert_to_integer_general(
@@ -1960,7 +1960,8 @@ class _BinaryFloat(object):
 
     def convert_to_integer_toward_zero(self):
         """
-        Round 'self' to a Python integer, truncating the fractional part.
+        Round 'self' to a Python integer, using the roundTowardZero rounding
+        direction.
 
         """
         return self._convert_to_integer_general(
@@ -1969,7 +1970,8 @@ class _BinaryFloat(object):
 
     def convert_to_integer_toward_positive(self):
         """
-        Round 'self' to a Python integer, rounding toward positive infinity.
+        Round 'self' to a Python integer, using the roundTowardPositive
+        rounding direction.
 
         In other words, return the 'ceiling' of 'self' as a Python integer.
 
@@ -1980,7 +1982,8 @@ class _BinaryFloat(object):
 
     def convert_to_integer_toward_negative(self):
         """
-        Round 'self' to a Python integer, rounding toward negative infinity.
+        Round 'self' to a Python integer, using the roundTowardNegative
+        rounding direction.
 
         In other words, return the 'floor' of 'self' as a Python integer.
 
@@ -1991,8 +1994,8 @@ class _BinaryFloat(object):
 
     def convert_to_integer_ties_to_away(self):
         """
-        Round 'self' to the nearest Python integer, with halfway cases rounded
-        away from zero.
+        Round 'self' to the nearest Python integer, using the roundTiesToAway
+        rounding direction.
 
         """
         return self._convert_to_integer_general(
