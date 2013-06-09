@@ -6,6 +6,8 @@ Bugs
 
 * Special methods aren't correctly returning NotImplemented.
 
+* There's a test failure on Python 3.3, due to access of Decimal internals.
+
 * Lots of public methods are missing docstrings.
 
 * Missing documentation.
@@ -26,9 +28,6 @@ Features
 
 * Look at the rest of the recommended functionality (e.g., correctly-rounded
   math operations; could take some time!)
-
-* Support earlier versions of Python (e.g., 3.1, 2.5) in addition to the current
-  versions (>= 2.6, >= 3.2).
 
 
 Internal refactoring
@@ -57,3 +56,5 @@ Tests
 
 * The operation should not contain information about argument formats; that's
   only necessary for parsing the test data, not for executing the operation.
+
+* Move test_data into separate files.
