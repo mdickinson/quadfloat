@@ -3,13 +3,6 @@ import unittest
 from quadfloat.tests.parse_test_data import parse_test_data
 
 
-FAILURE_MSG_TEMPLATE = """\
-Flags don't match for failed test: {0!r}
-Actual flags: {1!r}
-Expected flags: {2!r}
-"""
-
-
 test_data = """\
 operation: subtraction
 operation destination: binary16
