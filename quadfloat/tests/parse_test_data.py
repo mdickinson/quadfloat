@@ -205,9 +205,23 @@ class convertFromHexCharacter(object):
         return self._destination_format.convert_from_hex_character(*args)
 
 
+class scaleB(object):
+    def __init__(self, source):
+        self.source = source
+        self.argument_conversions = [
+            binary_conversion(formats[self.source]),
+            int,
+        ]
+        self.result_conversion = binary_conversion(formats[self.source])
+
+    def __call__(self, *args):
+        return args[0].scale_b(args[1])
+
+
 operations = {
     'addition': addition,
     'subtraction': subtraction,
     'convertFromHexCharacter': convertFromHexCharacter,
-    'roundToIntegralTiesToAway': roundToIntegralTiesToAway
+    'roundToIntegralTiesToAway': roundToIntegralTiesToAway,
+    'scaleB': scaleB,
 }

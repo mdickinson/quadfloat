@@ -55,8 +55,5 @@ Tests
 * Use assertSignalsInvalidOperation where appropriate (replace older
   invalid_operation_handler(signal_list.append) mechanism.
 
-* Convert test_scale_b to use ArithmeticTestCase machinery.
-
-* Don't use operation.__name__.  In addition, the operation should not
-  contain information about argument formats;  that's only necessary
-  for parsing the test data, not for executing the operation.
+* The operation should not contain information about argument formats; that's
+  only necessary for parsing the test data, not for executing the operation.
