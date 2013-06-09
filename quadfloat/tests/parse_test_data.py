@@ -182,6 +182,22 @@ class subtraction(object):
         return self._destination_format.subtraction(*args)
 
 
+class division(object):
+    def __init__(self, destination, source1, source2):
+        self.destination = destination
+        self.source1 = source1
+        self.source2 = source2
+        self._destination_format = formats[self.destination]
+        self.argument_conversions = [
+            binary_conversion(formats[self.source1]),
+            binary_conversion(formats[self.source2]),
+        ]
+        self.result_conversion = binary_conversion(formats[self.destination])
+
+    def __call__(self, *args):
+        return self._destination_format.division(*args)
+
+
 class roundToIntegralTiesToAway(object):
     def __init__(self, source):
         self.source = source
@@ -221,6 +237,7 @@ class scaleB(object):
 operations = {
     'addition': addition,
     'subtraction': subtraction,
+    'division': division,
     'convertFromHexCharacter': convertFromHexCharacter,
     'roundToIntegralTiesToAway': roundToIntegralTiesToAway,
     'scaleB': scaleB,

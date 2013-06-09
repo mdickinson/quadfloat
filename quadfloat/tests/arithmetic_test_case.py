@@ -30,6 +30,7 @@ class SignalCollector(object):
             invalid_operation_handler=self.set_flag('invalid'),
             overflow_handler=self.set_flag('overflow'),
             underflow_handler=self.set_flag('underflow'),
+            divide_by_zero_handler=self.set_flag('zero-division')
         )
 
     def set_flag(self, flag):

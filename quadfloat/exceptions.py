@@ -32,7 +32,7 @@ class InvalidBooleanOperationException(object):
 
 class SignalingNaNException(object):
     """
-    InvalidOperation exception thrown as a result of an arithmetic
+    InvalidOperation exception signaled as a result of an arithmetic
     operation encountering a signaling NaN.
 
     """
@@ -47,7 +47,7 @@ class SignalingNaNException(object):
 
 class InexactException(object):
     """
-    Exception thrown when a result is inexact.
+    Exception signaled when a result is inexact.
 
     """
     def __init__(self, rounded):
@@ -59,7 +59,7 @@ class InexactException(object):
 
 class UnderflowException(object):
     """
-    Exception thrown when a result is non-zero and tiny.
+    Exception signaled when a result is non-zero and tiny.
 
     """
     def __init__(self, rounded, inexact):
@@ -77,7 +77,7 @@ class UnderflowException(object):
 
 class OverflowException(object):
     """
-    Exception thrown when a result overflows.
+    Exception signaled when a result overflows.
 
     """
     def __init__(self, rounded):
@@ -89,6 +89,21 @@ class OverflowException(object):
         return _signal_inexact(InexactException(self.rounded))
 
 
+class DivideByZeroException(object):
+    """
+    Exception signaled when an operation with finite operands
+    results in an exact infinity.
+
+    """
+    def __init__(self, sign, format):
+        self.sign = sign
+        self.format = format
+
+    def default_handler(self):
+        # Local import to avoid circular imports.
+        return self.format._infinite(self.sign)
+
+
 def _default_handler(exception):
     return exception.default_handler()
 
@@ -97,3 +112,4 @@ default_invalid_operation_handler = _default_handler
 default_inexact_handler = _default_handler
 default_overflow_handler = _default_handler
 default_underflow_handler = _default_handler
+default_divide_by_zero_handler = _default_handler

@@ -1,0 +1,40 @@
+attribute rounding-direction: roundTiesToEven
+attribute tininess-detection: afterRounding
+
+operation: division
+operation destination: binary16
+operation source1: binary16
+operation source2: binary16
+
+# Checking signs.
+0x0p0 0x1p0 -> 0x0p0
+-0x0p0 0x1p0 -> -0x0p0
+0x0p0 -0x1p0 -> -0x0p0
+-0x0p0 -0x1p0 -> 0x0p0
+
+# Division by zero.
+0x1p0 0x0p0 -> Infinity zero-division
+-0x1p0 0x0p0 -> -Infinity zero-division
+0x1p0 -0x0p0 -> -Infinity zero-division
+-0x1p0 -0x0p0 -> Infinity zero-division
+
+0x0p0 0x0p0 -> NaN invalid
+-0x0p0 0x0p0 -> NaN invalid  # should these be -NaN?
+0x0p0 -0x0p0 -> NaN invalid
+-0x0p0 -0x0p0 -> NaN invalid
+
+# Infinities
+Infinity Infinity -> NaN invalid
+-Infinity Infinity -> NaN invalid  # should these be -NaN?
+Infinity -Infinity -> NaN invalid
+-Infinity -Infinity -> NaN invalid
+
+0x0p0 Infinity -> 0x0p0
+-0x0p0 Infinity -> -0x0p0
+0x0p0 -Infinity -> -0x0p0
+-0x0p0 -Infinity -> 0x0p0
+
+Infinity 0x0p0 -> Infinity
+Infinity -0x0p0 -> -Infinity
+-Infinity 0x0p0 -> -Infinity
+-Infinity -0x0p0 -> Infinity

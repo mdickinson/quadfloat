@@ -16,6 +16,7 @@ from quadfloat.attributes import (
     _signal_inexact,
     _signal_overflow,
     _signal_underflow,
+    _signal_divide_by_zero,
     get_current_attributes,
     set_current_attributes,
     Attributes,
@@ -37,6 +38,7 @@ from quadfloat.exceptions import (
     default_invalid_operation_handler,
     default_overflow_handler,
     default_underflow_handler,
+    default_divide_by_zero_handler,
     InexactException,
     InvalidBooleanOperationException,
     InvalidIntegerOperationException,
@@ -44,6 +46,7 @@ from quadfloat.exceptions import (
     OverflowException,
     UnderflowException,
     SignalingNaNException,
+    DivideByZeroException,
 )
 from quadfloat.interval import Interval as _Interval
 from quadfloat.parsing import (
@@ -69,6 +72,7 @@ _default_attributes = Attributes(
     invalid_operation_handler=default_invalid_operation_handler,
     overflow_handler=default_overflow_handler,
     underflow_handler=default_underflow_handler,
+    divide_by_zero_handler=default_divide_by_zero_handler,
 )
 
 set_current_attributes(_default_attributes)
@@ -702,7 +706,7 @@ class BinaryInterchangeFormat(object):
                 return self._zero(sign=sign)
 
         if source2.is_zero():
-            return self._infinite(sign=sign)
+            return _signal_divide_by_zero(DivideByZeroException(sign, self))
 
         # Finite / finite case.
 

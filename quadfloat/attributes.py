@@ -120,6 +120,10 @@ def _current_underflow_handler():
     return get_current_attributes().underflow_handler
 
 
+def _current_divide_by_zero_handler():
+    return get_current_attributes().divide_by_zero_handler
+
+
 # Context managers to set and restore particular attributes.
 
 @contextlib.contextmanager
@@ -127,6 +131,8 @@ def rounding_direction(new_rounding_direction):
     with partial_attributes(rounding_direction=new_rounding_direction):
         yield
 
+
+# XXX Do we need these?
 
 @contextlib.contextmanager
 def inexact_handler(new_handler):
@@ -168,3 +174,7 @@ def _signal_overflow(exception):
 
 def _signal_underflow(exception):
     return _current_underflow_handler()(exception)
+
+
+def _signal_divide_by_zero(exception):
+    return _current_divide_by_zero_handler()(exception)
