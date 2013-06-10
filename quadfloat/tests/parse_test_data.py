@@ -198,6 +198,17 @@ def unary_source_operation(method_name):
     return unary_operation_factory
 
 
+def binary_source_operation(method_name):
+    def binary_operation_factory(source):
+        source_format = formats[source]
+        return TestOperation(
+            operation=HomogeneousOperation(method_name),
+            operand_conversions=[binary_conversion(source_format)] * 2,
+            result_conversion=binary_conversion(source_format),
+        )
+    return binary_operation_factory
+
+
 def convertFromHexCharacter(destination):
     destination_format = formats[destination]
     return TestOperation(
@@ -229,6 +240,8 @@ operation_factories = {
     'roundToIntegralExact': unary_source_operation('round_to_integral_exact'),
     'nextUp': unary_source_operation('next_up'),
     'nextDown': unary_source_operation('next_down'),
+    'remainder': binary_source_operation('remainder'),
+
     'addition': binary_operation_factory('addition'),
     'subtraction': binary_operation_factory('subtraction'),
     'division': binary_operation_factory('division'),

@@ -908,18 +908,7 @@ class TestBinary16(BaseTestCase):
         with self.assertRaises(ValueError):
             x.remainder(y)
 
-        # Signaling NaNs.
-        snan_triples = [
-            ('snan(123)', 'snan(456)', 'nan(123)'),
-            ('nan(234)', '-snan(567)', '-nan(567)'),
-            ('snan(789)', '-nan(123)', 'nan(789)'),
-        ]
-        for source1, source2, expected in snan_triples:
-            source1 = binary16(source1)
-            source2 = binary16(source2)
-            with self.assertSignalsInvalidOperation():
-                source1.remainder(source2)
-
+        # Signaling NaNs are tested in remainder.qtest.
         test_triples = [
             # Quiet NaNs
             ('nan(123)', 'nan(456)', 'nan(123)'),
