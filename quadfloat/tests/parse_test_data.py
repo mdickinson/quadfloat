@@ -220,14 +220,18 @@ def scaleB(source):
 
 
 operation_factories = {
-    'addition': binary_operation_factory('addition'),
-    'subtraction': binary_operation_factory('subtraction'),
-    'division': binary_operation_factory('division'),
-    'convertFromHexCharacter': convertFromHexCharacter,
+    # 5.3.1 General operations
     'roundToIntegralTiesToEven': unary_source_operation('round_to_integral_ties_to_even'),
     'roundToIntegralTiesToAway': unary_source_operation('round_to_integral_ties_to_away'),
     'roundToIntegralTowardZero': unary_source_operation('round_to_integral_toward_zero'),
     'roundToIntegralTowardPositive': unary_source_operation('round_to_integral_toward_positive'),
     'roundToIntegralTowardNegative': unary_source_operation('round_to_integral_toward_negative'),
+    'roundToIntegralExact': unary_source_operation('round_to_integral_exact'),
+    'nextUp': unary_source_operation('next_up'),
+    'nextDown': unary_source_operation('next_down'),
+    'addition': binary_operation_factory('addition'),
+    'subtraction': binary_operation_factory('subtraction'),
+    'division': binary_operation_factory('division'),
+    'convertFromHexCharacter': convertFromHexCharacter,
     'scaleB': scaleB,
 }
