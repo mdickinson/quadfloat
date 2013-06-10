@@ -47,6 +47,46 @@ class SignalCollector(object):
         return self.set_handlers.__exit__(*exc_info)
 
 
+class ArithmeticOperation(object):
+    """
+    Abstract base class.
+
+    """
+    def __str__(self):
+        raise NotImplementedError
+
+    def __call__(self, *args):
+        # An arithmetic operation should be callable.
+        raise NotImplementedError
+
+
+class HomogeneousOperation(ArithmeticOperation):
+    def __init__(self, method_name):
+        self.method_name = method_name
+
+    def __str__(self):
+        return self.method_name
+
+    def __call__(self, *args):
+        first = args[0]
+        rest = args[1:]
+        method = getattr(first, self.method_name)
+        return method(*rest)
+
+
+class FormatOfOperation(ArithmeticOperation):
+    def __init__(self, format, method_name):
+        self.format = format
+        self.method_name = method_name
+
+    def __str__(self):
+        return "{}-{}".format(self.format, self.method_name)
+
+    def __call__(self, *args):
+        method = getattr(self.format, self.method_name)
+        return method(*args)
+
+
 class ArithmeticTestResult(object):
     def __init__(self, result, flags):
         self.result = result

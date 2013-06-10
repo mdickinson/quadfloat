@@ -22,6 +22,8 @@ from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 from quadfloat.tests.arithmetic_test_case import (
     ArithmeticTestCase,
     ArithmeticTestResult,
+    FormatOfOperation,
+    HomogeneousOperation,
 )
 
 formats = {
@@ -45,6 +47,10 @@ rounding_directions = {
     'roundTowardNegative': round_toward_negative,
     'roundTowardZero': round_toward_zero,
 }
+
+
+def identity_conversion(string):
+    return string
 
 
 def binary_conversion(format):
@@ -125,7 +131,7 @@ def parse_test_data(test_content):
             else:
                 raise ValueError("Unsupported directive: {0}".format(line))
         else:
-            operation_factory = operations[current_operation]
+            operation_factory = operation_factories[current_operation]
             operation = operation_factory(**current_operation_attributes)
 
             lhs, rhs = line.split('->')
@@ -133,9 +139,9 @@ def parse_test_data(test_content):
             results = rhs.split()
             yield ArithmeticTestCase(
                 operands=[
-                    argument_conversion(argument)
-                    for argument_conversion, argument in zip(
-                        operation.argument_conversions,
+                    operand_conversion(argument)
+                    for operand_conversion, argument in zip(
+                        operation.operand_conversions,
                         arguments,
                     )
                 ],
@@ -143,102 +149,85 @@ def parse_test_data(test_content):
                     result=operation.result_conversion(results[0]),
                     flags=set(results[1:]),
                 ),
-                operation=operation,
+                operation=operation.operation,
                 attributes=attributes,
             )
 
 
 # Specific operations.
 
-class addition(object):
-    def __init__(self, destination, source1, source2):
-        self.destination = destination
-        self.source1 = source1
-        self.source2 = source2
-        self._destination_format = formats[self.destination]
-        self.argument_conversions = [
-            binary_conversion(formats[self.source1]),
-            binary_conversion(formats[self.source2]),
-        ]
-        self.result_conversion = binary_conversion(formats[self.destination])
-
-    def __call__(self, *args):
-        return self._destination_format.addition(*args)
+class TestOperation(object):
+    def __init__(self, operation, operand_conversions, result_conversion):
+        self.operation = operation
+        self.operand_conversions = operand_conversions
+        self.result_conversion = result_conversion
 
 
-class subtraction(object):
-    def __init__(self, destination, source1, source2):
-        self.destination = destination
-        self.source1 = source1
-        self.source2 = source2
-        self._destination_format = formats[self.destination]
-        self.argument_conversions = [
-            binary_conversion(formats[self.source1]),
-            binary_conversion(formats[self.source2]),
-        ]
-        self.result_conversion = binary_conversion(formats[self.destination])
+def binary_operation_factory(method_name):
+    """
+    Factory for binary formatOf operations.
 
-    def __call__(self, *args):
-        return self._destination_format.subtraction(*args)
+    """
+    def operation_factory(destination, source1, source2):
+        """
+        Factory for binary formatOf operations.
 
-
-class division(object):
-    def __init__(self, destination, source1, source2):
-        self.destination = destination
-        self.source1 = source1
-        self.source2 = source2
-        self._destination_format = formats[self.destination]
-        self.argument_conversions = [
-            binary_conversion(formats[self.source1]),
-            binary_conversion(formats[self.source2]),
-        ]
-        self.result_conversion = binary_conversion(formats[self.destination])
-
-    def __call__(self, *args):
-        return self._destination_format.division(*args)
+        """
+        destination_format = formats[destination]
+        source1_format = formats[source1]
+        source2_format = formats[source2]
+        return TestOperation(
+            operation=FormatOfOperation(destination_format, method_name),
+            operand_conversions=[
+                binary_conversion(source1_format),
+                binary_conversion(source2_format),
+            ],
+            result_conversion=binary_conversion(destination_format),
+        )
+    return operation_factory
 
 
-class roundToIntegralTiesToAway(object):
-    def __init__(self, source):
-        self.source = source
-        self.argument_conversions = [binary_conversion(formats[self.source])]
-        self.result_conversion = binary_conversion(formats[self.source])
-
-    def __call__(self, *args):
-        arg, = args
-        return arg.round_to_integral_ties_to_away()
-
-
-class convertFromHexCharacter(object):
-    def __init__(self, destination):
-        self.destination = destination
-        self._destination_format = formats[self.destination]
-        # Strings do not need to be converted.
-        self.argument_conversions = [lambda x: x]
-        self.result_conversion = binary_conversion(formats[self.destination])
-
-    def __call__(self, *args):
-        return self._destination_format.convert_from_hex_character(*args)
+def unary_source_operation(method_name):
+    def unary_operation_factory(source):
+        source_format = formats[source]
+        return TestOperation(
+            operation=HomogeneousOperation(method_name),
+            operand_conversions=[binary_conversion(source_format)],
+            result_conversion=binary_conversion(source_format),
+        )
+    return unary_operation_factory
 
 
-class scaleB(object):
-    def __init__(self, source):
-        self.source = source
-        self.argument_conversions = [
-            binary_conversion(formats[self.source]),
-            int,
-        ]
-        self.result_conversion = binary_conversion(formats[self.source])
+def convertFromHexCharacter(destination):
+    destination_format = formats[destination]
+    return TestOperation(
+        operation=FormatOfOperation(
+            destination_format,
+            'convert_from_hex_character',
+        ),
+        operand_conversions=[identity_conversion],
+        result_conversion=binary_conversion(destination_format),
+    )
 
-    def __call__(self, *args):
-        return args[0].scale_b(args[1])
+
+def scaleB(source):
+    source_format = formats[source]
+    return TestOperation(
+        operation=HomogeneousOperation('scale_b'),
+        operand_conversions=[binary_conversion(source_format), int],
+        result_conversion=binary_conversion(source_format),
+    )
 
 
-operations = {
-    'addition': addition,
-    'subtraction': subtraction,
-    'division': division,
+operation_factories = {
+    'addition': binary_operation_factory('addition'),
+    'subtraction': binary_operation_factory('subtraction'),
+    'division': binary_operation_factory('division'),
     'convertFromHexCharacter': convertFromHexCharacter,
-    'roundToIntegralTiesToAway': roundToIntegralTiesToAway,
+    'roundToIntegralTiesToEven': unary_source_operation('round_to_integral_ties_to_even'),
+    'roundToIntegralTiesToAway': unary_source_operation('round_to_integral_ties_to_away'),
+    'roundToIntegralTowardZero': unary_source_operation('round_to_integral_toward_zero'),
+    'roundToIntegralTowardPositive': unary_source_operation('round_to_integral_toward_positive'),
+    'roundToIntegralTowardNegative': unary_source_operation('round_to_integral_toward_negative'),
     'scaleB': scaleB,
 }
