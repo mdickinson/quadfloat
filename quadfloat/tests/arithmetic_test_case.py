@@ -112,11 +112,13 @@ class ArithmeticTestResult(object):
 
 
 class ArithmeticTestCase(object):
-    def __init__(self, attributes, operation, operands, expected_result):
+    def __init__(self, attributes, operation, operands, expected_result, source_file, line_number):
         self.attributes = attributes
         self.operation = operation
         self.operands = operands
         self.expected_result = expected_result
+        self.source_file = source_file
+        self.line_number = line_number
         self._actual_result = None
 
     @property
@@ -141,6 +143,7 @@ class ArithmeticTestCase(object):
 
     def __repr__(self):
         return """\
+File {self.source_file!r}, line {self.line_number}
 Attributes: {self.attributes}
 Operation: {self.operation}
 Operands: {self.operands}

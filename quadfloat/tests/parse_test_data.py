@@ -78,7 +78,7 @@ READ_ATTRIBUTES = Attributes(
 )
 
 
-def parse_test_data(test_content):
+def parse_test_data(test_content, source_file):
     """Given a string containing test data, generate ArithmeticTestCase objects
     representing the individual tests.
 
@@ -91,7 +91,7 @@ def parse_test_data(test_content):
     # Attributes to apply to tests.
     attributes = Attributes()
 
-    for line in lines:
+    for line_number, line in enumerate(lines, start=1):
         # Strip comments; skip blank lines.
         if '#' in line:
             line = line[:line.index('#')]
@@ -151,6 +151,8 @@ def parse_test_data(test_content):
                 ),
                 operation=operation.operation,
                 attributes=attributes,
+                line_number=line_number,
+                source_file=source_file,
             )
 
 

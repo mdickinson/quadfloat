@@ -9,7 +9,7 @@ class QuadfloatTestDataCase(unittest.TestCase):
         with open(test_file) as f:
             test_data = f.read()
 
-        for test_case in parse_test_data(test_data):
+        for test_case in parse_test_data(test_data, test_file):
             if test_case.actual_result != test_case.expected_result:
                 self.fail(
                     "Error in test case:\n{0!r}".format(test_case)
