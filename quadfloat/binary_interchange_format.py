@@ -20,6 +20,7 @@ from quadfloat.attributes import (
     get_current_attributes,
     set_current_attributes,
     Attributes,
+    partial_attributes,
 )
 from quadfloat.compat import (
     bit_length,
@@ -476,24 +477,23 @@ class BinaryInterchangeFormat(object):
             e == self.qmin - 3 and bit_length(q) < self.precision + 2
         )
 
-        if attributes.tininess_detection == BEFORE_ROUNDING:
-            # Underflow *before* rounding.
-            underflow = q != 0 and e == self.qmin - 3
-        elif attributes.tininess_detection == AFTER_ROUNDING:
-            # Underflow *after* rounding.
-            if q == 0:
-                underflow = False
-            elif bit_length(q) < self.precision + 2:
+        if q == 0:
+            underflow = False
+        elif bit_length(q) < self.precision + 2:
+            underflow = True
+        elif e == self.qmin - 3:
+            if attributes.tininess_detection == BEFORE_ROUNDING:
                 underflow = True
-            elif e == self.qmin - 3:
+            elif attributes.tininess_detection == AFTER_ROUNDING:
                 # Determine whether the result computed as though the exponent
                 # range were unbounded would underflow.
                 q2 = attributes.rounding_direction.round_quarters(q, sign)
                 underflow = bit_length(q2) <= self.precision
             else:
-                underflow = False
+                assert False, "never get here"
         else:
-            assert False, "never get here"  # pragma no cover
+            assert e > self.qmin - 3
+            underflow = False
 
         # Remove extra bit in the subnormal case, using roundInexactToOdd.
         if e == self.qmin - 3:
@@ -1067,6 +1067,15 @@ class _BinaryFloat(object):
     def format(self):
         return self._format
 
+    @property
+    def _signed_significand(self):
+        """
+        Combination of self._sign and self._significand as an integer.
+
+        """
+        assert self._type == _FINITE
+        return -self._significand if self._sign else self._significand
+
     def _shortest_decimal(self):
         """
         Convert to shortest Decimal instance that rounds back to the correct
@@ -1324,47 +1333,54 @@ class _BinaryFloat(object):
 
         """
         # This is a homogeneous operation: both operands have the same format.
-        if not self._format == other._format:
+        format = self._format
+        if other._format != format:
             raise ValueError(
                 "remainder operation not implemented for mixed formats."
             )
 
         # NaNs follow the usual rules.
         if self._type == _NAN or other._type == _NAN:
-            return self._format._handle_nans(self, other)
+            return format._handle_nans(self, other)
 
         # remainder(+/-inf, y) and remainder(x, 0) are invalid
         if self._type == _INFINITE or other.is_zero():
-            return self._format._handle_invalid()
+            return format._handle_invalid()
 
         # remainder(x, +/-inf) is x for any finite x.  Similarly, if x is
         # much smaller than y, remainder(x, y) is x.
         if other._type == _INFINITE or self._exponent <= other._exponent - 2:
-            return self
+            # Careful: we can't just return self here, since we have to
+            # signal the underflow exception where appropriate.
+            sign = self._sign
+            exponent = self._exponent
+            significand = self._significand
+        else:
+            # Now (other._exponent - exponent) is either 0 or 1, thanks to the
+            # optimization above.
+            exponent = min(self._exponent, other._exponent)
+            modulus = other._significand << (other._exponent - exponent)
+            # It's enough to compute modulo 2 * modulus, since the remainder
+            # result is periodic modulo that value.
+            multiplier = pow(2, self._exponent - exponent, 2 * modulus)
+            remainder = _remainder_nearest(
+                self._signed_significand * multiplier,
+                modulus,
+            )
+            sign = self._sign if remainder == 0 else remainder < 0
+            significand = abs(remainder)
 
-        # Now (other._exponent - exponent) is either 0 or 1, thanks to the
-        # optimization above.
-        exponent = min(self._exponent, other._exponent)
-        b = other._significand << (other._exponent - exponent)
-        r = _remainder_nearest(
-            self._significand * pow(2, self._exponent - exponent, 2 * b),
-            b
-        )
-        sign = self._sign ^ (r < 0)
-        significand = abs(r)
-
-        # Normalize result.
-        if significand == 0:
-            return self._format._zero(sign)
-        adjust = min(
-            self._format.precision - bit_length(significand),
-            exponent - self._format.qmin,
-        )
-        return self._format._finite(
-            sign,
-            exponent - adjust,
-            significand << adjust,
-        )
+        # Normalize result.  It doesn't matter what rounding direction
+        # we use, since the result should always be exact.
+        with partial_attributes(rounding_direction=round_ties_to_even):
+            inexact, converted = format._from_triple(
+                sign,
+                exponent,
+                significand,
+                get_current_attributes(),
+            )
+        assert not inexact
+        return converted
 
     def min_num(self, other):
         """
