@@ -1038,9 +1038,9 @@ class TestBinary16(BaseTestCase):
             x.min_num(y)
 
         test_triples = [
-            # In case of equal numbers, first one wins.
+            # In case of equal numbers, compare signs.
             ('-0.0', '0.0', '-0.0'),
-            ('0.0', '-0.0', '0.0'),
+            ('0.0', '-0.0', '-0.0'),
             # Infinities.
             ('-inf', '-inf', '-inf'),
             ('-inf', 'inf', '-inf'),
@@ -1077,9 +1077,9 @@ class TestBinary16(BaseTestCase):
             x.max_num(y)
 
         test_triples = [
-            # In case of equal numbers, second one wins.
+            # In case of equal numbers, compare signs.
             ('-0.0', '0.0', '0.0'),
-            ('0.0', '-0.0', '-0.0'),
+            ('0.0', '-0.0', '0.0'),
             # Infinities.
             ('-inf', '-inf', '-inf'),
             ('-inf', 'inf', 'inf'),
@@ -1116,20 +1116,20 @@ class TestBinary16(BaseTestCase):
             x.min_num_mag(y)
 
         test_triples = [
-            # In case of equal numbers, first one wins.
+            # In case of equal numbers, compare signs.
             ('-0.0', '0.0', '-0.0'),
-            ('0.0', '-0.0', '0.0'),
+            ('0.0', '-0.0', '-0.0'),
             # Infinities.
             ('-inf', '-inf', '-inf'),
             ('-inf', 'inf', '-inf'),
-            ('inf', '-inf', 'inf'),
+            ('inf', '-inf', '-inf'),
             ('inf', 'inf', 'inf'),
             ('inf', '2.3', '2.3'),
             ('-inf', '2.3', '2.3'),
             ('2.3', 'inf', '2.3'),
             ('2.3', '-inf', '2.3'),
             ('-1', '1', '-1'),
-            ('1', '-1', '1'),
+            ('1', '-1', '-1'),
             ('1.2', '1.3', '1.2'),
             ('-1.2', '-1.3', '-1.2'),
             ('0.1', '10.0', '0.1'),
@@ -1159,20 +1159,20 @@ class TestBinary16(BaseTestCase):
             x.max_num_mag(y)
 
         test_triples = [
-            # In case of equal numbers, second one wins.
+            # In case of equal numbers, compare signs.
             ('-0.0', '0.0', '0.0'),
-            ('0.0', '-0.0', '-0.0'),
+            ('0.0', '-0.0', '0.0'),
             # Infinities.
             ('-inf', '-inf', '-inf'),
             ('-inf', 'inf', 'inf'),
-            ('inf', '-inf', '-inf'),
+            ('inf', '-inf', 'inf'),
             ('inf', 'inf', 'inf'),
             ('inf', '2.3', 'inf'),
             ('-inf', '2.3', '-inf'),
             ('2.3', 'inf', 'inf'),
             ('2.3', '-inf', '-inf'),
             ('-1', '1', '1'),
-            ('1', '-1', '-1'),
+            ('1', '-1', '1'),
             ('1.2', '1.3', '1.3'),
             ('-1.2', '-1.3', '-1.3'),
             ('0.1', '10.0', '10.0'),

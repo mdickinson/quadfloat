@@ -243,6 +243,10 @@ operation_factories = {
     'nextUp': unary_source_operation('next_up'),
     'nextDown': unary_source_operation('next_down'),
     'remainder': binary_source_operation('remainder'),
+    'minNum': binary_source_operation('min_num'),
+    'maxNum': binary_source_operation('max_num'),
+    'minNumMag': binary_source_operation('min_num_mag'),
+    'maxNumMag': binary_source_operation('max_num_mag'),
 
     'addition': binary_operation_factory('addition'),
     'subtraction': binary_operation_factory('subtraction'),

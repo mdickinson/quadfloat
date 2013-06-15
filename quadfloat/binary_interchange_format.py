@@ -119,6 +119,13 @@ def _decimal_format(sign, exponent, digits):
     return ('-' if sign else '') + coefficient
 
 
+def _check_common_format(source1, source2):
+    format = source1._format
+    if source2._format != format:
+        raise ValueError("Both operands should have the same format.")
+    return format
+
+
 # roundInexactToOdd is a useful primitive rounding direction for performing
 # general rounding operations while avoiding problems from double rounding.
 #
@@ -582,6 +589,18 @@ class BinaryInterchangeFormat(object):
         # If we get here, then _handle_nans has been called with all arguments
         # non-NaN.  This shouldn't happen.
         assert False, "never get here"  # pragma no cover
+
+    def _handle_nans_min_max(self, source1, source2):
+        # Handle NaNs in the manner required for min and max operations.
+
+        # If we've got a combination of a quiet NaN and a non-NaN, return the
+        # non-NaN.
+        if source1._is_quiet() and not source2.is_nan():
+            return source2
+        elif source2._is_quiet() and not source1.is_nan():
+            return source1
+        else:
+            return self._handle_nans(source1, source2)
 
     # Section 5.4.1: Arithmetic operations
 
@@ -1168,6 +1187,21 @@ class _BinaryFloat(object):
             payload=self._payload,
         )
 
+    def _loud_copy(self):
+        """
+        Return a float identical to self, but re-signal any relevant
+        exceptions.
+
+        """
+        # The only possible relevant exception is 'underflow'.  We don't
+        # actually create a copy here: there's no need, since these
+        # instances are immutable.
+        if self.is_subnormal():
+            exception = UnderflowException(self, False)
+            return _signal_underflow(exception)
+        else:
+            return self
+            
     # IEEE 754-2008 5.3.1: General operations.
     def _round_to_integral_general(self, rounding_direction, quiet):
         """
@@ -1333,11 +1367,7 @@ class _BinaryFloat(object):
 
         """
         # This is a homogeneous operation: both operands have the same format.
-        format = self._format
-        if other._format != format:
-            raise ValueError(
-                "remainder operation not implemented for mixed formats."
-            )
+        format = _check_common_format(self, other)
 
         # NaNs follow the usual rules.
         if self._type == _NAN or other._type == _NAN:
@@ -1352,9 +1382,7 @@ class _BinaryFloat(object):
         if other._type == _INFINITE or self._exponent <= other._exponent - 2:
             # Careful: we can't just return self here, since we have to
             # signal the underflow exception where appropriate.
-            sign = self._sign
-            exponent = self._exponent
-            significand = self._significand
+            return self._loud_copy()
         else:
             # Now (other._exponent - exponent) is either 0 or 1, thanks to the
             # optimization above.
@@ -1372,7 +1400,10 @@ class _BinaryFloat(object):
 
         # Normalize result.  It doesn't matter what rounding direction
         # we use, since the result should always be exact.
-        with partial_attributes(rounding_direction=round_ties_to_even):
+        with partial_attributes(
+                rounding_direction=round_ties_to_even,
+                tininess_detection=AFTER_ROUNDING,
+        ):
             inexact, converted = format._from_triple(
                 sign,
                 exponent,
@@ -1382,61 +1413,77 @@ class _BinaryFloat(object):
         assert not inexact
         return converted
 
+    def _min_max_num(self, other):
+        """
+        Helper function for min_num and max_num.  self and other
+        should be non-NaN and have the same format.
+
+        """
+        if self._sign != other._sign:
+            self_is_small = self._sign and not other._sign
+        else:
+            self_is_small = _compare_ordered(self, other) <= 0
+
+        if self_is_small:
+            return self, other
+        else:
+            return other, self
+
+    def _min_max_num_mag(self, other):
+        """
+        Helper function for min_num_mag and max_num_mag.  self and other
+        should be non-NaN and have the same format.
+
+        """
+        cmp = _compare_ordered(self.abs(), other.abs())
+        if cmp != 0:
+            self_is_small = cmp < 0
+        elif self._sign != other._sign:
+            self_is_small = self._sign and not other._sign
+        else:
+            # Identical; take the first.
+            self_is_small = True
+
+        if self_is_small:
+            return self, other
+        else:
+            return other, self
+
     def min_num(self, other):
         """
         Minimum of self and other.
 
-        If self and other are numerically equal (for example in the case of
-        differently-signed zeros), self is returned.
+        If self and other are differently-signed zeros, the negative zero is
+        returned.
 
         """
         # This is a homogeneous operation: both operands have the same format.
-        if not self._format == other._format:
-            raise ValueError(
-                "min_num operation not implemented for mixed formats."
-            )
+        format = _check_common_format(self, other)
 
-        # Special behaviour for NaNs: if one operand is NaN and the other is
-        # not then return the non-NaN operand.
-        if self.is_nan() and not self.is_signaling() and not other.is_nan():
-            return other
-        if other.is_nan() and not other.is_signaling() and not self.is_nan():
-            return self
+        # Special behaviour for NaNs:  if one operand is a quiet NaN and
+        # the other is not, return the non-NaN operand.
+        if self.is_nan() or other.is_nan():
+            return format._handle_nans_min_max(self, other)
 
-        # Apart from the above special case, treat NaNs as normal.
-        if self._type == _NAN or other._type == _NAN:
-            return self._format._handle_nans(self, other)
-
-        cmp = _compare_ordered(self, other)
-        return self if cmp <= 0 else other
+        return self._min_max_num(other)[0]._loud_copy()
 
     def max_num(self, other):
         """
         Maximum of self and other.
 
-        If self and other are numerically equal (for example in the case of
-        differently-signed zeros), other is returned.
+        If self and other are differently-signed zeros, the positive zero is
+        returned.
 
         """
         # This is a homogeneous operation: both operands have the same format.
-        if not self._format == other._format:
-            raise ValueError(
-                "max_num operation not implemented for mixed formats."
-            )
+        format = _check_common_format(self, other)
 
-        # Special behaviour for NaNs: if one operand is NaN and the other is
-        # not then return the non-NaN operand.
-        if self.is_nan() and not self.is_signaling() and not other.is_nan():
-            return other
-        if other.is_nan() and not other.is_signaling() and not self.is_nan():
-            return self
+        # Special behaviour for NaNs:  if one operand is a quiet NaN and
+        # the other is not, return the non-NaN operand.
+        if self.is_nan() or other.is_nan():
+            return format._handle_nans_min_max(self, other)
 
-        # Apart from the above special case, treat NaNs as normal.
-        if self._type == _NAN or other._type == _NAN:
-            return self._format._handle_nans(self, other)
-
-        cmp = _compare_ordered(self, other)
-        return other if cmp <= 0 else self
+        return self._min_max_num(other)[1]._loud_copy()
 
     def min_num_mag(self, other):
         """
@@ -1447,24 +1494,14 @@ class _BinaryFloat(object):
 
         """
         # This is a homogeneous operation: both operands have the same format.
-        if not self._format == other._format:
-            raise ValueError(
-                "min_num_mag operation not implemented for mixed formats."
-            )
+        format = _check_common_format(self, other)
 
-        # Special behaviour for NaNs: if one operand is NaN and the other is
-        # not then return the non-NaN operand.
-        if self.is_nan() and not self.is_signaling() and not other.is_nan():
-            return other
-        if other.is_nan() and not other.is_signaling() and not self.is_nan():
-            return self
+        # Special behaviour for NaNs:  if one operand is a quiet NaN and
+        # the other is not, return the non-NaN operand.
+        if self.is_nan() or other.is_nan():
+            return format._handle_nans_min_max(self, other)
 
-        # Apart from the above special case, treat NaNs as normal.
-        if self._type == _NAN or other._type == _NAN:
-            return self._format._handle_nans(self, other)
-
-        cmp = _compare_ordered(self.abs(), other.abs())
-        return self if cmp <= 0 else other
+        return self._min_max_num_mag(other)[0]._loud_copy()
 
     def max_num_mag(self, other):
         """
@@ -1475,24 +1512,14 @@ class _BinaryFloat(object):
 
         """
         # This is a homogeneous operation: both operands have the same format.
-        if not self._format == other._format:
-            raise ValueError(
-                "max_num_mag operation not implemented for mixed formats."
-            )
+        format = _check_common_format(self, other)
 
-        # Special behaviour for NaNs: if one operand is NaN and the other is
-        # not then return the non-NaN operand.
-        if self.is_nan() and not self.is_signaling() and not other.is_nan():
-            return other
-        if other.is_nan() and not other.is_signaling() and not self.is_nan():
-            return self
+        # Special behaviour for NaNs:  if one operand is a quiet NaN and
+        # the other is not, return the non-NaN operand.
+        if self.is_nan() or other.is_nan():
+            return format._handle_nans_min_max(self, other)
 
-        # Apart from the above special case, treat NaNs as normal.
-        if self._type == _NAN or other._type == _NAN:
-            return self._format._handle_nans(self, other)
-
-        cmp = _compare_ordered(self.abs(), other.abs())
-        return other if cmp <= 0 else self
+        return self._min_max_num_mag(other)[1]._loud_copy()
 
     # IEEE 754 5.3.3: logBFormat operations
     def scale_b(self, n):
@@ -1606,6 +1633,13 @@ class _BinaryFloat(object):
 
         """
         return self._type == _NAN and self._signaling
+
+    def _is_quiet(self):
+        """
+        Return True if self is a quiet NaN, and False otherwise.
+
+        """
+        return self._type == _NAN and not self._signaling
 
     def is_canonical(self):
         """
