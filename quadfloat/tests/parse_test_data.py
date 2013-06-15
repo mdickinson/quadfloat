@@ -2,7 +2,6 @@
 Helper class for representing a single test.
 
 """
-from quadfloat import binary16, binary32, binary64, binary128
 from quadfloat.attributes import (
     Attributes,
     temporary_attributes,
