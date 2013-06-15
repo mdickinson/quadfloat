@@ -7,6 +7,7 @@ from quadfloat.attributes import (
     Attributes,
     temporary_attributes,
 )
+from quadfloat.binary_interchange_format import BinaryInterchangeFormat
 from quadfloat.exceptions import (
     UnderflowException,
 )
@@ -26,11 +27,20 @@ from quadfloat.tests.arithmetic_test_case import (
     HomogeneousOperation,
 )
 
+
+def binary_format(key):
+    if not key.startswith('binary'):
+        raise ValueError("Invalid format string: {}".format(key))
+    width = int(key[len('binary'):])
+    return BinaryInterchangeFormat(width=width)
+
+
 formats = {
-    'binary16': binary16,
-    'binary32': binary32,
-    'binary64': binary64,
-    'binary128': binary128,
+    'binary16': BinaryInterchangeFormat(width=16),
+    'binary32': BinaryInterchangeFormat(width=32),
+    'binary64': BinaryInterchangeFormat(width=64),
+    'binary128': BinaryInterchangeFormat(width=128),
+    'binary1024': BinaryInterchangeFormat(width=1024),
 }
 
 
@@ -175,9 +185,9 @@ def binary_operation_factory(method_name):
         Factory for binary formatOf operations.
 
         """
-        destination_format = formats[destination]
-        source1_format = formats[source1]
-        source2_format = formats[source2]
+        destination_format = binary_format(destination)
+        source1_format = binary_format(source1)
+        source2_format = binary_format(source2)
         return TestOperation(
             operation=FormatOfOperation(destination_format, method_name),
             operand_conversions=[
@@ -191,7 +201,7 @@ def binary_operation_factory(method_name):
 
 def unary_source_operation(method_name):
     def unary_operation_factory(source):
-        source_format = formats[source]
+        source_format = binary_format(source)
         return TestOperation(
             operation=HomogeneousOperation(method_name),
             operand_conversions=[binary_conversion(source_format)],
@@ -202,7 +212,7 @@ def unary_source_operation(method_name):
 
 def binary_source_operation(method_name):
     def binary_operation_factory(source):
-        source_format = formats[source]
+        source_format = binary_format(source)
         return TestOperation(
             operation=HomogeneousOperation(method_name),
             operand_conversions=[binary_conversion(source_format)] * 2,
@@ -212,7 +222,7 @@ def binary_source_operation(method_name):
 
 
 def convertFromHexCharacter(destination):
-    destination_format = formats[destination]
+    destination_format = binary_format(destination)
     return TestOperation(
         operation=FormatOfOperation(
             destination_format,
@@ -224,7 +234,7 @@ def convertFromHexCharacter(destination):
 
 
 def scaleB(source):
-    source_format = formats[source]
+    source_format = binary_format(source)
     return TestOperation(
         operation=HomogeneousOperation('scale_b'),
         operand_conversions=[binary_conversion(source_format), int],
@@ -233,7 +243,7 @@ def scaleB(source):
 
 
 def logB(source):
-    source_format = formats[source]
+    source_format = binary_format(source)
     return TestOperation(
         operation=HomogeneousOperation('log_b'),
         operand_conversions=[binary_conversion(source_format)],
