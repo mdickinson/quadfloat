@@ -1201,7 +1201,7 @@ class _BinaryFloat(object):
             return _signal_underflow(exception)
         else:
             return self
-            
+
     # IEEE 754-2008 5.3.1: General operations.
     def _round_to_integral_general(self, rounding_direction, quiet):
         """

@@ -232,14 +232,15 @@ def scaleB(source):
     )
 
 
+_uso = unary_source_operation
 operation_factories = {
     # 5.3.1 General operations
-    'roundToIntegralTiesToEven': unary_source_operation('round_to_integral_ties_to_even'),
-    'roundToIntegralTiesToAway': unary_source_operation('round_to_integral_ties_to_away'),
-    'roundToIntegralTowardZero': unary_source_operation('round_to_integral_toward_zero'),
-    'roundToIntegralTowardPositive': unary_source_operation('round_to_integral_toward_positive'),
-    'roundToIntegralTowardNegative': unary_source_operation('round_to_integral_toward_negative'),
-    'roundToIntegralExact': unary_source_operation('round_to_integral_exact'),
+    'roundToIntegralTiesToEven': _uso('round_to_integral_ties_to_even'),
+    'roundToIntegralTiesToAway': _uso('round_to_integral_ties_to_away'),
+    'roundToIntegralTowardZero': _uso('round_to_integral_toward_zero'),
+    'roundToIntegralTowardPositive': _uso('round_to_integral_toward_positive'),
+    'roundToIntegralTowardNegative': _uso('round_to_integral_toward_negative'),
+    'roundToIntegralExact': _uso('round_to_integral_exact'),
     'nextUp': unary_source_operation('next_up'),
     'nextDown': unary_source_operation('next_down'),
     'remainder': binary_source_operation('remainder'),
