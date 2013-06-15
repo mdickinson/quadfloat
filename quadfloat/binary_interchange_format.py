@@ -1203,383 +1203,6 @@ class _BinaryFloat(object):
         else:
             return self
 
-    # IEEE 754-2008 5.3.1: General operations.
-    def _round_to_integral_general(self, rounding_direction, quiet):
-        """
-        General round_to_integral implementation used
-        by the round_to_integral_* functions.
-
-        """
-        # NaNs.
-        if self._type == _NAN:
-            return self._format._handle_nans(self)
-
-        # Infinities, zeros, and integral values are returned unchanged.
-        if self._type == _INFINITE or self.is_zero() or self._exponent >= 0:
-            return self
-
-        # Round to a number of the form n / 4 using roundInexactToOdd.
-        to_quarter = _rshift_to_odd(self._significand, -self._exponent - 2)
-
-        # Then round to the nearest integer, using the prescribed rounding
-        # direction.
-        q = rounding_direction._rounder(to_quarter, self._sign)
-
-        # Signal inexact if necessary.
-
-        inexact = not quiet and q << 2 != to_quarter
-
-        # Normalize.
-        if q == 0:
-            rounded = self._format._zero(self._sign)
-        else:
-            shift = self._format.precision - bit_length(q)
-            rounded = self._format._finite(self._sign, -shift, q << shift)
-
-        if inexact:
-            return _signal_inexact(InexactException(rounded))
-        else:
-            return rounded
-
-    def round_to_integral_ties_to_even(self):
-        """
-        Round self to an integral value in the same format, using
-        the roundTiesToEven rounding direction.
-
-        """
-        return self._round_to_integral_general(
-            rounding_direction=round_ties_to_even,
-            quiet=True,
-        )
-
-    def round_to_integral_ties_to_away(self):
-        """
-        Round self to an integral value in the same format, using
-        the roundTiesToAway rounding direction.
-
-        """
-        return self._round_to_integral_general(
-            rounding_direction=round_ties_to_away,
-            quiet=True,
-        )
-
-    def round_to_integral_toward_zero(self):
-        """
-        Round self to an integral value in the same format, using
-        the roundTowardZero rounding direction.
-
-        """
-        return self._round_to_integral_general(
-            rounding_direction=round_toward_zero,
-            quiet=True,
-        )
-
-    def round_to_integral_toward_positive(self):
-        """
-        Round self to an integral value in the same format, using
-        the roundTowardPositive rounding direction.
-
-        In other words, this is the ceiling operation.
-
-        """
-        return self._round_to_integral_general(
-            rounding_direction=round_toward_positive,
-            quiet=True,
-        )
-
-    def round_to_integral_toward_negative(self):
-        """
-        Round self to an integral value in the same format, using
-        the roundTowardNegative rounding direction.
-
-        In other words, this is the floor operation.
-
-        """
-        return self._round_to_integral_general(
-            rounding_direction=round_toward_negative,
-            quiet=True,
-        )
-
-    def round_to_integral_exact(self):
-        """
-        Round self to an integral value using the current rounding-direction
-        attribute.  Signal the 'inexact' exception if this changes the value.
-
-        """
-        rounding_direction = get_current_attributes().rounding_direction
-
-        return self._round_to_integral_general(
-            rounding_direction=rounding_direction,
-            quiet=False,
-        )
-
-    def next_up(self):
-        """
-        Return the least floating-point number in the format of 'self'
-        that compares greater than 'self'.
-
-        """
-        # NaNs follow the usual rules.
-        if self._type == _NAN:
-            return self._format._handle_nans(self)
-
-        # Positive infinity maps to itself.
-        if self._type == _INFINITE and not self._sign:
-            return self
-
-        # Negative zero is treated in the same way as positive zero.
-        if self.is_zero() and self._sign:
-            self = self._format._zero(sign=False)
-
-        # Now we can cheat: encode as an integer, and then simply
-        # increment or decrement the integer representation.
-        n = self._format._encode_as_int(self)
-        n += -1 if self._sign else 1
-        return self._format._decode_from_int(n)
-
-    def next_down(self):
-        """
-        Return the greatest floating-point number in the format of 'self'
-        that compares less than 'self'.
-
-        """
-        # NaNs follow the usual rules.
-        if self._type == _NAN:
-            return self._format._handle_nans(self)
-
-        # Negative infinity maps to itself.
-        if self._type == _INFINITE and self._sign:
-            return self
-
-        # Positive zero is treated in the same way as negative zero.
-        if self.is_zero() and not self._sign:
-            self = self._format._zero(sign=True)
-
-        # Now we can cheat: encode as an integer, and then simply
-        # increment or decrement the integer representation.
-        n = self._format._encode_as_int(self)
-        n += 1 if self._sign else -1
-        return self._format._decode_from_int(n)
-
-    def remainder(self, other):
-        """
-        Defined as self - n * other, where n is the closest integer
-        to the exact quotient self / other (with ties rounded to even).
-
-        """
-        # This is a homogeneous operation: both operands have the same format.
-        format = _check_common_format(self, other)
-
-        # NaNs follow the usual rules.
-        if self._type == _NAN or other._type == _NAN:
-            return format._handle_nans(self, other)
-
-        # remainder(+/-inf, y) and remainder(x, 0) are invalid
-        if self._type == _INFINITE or other.is_zero():
-            return format._handle_invalid()
-
-        # remainder(x, +/-inf) is x for any finite x.  Similarly, if x is
-        # much smaller than y, remainder(x, y) is x.
-        if other._type == _INFINITE or self._exponent <= other._exponent - 2:
-            # Careful: we can't just return self here, since we have to
-            # signal the underflow exception where appropriate.
-            return self._loud_copy()
-        else:
-            # Now (other._exponent - exponent) is either 0 or 1, thanks to the
-            # optimization above.
-            exponent = min(self._exponent, other._exponent)
-            modulus = other._significand << (other._exponent - exponent)
-            # It's enough to compute modulo 2 * modulus, since the remainder
-            # result is periodic modulo that value.
-            multiplier = pow(2, self._exponent - exponent, 2 * modulus)
-            remainder = _remainder_nearest(
-                self._signed_significand * multiplier,
-                modulus,
-            )
-            sign = self._sign if remainder == 0 else remainder < 0
-            significand = abs(remainder)
-
-        # Normalize result.  It doesn't matter what rounding direction
-        # we use, since the result should always be exact.
-        with partial_attributes(
-                rounding_direction=round_ties_to_even,
-                tininess_detection=AFTER_ROUNDING,
-        ):
-            inexact, converted = format._from_triple(
-                sign,
-                exponent,
-                significand,
-                get_current_attributes(),
-            )
-        assert not inexact
-        return converted
-
-    def _min_max_num(self, other):
-        """
-        Helper function for min_num and max_num.  self and other
-        should be non-NaN and have the same format.
-
-        """
-        if self._sign != other._sign:
-            self_is_small = self._sign and not other._sign
-        else:
-            self_is_small = _compare_ordered(self, other) <= 0
-
-        if self_is_small:
-            return self, other
-        else:
-            return other, self
-
-    def _min_max_num_mag(self, other):
-        """
-        Helper function for min_num_mag and max_num_mag.  self and other
-        should be non-NaN and have the same format.
-
-        """
-        cmp = _compare_ordered(self.abs(), other.abs())
-        if cmp != 0:
-            self_is_small = cmp < 0
-        elif self._sign != other._sign:
-            self_is_small = self._sign and not other._sign
-        else:
-            # Identical; take the first.
-            self_is_small = True
-
-        if self_is_small:
-            return self, other
-        else:
-            return other, self
-
-    def min_num(self, other):
-        """
-        Minimum of self and other.
-
-        If self and other are differently-signed zeros, the negative zero is
-        returned.
-
-        """
-        # This is a homogeneous operation: both operands have the same format.
-        format = _check_common_format(self, other)
-
-        # Special behaviour for NaNs:  if one operand is a quiet NaN and
-        # the other is not, return the non-NaN operand.
-        if self.is_nan() or other.is_nan():
-            return format._handle_nans_min_max(self, other)
-
-        return self._min_max_num(other)[0]._loud_copy()
-
-    def max_num(self, other):
-        """
-        Maximum of self and other.
-
-        If self and other are differently-signed zeros, the positive zero is
-        returned.
-
-        """
-        # This is a homogeneous operation: both operands have the same format.
-        format = _check_common_format(self, other)
-
-        # Special behaviour for NaNs:  if one operand is a quiet NaN and
-        # the other is not, return the non-NaN operand.
-        if self.is_nan() or other.is_nan():
-            return format._handle_nans_min_max(self, other)
-
-        return self._min_max_num(other)[1]._loud_copy()
-
-    def min_num_mag(self, other):
-        """
-        Minimum of self and other, by absolute value.
-
-        If self and other are numerically equal (for example in the case of
-        differently-signed zeros), self is returned.
-
-        """
-        # This is a homogeneous operation: both operands have the same format.
-        format = _check_common_format(self, other)
-
-        # Special behaviour for NaNs:  if one operand is a quiet NaN and
-        # the other is not, return the non-NaN operand.
-        if self.is_nan() or other.is_nan():
-            return format._handle_nans_min_max(self, other)
-
-        return self._min_max_num_mag(other)[0]._loud_copy()
-
-    def max_num_mag(self, other):
-        """
-        Maximum of self and other, by absolute value.
-
-        If self and other are numerically equal (for example in the case of
-        differently-signed zeros), other is returned.
-
-        """
-        # This is a homogeneous operation: both operands have the same format.
-        format = _check_common_format(self, other)
-
-        # Special behaviour for NaNs:  if one operand is a quiet NaN and
-        # the other is not, return the non-NaN operand.
-        if self.is_nan() or other.is_nan():
-            return format._handle_nans_min_max(self, other)
-
-        return self._min_max_num_mag(other)[1]._loud_copy()
-
-    # IEEE 754 5.3.3: logBFormat operations
-    def scale_b(self, n):
-        """
-        self * 2**n
-
-        """
-        attributes = get_current_attributes()
-
-        # NaNs follow the usual rules.
-        if self._type == _NAN:
-            return self._format._handle_nans(self)
-
-        # Infinities and zeros are unchanged.
-        if self._type == _INFINITE or self.is_zero():
-            return self
-
-        # Finite case.
-        return self._format._from_triple(
-            sign=self._sign,
-            exponent=self._exponent + n,
-            significand=self._significand,
-            attributes=attributes,
-        )[1]
-
-    def log_b(self):
-        """
-        exponent of self.
-
-        """
-        if self._type == _FINITE and self._significand != 0:
-            # Finite nonzero case.
-            return self._exponent + bit_length(self._significand) - 1
-
-        # Exceptional cases.  The standard says: "logB(NaN), logB(∞), and
-        # logB(0) return language-defined values outside the range ±2 × (emax +
-        # p - 1) and signal the invalid operation exception."  The integer
-        # format used for the output of logB is required to include the
-        # range ±2 × (emax + p) inclusive.  If we stick within that range,
-        # that leaves us 4 values to play with for the exceptional cases
-        # of 0, infinity, and signaling and quiet NaNs.
-        format = self._format
-        limit = 2 * (format.emax + format.precision)
-
-        # Zeros and infinities; return values that are at the appropriate
-        # extremes of the finite result range.
-        if self.is_zero():
-            return _handle_invalid_int(-limit + 1)
-        elif self._type == _INFINITE:
-            return _handle_invalid_int(limit - 1)
-
-        # NaNs.  We somewhat arbitrarily map signaling NaNs to the max
-        # available value, and quiet NaNs to the min.
-        assert self._type == _NAN
-        if self.is_signaling():
-            return _handle_invalid_int(limit)
-        else:
-            return _handle_invalid_int(-limit)
-
     # IEEE 754 5.7.2: General operations.
 
     def is_sign_minus(self):
@@ -2074,7 +1697,412 @@ class _BinaryFloat(object):
         )
 
 
-# Section 5.6.1: Comparisons.
+# 5.3: Homogeneous general-computational operations
+
+# 5.3.1: General operations.
+
+def _round_to_integral_general(self, rounding_direction, quiet):
+    """
+    General round_to_integral implementation used
+    by the round_to_integral_* functions.
+
+    """
+    # NaNs.
+    if self._type == _NAN:
+        return self._format._handle_nans(self)
+
+    # Infinities, zeros, and integral values are returned unchanged.
+    if self._type == _INFINITE or self.is_zero() or self._exponent >= 0:
+        return self
+
+    # Round to a number of the form n / 4 using roundInexactToOdd.
+    to_quarter = _rshift_to_odd(self._significand, -self._exponent - 2)
+
+    # Then round to the nearest integer, using the prescribed rounding
+    # direction.
+    q = rounding_direction._rounder(to_quarter, self._sign)
+
+    # Signal inexact if necessary.
+
+    inexact = not quiet and q << 2 != to_quarter
+
+    # Normalize.
+    if q == 0:
+        rounded = self._format._zero(self._sign)
+    else:
+        shift = self._format.precision - bit_length(q)
+        rounded = self._format._finite(self._sign, -shift, q << shift)
+
+    if inexact:
+        return _signal_inexact(InexactException(rounded))
+    else:
+        return rounded
+
+
+def round_to_integral_ties_to_even(self):
+    """
+    Round self to an integral value in the same format, using
+    the roundTiesToEven rounding direction.
+
+    """
+    return _round_to_integral_general(
+        self,
+        rounding_direction=round_ties_to_even,
+        quiet=True,
+    )
+
+
+def round_to_integral_ties_to_away(self):
+    """
+    Round self to an integral value in the same format, using
+    the roundTiesToAway rounding direction.
+
+    """
+    return _round_to_integral_general(
+        self,
+        rounding_direction=round_ties_to_away,
+        quiet=True,
+    )
+
+
+def round_to_integral_toward_zero(self):
+    """
+    Round self to an integral value in the same format, using
+    the roundTowardZero rounding direction.
+
+    """
+    return _round_to_integral_general(
+        self,
+        rounding_direction=round_toward_zero,
+        quiet=True,
+    )
+
+
+def round_to_integral_toward_positive(self):
+    """
+    Round self to an integral value in the same format, using
+    the roundTowardPositive rounding direction.
+
+    In other words, this is the ceiling operation.
+
+    """
+    return _round_to_integral_general(
+        self,
+        rounding_direction=round_toward_positive,
+        quiet=True,
+    )
+
+
+def round_to_integral_toward_negative(self):
+    """
+    Round self to an integral value in the same format, using
+    the roundTowardNegative rounding direction.
+
+    In other words, this is the floor operation.
+
+    """
+    return _round_to_integral_general(
+        self,
+        rounding_direction=round_toward_negative,
+        quiet=True,
+    )
+
+
+def round_to_integral_exact(self):
+    """
+    Round self to an integral value using the current rounding-direction
+    attribute.  Signal the 'inexact' exception if this changes the value.
+
+    """
+    rounding_direction = get_current_attributes().rounding_direction
+
+    return _round_to_integral_general(
+        self,
+        rounding_direction=rounding_direction,
+        quiet=False,
+    )
+
+
+def next_up(self):
+    """
+    Return the least floating-point number in the format of 'self'
+    that compares greater than 'self'.
+
+    """
+    # NaNs follow the usual rules.
+    if self._type == _NAN:
+        return self._format._handle_nans(self)
+
+    # Positive infinity maps to itself.
+    if self._type == _INFINITE and not self._sign:
+        return self
+
+    # Negative zero is treated in the same way as positive zero.
+    if self.is_zero() and self._sign:
+        self = self._format._zero(sign=False)
+
+    # Now we can cheat: encode as an integer, and then simply
+    # increment or decrement the integer representation.
+    n = self._format._encode_as_int(self)
+    n += -1 if self._sign else 1
+    return self._format._decode_from_int(n)
+
+
+def next_down(self):
+    """
+    Return the greatest floating-point number in the format of 'self'
+    that compares less than 'self'.
+
+    """
+    # NaNs follow the usual rules.
+    if self._type == _NAN:
+        return self._format._handle_nans(self)
+
+    # Negative infinity maps to itself.
+    if self._type == _INFINITE and self._sign:
+        return self
+
+    # Positive zero is treated in the same way as negative zero.
+    if self.is_zero() and not self._sign:
+        self = self._format._zero(sign=True)
+
+    # Now we can cheat: encode as an integer, and then simply
+    # increment or decrement the integer representation.
+    n = self._format._encode_as_int(self)
+    n += 1 if self._sign else -1
+    return self._format._decode_from_int(n)
+
+
+def remainder(self, other):
+    """
+    Defined as self - n * other, where n is the closest integer
+    to the exact quotient self / other (with ties rounded to even).
+
+    """
+    # This is a homogeneous operation: both operands have the same format.
+    format = _check_common_format(self, other)
+
+    # NaNs follow the usual rules.
+    if self._type == _NAN or other._type == _NAN:
+        return format._handle_nans(self, other)
+
+    # remainder(+/-inf, y) and remainder(x, 0) are invalid
+    if self._type == _INFINITE or other.is_zero():
+        return format._handle_invalid()
+
+    # remainder(x, +/-inf) is x for any finite x.  Similarly, if x is
+    # much smaller than y, remainder(x, y) is x.
+    if other._type == _INFINITE or self._exponent <= other._exponent - 2:
+        # Careful: we can't just return self here, since we have to
+        # signal the underflow exception where appropriate.
+        return self._loud_copy()
+    else:
+        # Now (other._exponent - exponent) is either 0 or 1, thanks to the
+        # optimization above.
+        exponent = min(self._exponent, other._exponent)
+        modulus = other._significand << (other._exponent - exponent)
+        # It's enough to compute modulo 2 * modulus, since the remainder
+        # result is periodic modulo that value.
+        multiplier = pow(2, self._exponent - exponent, 2 * modulus)
+        remainder = _remainder_nearest(
+            self._signed_significand * multiplier,
+            modulus,
+        )
+        sign = self._sign if remainder == 0 else remainder < 0
+        significand = abs(remainder)
+
+    # Normalize result.  It doesn't matter what rounding direction
+    # we use, since the result should always be exact.
+    with partial_attributes(
+            rounding_direction=round_ties_to_even,
+            tininess_detection=AFTER_ROUNDING,
+    ):
+        inexact, converted = format._from_triple(
+            sign,
+            exponent,
+            significand,
+            get_current_attributes(),
+        )
+    assert not inexact
+    return converted
+
+
+def _min_max_num(self, other):
+    """
+    Helper function for min_num and max_num.  self and other
+    should be non-NaN and have the same format.
+
+    """
+    if self._sign != other._sign:
+        self_is_small = self._sign and not other._sign
+    else:
+        self_is_small = _compare_ordered(self, other) <= 0
+
+    if self_is_small:
+        return self, other
+    else:
+        return other, self
+
+
+def _min_max_num_mag(self, other):
+    """
+    Helper function for min_num_mag and max_num_mag.  self and other
+    should be non-NaN and have the same format.
+
+    """
+    cmp = _compare_ordered(self.abs(), other.abs())
+    if cmp != 0:
+        self_is_small = cmp < 0
+    elif self._sign != other._sign:
+        self_is_small = self._sign and not other._sign
+    else:
+        # Identical; take the first.
+        self_is_small = True
+
+    if self_is_small:
+        return self, other
+    else:
+        return other, self
+
+
+def min_num(self, other):
+    """
+    Minimum of self and other.
+
+    If self and other are differently-signed zeros, the negative zero is
+    returned.
+
+    """
+    # This is a homogeneous operation: both operands have the same format.
+    format = _check_common_format(self, other)
+
+    # Special behaviour for NaNs:  if one operand is a quiet NaN and
+    # the other is not, return the non-NaN operand.
+    if self.is_nan() or other.is_nan():
+        return format._handle_nans_min_max(self, other)
+
+    return _min_max_num(self, other)[0]._loud_copy()
+
+
+def max_num(self, other):
+    """
+    Maximum of self and other.
+
+    If self and other are differently-signed zeros, the positive zero is
+    returned.
+
+    """
+    # This is a homogeneous operation: both operands have the same format.
+    format = _check_common_format(self, other)
+
+    # Special behaviour for NaNs:  if one operand is a quiet NaN and
+    # the other is not, return the non-NaN operand.
+    if self.is_nan() or other.is_nan():
+        return format._handle_nans_min_max(self, other)
+
+    return _min_max_num(self, other)[1]._loud_copy()
+
+
+def min_num_mag(self, other):
+    """
+    Minimum of self and other, by absolute value.
+
+    If self and other are numerically equal (for example in the case of
+    differently-signed zeros), self is returned.
+
+    """
+    # This is a homogeneous operation: both operands have the same format.
+    format = _check_common_format(self, other)
+
+    # Special behaviour for NaNs:  if one operand is a quiet NaN and
+    # the other is not, return the non-NaN operand.
+    if self.is_nan() or other.is_nan():
+        return format._handle_nans_min_max(self, other)
+
+    return _min_max_num_mag(self, other)[0]._loud_copy()
+
+
+def max_num_mag(self, other):
+    """
+    Maximum of self and other, by absolute value.
+
+    If self and other are numerically equal (for example in the case of
+    differently-signed zeros), other is returned.
+
+    """
+    # This is a homogeneous operation: both operands have the same format.
+    format = _check_common_format(self, other)
+
+    # Special behaviour for NaNs:  if one operand is a quiet NaN and
+    # the other is not, return the non-NaN operand.
+    if self.is_nan() or other.is_nan():
+        return format._handle_nans_min_max(self, other)
+
+    return _min_max_num_mag(self, other)[1]._loud_copy()
+
+
+# 5.3.3: logBFormat operations
+
+def scale_b(self, n):
+    """
+    self * 2**n
+
+    """
+    attributes = get_current_attributes()
+
+    # NaNs follow the usual rules.
+    if self._type == _NAN:
+        return self._format._handle_nans(self)
+
+    # Infinities and zeros are unchanged.
+    if self._type == _INFINITE or self.is_zero():
+        return self
+
+    # Finite case.
+    return self._format._from_triple(
+        sign=self._sign,
+        exponent=self._exponent + n,
+        significand=self._significand,
+        attributes=attributes,
+    )[1]
+
+
+def log_b(self):
+    """
+    exponent of self.
+
+    """
+    if self._type == _FINITE and self._significand != 0:
+        # Finite nonzero case.
+        return self._exponent + bit_length(self._significand) - 1
+
+    # Exceptional cases.  The standard says: "logB(NaN), logB(∞), and
+    # logB(0) return language-defined values outside the range ±2 × (emax +
+    # p - 1) and signal the invalid operation exception."  The integer
+    # format used for the output of logB is required to include the
+    # range ±2 × (emax + p) inclusive.  If we stick within that range,
+    # that leaves us 4 values to play with for the exceptional cases
+    # of 0, infinity, and signaling and quiet NaNs.
+    format = self._format
+    limit = 2 * (format.emax + format.precision)
+
+    # Zeros and infinities; return values that are at the appropriate
+    # extremes of the finite result range.
+    if self.is_zero():
+        return _handle_invalid_int(-limit + 1)
+    elif self._type == _INFINITE:
+        return _handle_invalid_int(limit - 1)
+
+    # NaNs.  We somewhat arbitrarily map signaling NaNs to the max
+    # available value, and quiet NaNs to the min.
+    assert self._type == _NAN
+    if self.is_signaling():
+        return _handle_invalid_int(limit)
+    else:
+        return _handle_invalid_int(-limit)
+
+
+# 5.6.1: Comparisons.
 
 def _compare_ordered(source1, source2):
     """

@@ -6,6 +6,7 @@ from quadfloat.attributes import (
     partial_attributes,
     temporary_attributes,
 )
+import quadfloat.binary_interchange_format
 
 
 def identifying_string(binary_float):
@@ -73,10 +74,8 @@ class HomogeneousOperation(ArithmeticOperation):
         return self.method_name
 
     def __call__(self, *args):
-        first = args[0]
-        rest = args[1:]
-        method = getattr(first, self.method_name)
-        return method(*rest)
+        method = getattr(quadfloat.binary_interchange_format, self.method_name)
+        return method(*args)
 
 
 class FormatOfOperation(ArithmeticOperation):
