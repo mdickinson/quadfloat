@@ -22,6 +22,9 @@ Documentation
 Features
 --------
 
+* __repr__ should be changed to include the hex representation instead
+  of the Decimal representation.
+
 * The non formatOf operations should be exposed as functions, as well as or
   instead of as methods.  It's more natural to do remainder(x, y) than
   x.remainder(y).
@@ -41,6 +44,8 @@ Features
 Internal refactoring
 --------------------
 
+* Get rid of signal_underflow, etc., in favour of a single 'signal' function.
+
 * Remove dependence on decimal.
 
 * Be consistent about internal uses of is_finite, is_infinite versus ._type
@@ -54,13 +59,3 @@ Performance
   exponents differ wildly.
 
 * Properties on the BinaryInterchangeFormat should be cached.
-
-
-Tests
------
-
-* Use assertSignalsInvalidOperation where appropriate (replace older
-  invalid_operation_handler(signal_list.append) mechanism.
-
-* The operation should not contain information about argument formats; that's
-  only necessary for parsing the test data, not for executing the operation.

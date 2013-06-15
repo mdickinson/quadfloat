@@ -15,11 +15,16 @@ class InvalidOperationException(object):
 
 
 class InvalidIntegerOperationException(object):
-    def __init__(self):
-        pass
+    """
+    Class representing an invalid operation that returns an integer.
+
+    """
+    def __init__(self, payload):
+        # 'payload' is the value to return in non-stop mode.
+        self.payload = payload
 
     def default_handler(self):
-        raise ValueError("Invalid operation returning an integer.")
+        return self.payload
 
 
 class InvalidBooleanOperationException(object):

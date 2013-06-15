@@ -232,6 +232,15 @@ def scaleB(source):
     )
 
 
+def logB(source):
+    source_format = formats[source]
+    return TestOperation(
+        operation=HomogeneousOperation('log_b'),
+        operand_conversions=[binary_conversion(source_format)],
+        result_conversion=int,
+    )
+
+
 _uso = unary_source_operation
 operation_factories = {
     # 5.3.1 General operations
@@ -254,4 +263,5 @@ operation_factories = {
     'division': binary_operation_factory('division'),
     'convertFromHexCharacter': convertFromHexCharacter,
     'scaleB': scaleB,
+    'logB': logB,
 }

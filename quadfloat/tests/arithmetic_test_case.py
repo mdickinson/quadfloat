@@ -15,6 +15,11 @@ def identifying_string(binary_float):
     purposes if their identifying strings are identical.
 
     """
+    # XXX We actually use this for all result types;  fix accordingly.
+    # (TestCase could also check return type.)
+    if isinstance(binary_float, int):
+        return str(binary_float)
+
     fmt = binary_float.format
     return "{0} (format {1})".format(
         fmt.convert_to_hex_character(binary_float),

@@ -1,0 +1,45 @@
+# Integer-based logB.
+
+operation: logB
+operation source: binary16
+
+# Values near 1.
+0x0.ffep0 -> -1
+0x1p0 -> 0
+0x1.004p0 -> 0
+
+-0x0.ffep0 -> -1
+-0x1p0 -> 0
+-0x1.004p0 -> 0
+
+# More finite values.
+0x1p-2 -> -2
+0x1p-1 -> -1
+0x1p1 -> 1
+0x1p2 -> 2
+
+# Subnormals.
+0x1.004p-13 -> -13
+0x1p-13 -> -13
+0x0.ffep-13 -> -14
+0x1.004p-14 -> -14
+0x1p-14 -> -14  # Smallest normal.
+0x0.ffcp-14 -> -15  # Largest subnormal
+0x1p-15 -> -15
+0x1p-24 -> -24
+
+# Max representable value.
+0x0.ffep16 -> 15
+0x1.004p15 -> 15
+0x1p15 -> 15
+0x0.ffep15 -> 14
+
+# Errors.
+0x0p0 -> -51  invalid
+-0x0p0 -> -51  invalid
+Infinity -> 51  invalid
+-Infinity -> 51  invalid
+NaN -> -52 invalid
+-NaN(123) -> -52 invalid
+sNaN(45) -> 52 invalid
+sNaN -> 52 invalid

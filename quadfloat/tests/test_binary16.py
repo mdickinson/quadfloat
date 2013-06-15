@@ -1,4 +1,3 @@
-import contextlib
 import decimal
 
 from quadfloat import binary16, binary32, binary64
@@ -22,6 +21,9 @@ from quadfloat.tests.base_test_case import BaseTestCase
 
 # binary16 details:
 #
+#    emax = 15
+#    p = 11
+#
 #    11-bit precision
 #     5-bit exponent, so normal range is 2 ** -14 through 2 ** 16.
 #
@@ -35,13 +37,6 @@ from quadfloat.tests.base_test_case import BaseTestCase
 
 
 class TestBinary16(BaseTestCase):
-    @contextlib.contextmanager
-    def assertSignalsInvalidOperation(self):
-        signal_list = []
-        with invalid_operation_handler(signal_list.append):
-            yield
-        self.assertEqual(len(signal_list), 1)
-
     def test_construction_from_int(self):
         # Test round-half-to-even
         self.assertEqual(binary16(2048).encode(), b'\x00\x68')
@@ -1193,61 +1188,4 @@ class TestBinary16(BaseTestCase):
                 actual,
                 expected,
                 'max_num_mag({0}, {1})'.format(source1, source2),
-            )
-
-    def test_log_b(self):
-        # NaNs
-        for x in binary16('nan'), binary16('-snan'):
-            with self.assertSignalsInvalidOperation():
-                try:
-                    x.log_b()
-                except ValueError:
-                    pass
-
-        # Infinities
-        for x in binary16('inf'), binary16('-inf'):
-            with self.assertSignalsInvalidOperation():
-                try:
-                    x.log_b()
-                except ValueError:
-                    pass
-
-        # Zeros
-        for x in binary16('0'), binary16('-0'):
-            with self.assertSignalsInvalidOperation():
-                try:
-                    x.log_b()
-                except ValueError:
-                    pass
-
-        test_pairs = [
-            ('0.9', '-1'),
-            ('1', '0'),
-            ('1.5', '0'),
-            ('2.0', '1'),
-
-            # Subnormals.
-            ('6e-8', '-24'),
-            ('1e-7', '-23'),
-            ('2e-7', '-23'),
-        ]
-        for str_source1, expected in test_pairs:
-            source1 = binary16(str_source1)
-            expected = int(expected)
-            actual = source1.log_b()
-            self.assertEqual(
-                actual,
-                expected,
-                'log_b({0}): expected {1}, got {2}'.format(
-                    source1, expected, actual),
-            )
-
-            # Same test with negative values.
-            source1 = binary16('-' + str_source1)
-            actual = source1.log_b()
-            self.assertEqual(
-                actual,
-                expected,
-                'log_b({0}): expected {1}, got {2}'.format(
-                    source1, expected, actual)
             )

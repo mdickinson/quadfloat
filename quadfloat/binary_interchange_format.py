@@ -1550,18 +1550,34 @@ class _BinaryFloat(object):
         exponent of self.
 
         """
-        if self._type == _NAN:
-            if self.is_signaling():
-                return _handle_invalid_int('signaling nan')
-            else:
-                return _handle_invalid_int('log_b(nan)')
-        elif self._type == _INFINITE:
-            return _handle_invalid_int('log_b(infinity)')
-        elif self.is_zero():
-            return _handle_invalid_int('log_b(zero)')
+        if self._type == _FINITE and self._significand != 0:
+            # Finite nonzero case.
+            return self._exponent + bit_length(self._significand) - 1
 
-        # Finite nonzero case.
-        return self._exponent + bit_length(self._significand) - 1
+        # Exceptional cases.  The standard says: "logB(NaN), logB(∞), and
+        # logB(0) return language-defined values outside the range ±2 × (emax +
+        # p - 1) and signal the invalid operation exception."  The integer
+        # format used for the output of logB is required to include the
+        # range ±2 × (emax + p) inclusive.  If we stick within that range,
+        # that leaves us 4 values to play with for the exceptional cases
+        # of 0, infinity, and signaling and quiet NaNs.
+        format = self._format
+        limit = 2 * (format.emax + format.precision)
+
+        # Zeros and infinities; return values that are at the appropriate
+        # extremes of the finite result range.
+        if self.is_zero():
+            return _handle_invalid_int(-limit + 1)
+        elif self._type == _INFINITE:
+            return _handle_invalid_int(limit - 1)
+
+        # NaNs.  We somewhat arbitrarily map signaling NaNs to the max
+        # available value, and quiet NaNs to the min.
+        assert self._type == _NAN
+        if self.is_signaling():
+            return _handle_invalid_int(limit)
+        else:
+            return _handle_invalid_int(-limit)
 
     # IEEE 754 5.7.2: General operations.
 
@@ -2103,13 +2119,13 @@ def _handle_invalid_bool(default_bool):
     return _signal_invalid_operation(InvalidBooleanOperationException())
 
 
-def _handle_invalid_int(message):
+def _handle_invalid_int(payload):
     """
     This handler should be called when a function that would normally return an
     int signals invalid operation.
 
     """
-    return _signal_invalid_operation(InvalidIntegerOperationException())
+    return _signal_invalid_operation(InvalidIntegerOperationException(payload))
 
 
 def _compare_quiet_general(source1, source2, operator, unordered_result):
