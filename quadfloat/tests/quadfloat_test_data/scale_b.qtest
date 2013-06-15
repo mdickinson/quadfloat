@@ -1,8 +1,8 @@
-attribute rounding-direction: roundTiesToEven
-attribute tininess-detection: afterRounding
-
 operation: scaleB
 operation source: binary16
+
+attribute rounding-direction: roundTiesToEven
+attribute tininess-detection: afterRounding
 
 # NaNs behave as usual
 nan 0 -> nan
@@ -49,6 +49,23 @@ inf 1000 -> inf
 0x1p0 15 -> 0x1p15
 0x1p0 16 -> inf inexact overflow
 0x1p0 1000 -> inf inexact overflow
+
+-0x1p0 -1000 -> -0x0p0 underflow inexact
+-0x1p0 -25 -> -0x0p0 underflow inexact
+-0x1p0 -24 -> -0x1p-24 underflow
+-0x1p0 -16 -> -0x1p-16 underflow
+-0x1p0 -15 -> -0x1p-15 underflow
+-0x1p0 -14 -> -0x1p-14
+-0x1p0 -3 -> -0x1p-3
+-0x1p0 -2 -> -0x1p-2
+-0x1p0 -1 -> -0x1p-1
+-0x1p0 0 -> -0x1p0
+-0x1p0 1 -> -0x1p1
+-0x1p0 2 -> -0x1p2
+-0x1p0 3 -> -0x1p3
+-0x1p0 15 -> -0x1p15
+-0x1p0 16 -> -inf inexact overflow
+-0x1p0 1000 -> -inf inexact overflow
 
 # Check rounding cases with subnormal result.
 0x1p-2 -24 -> 0x0p0 underflow inexact
