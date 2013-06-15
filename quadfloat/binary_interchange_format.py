@@ -605,7 +605,6 @@ class BinaryInterchangeFormat(object):
 
     # Section 5.4.1: Arithmetic operations
 
-    # 5.4.1 addition
     def addition(self, source1, source2):
         """
         Return 'source1 + source2', rounded to the format given by 'self'.
@@ -627,10 +626,8 @@ class BinaryInterchangeFormat(object):
 
         exponent = min(source1._exponent, source2._exponent)
         significand = (
-            (source1._significand * (-1) ** source1._sign <<
-             source1._exponent - exponent) +
-            (source2._significand * (-1) ** source2._sign <<
-             source2._exponent - exponent)
+            (source1._signed_significand << source1._exponent - exponent) +
+            (source2._signed_significand << source2._exponent - exponent)
         )
         if significand > 0:
             sign = False
@@ -650,7 +647,6 @@ class BinaryInterchangeFormat(object):
             attributes=attributes,
         )[1]
 
-    # 5.4.1 subtraction
     def subtraction(self, source1, source2):
         """
         Return 'source1 - source2', rounded to the format given by 'self'.
@@ -663,7 +659,6 @@ class BinaryInterchangeFormat(object):
         # addition(a, b.negate())
         return self.addition(source1, source2.negate())
 
-    # 5.4.1 multiplication
     def multiplication(self, source1, source2):
         """
         Return 'source1 * source2', rounded to the format given by 'self'.
@@ -697,7 +692,6 @@ class BinaryInterchangeFormat(object):
             attributes=attributes,
         )[1]
 
-    # 5.4.1 division
     def division(self, source1, source2):
         """
         Return 'source1 / source2', rounded to the format given by 'self'.
@@ -747,7 +741,6 @@ class BinaryInterchangeFormat(object):
         )
         return self._final_round(sign, exponent, significand, attributes)[1]
 
-    # 5.4.1 squareRoot
     def square_root(self, source1):
         """
         Return the square root of source1 in format 'self'.
@@ -790,7 +783,6 @@ class BinaryInterchangeFormat(object):
 
         return self._final_round(False, e, q, attributes)[1]
 
-    # 5.4.1 fusedMultiplyAdd
     def fused_multiply_add(self, source1, source2, source3):
         """
         Return source1 * source2 + source3, rounding once to format 'self'.
@@ -850,7 +842,6 @@ class BinaryInterchangeFormat(object):
             attributes=attributes,
         )[1]
 
-    # 5.4.1 convertFromInt
     def convert_from_int(self, n):
         """
         Convert the integer n to this format.
