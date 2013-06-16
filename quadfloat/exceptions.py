@@ -2,6 +2,8 @@
 Standard exceptions.
 
 """
+
+
 class InvalidOperationException(object):
     """
     Class representing an InvalidOperation exception.
