@@ -250,6 +250,17 @@ def logB(source):
     )
 
 
+def convert_to_integer(name):
+    def integer_operation_factory(source):
+        source_format = binary_format(source)
+        return TestOperation(
+            operation=HomogeneousOperation(name),
+            operand_conversions=[binary_conversion(source_format)],
+            result_conversion=int,
+        )
+    return integer_operation_factory
+
+
 _uso = unary_source_operation
 operation_factories = {
     # 5.3.1 General operations
@@ -273,4 +284,15 @@ operation_factories = {
     'convertFromHexCharacter': convertFromHexCharacter,
     'scaleB': scaleB,
     'logB': logB,
+
+    'convertToIntegerTiesToEven': convert_to_integer(
+        'convert_to_integer_ties_to_even'),
+    'convertToIntegerTiesToAway': convert_to_integer(
+        'convert_to_integer_ties_to_away'),
+    'convertToIntegerTowardZero': convert_to_integer(
+        'convert_to_integer_toward_zero'),
+    'convertToIntegerTowardPositive': convert_to_integer(
+        'convert_to_integer_toward_positive'),
+    'convertToIntegerTowardNegative': convert_to_integer(
+        'convert_to_integer_toward_negative'),
 }

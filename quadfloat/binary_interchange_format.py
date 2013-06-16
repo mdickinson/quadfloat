@@ -1424,7 +1424,7 @@ class _BinaryFloat(object):
 
     # Overloads for conversion to integer.
     def __int__(self):
-        return self.convert_to_integer_toward_zero()
+        return convert_to_integer_toward_zero(self)
 
     if _sys.version_info[0] == 2:
         def __long__(self):
@@ -1611,80 +1611,6 @@ class _BinaryFloat(object):
 
     def __ge__(self, other):
         return self._rich_compare_general(other, _operator.ge, False)
-
-    # 5.4.1 Arithmetic operations (conversions to integer).
-    def _convert_to_integer_general(self, rounding_direction):
-        if self._type == _NAN:
-            # XXX Signaling nans should also raise the invalid operation
-            # exception.
-            raise ValueError("Cannot convert a NaN to an integer.")
-
-        if self._type == _INFINITE:
-            # NB. Python raises OverflowError here, which doesn't really
-            # seem right.
-            raise ValueError("Cannot convert an infinity to an integer.")
-
-        # Round using roundInexactToOdd, with 2 extra bits.
-        q = _rshift_to_odd(self._significand, -self._exponent - 2)
-        q = rounding_direction._rounder(q, self._sign)
-
-        # Use int() to convert from long if necessary
-        return int(-q if self._sign else q)
-
-    def convert_to_integer_ties_to_even(self):
-        """
-        Round 'self' to the nearest Python integer, using the roundTiesToEven
-        rounding direction.
-
-        """
-        return self._convert_to_integer_general(
-            rounding_direction=round_ties_to_even
-        )
-
-    def convert_to_integer_toward_zero(self):
-        """
-        Round 'self' to a Python integer, using the roundTowardZero rounding
-        direction.
-
-        """
-        return self._convert_to_integer_general(
-            rounding_direction=round_toward_zero
-        )
-
-    def convert_to_integer_toward_positive(self):
-        """
-        Round 'self' to a Python integer, using the roundTowardPositive
-        rounding direction.
-
-        In other words, return the 'ceiling' of 'self' as a Python integer.
-
-        """
-        return self._convert_to_integer_general(
-            rounding_direction=round_toward_positive
-        )
-
-    def convert_to_integer_toward_negative(self):
-        """
-        Round 'self' to a Python integer, using the roundTowardNegative
-        rounding direction.
-
-        In other words, return the 'floor' of 'self' as a Python integer.
-
-        """
-        return self._convert_to_integer_general(
-            rounding_direction=round_toward_negative
-        )
-
-    def convert_to_integer_ties_to_away(self):
-        """
-        Round 'self' to the nearest Python integer, using the roundTiesToAway
-        rounding direction.
-
-        """
-        return self._convert_to_integer_general(
-            rounding_direction=round_ties_to_away
-        )
-
 
 # 5.3: Homogeneous general-computational operations
 
@@ -2089,6 +2015,85 @@ def log_b(self):
         return _handle_invalid_int(limit)
     else:
         return _handle_invalid_int(-limit)
+
+
+# 5.4.1 Arithmetic operations (conversions to integer).
+def _convert_to_integer_general(self, rounding_direction):
+    if self._type == _NAN:
+        # XXX Signaling nans should also raise the invalid operation
+        # exception.
+        raise ValueError("Cannot convert a NaN to an integer.")
+
+    if self._type == _INFINITE:
+        # NB. Python raises OverflowError here, which doesn't really
+        # seem right.
+        raise ValueError("Cannot convert an infinity to an integer.")
+
+    # Round using roundInexactToOdd, with 2 extra bits.
+    q = _rshift_to_odd(self._significand, -self._exponent - 2)
+    q = rounding_direction._rounder(q, self._sign)
+
+    # Use int() to convert from long if necessary
+    return int(-q if self._sign else q)
+
+def convert_to_integer_ties_to_even(self):
+    """
+    Round 'self' to the nearest Python integer, using the roundTiesToEven
+    rounding direction.
+
+    """
+    return _convert_to_integer_general(
+        self,
+        rounding_direction=round_ties_to_even
+    )
+
+def convert_to_integer_toward_zero(self):
+    """
+    Round 'self' to a Python integer, using the roundTowardZero rounding
+    direction.
+
+    """
+    return _convert_to_integer_general(
+        self,
+        rounding_direction=round_toward_zero
+    )
+
+def convert_to_integer_toward_positive(self):
+    """
+    Round 'self' to a Python integer, using the roundTowardPositive
+    rounding direction.
+
+    In other words, return the 'ceiling' of 'self' as a Python integer.
+
+    """
+    return _convert_to_integer_general(
+        self,
+        rounding_direction=round_toward_positive
+    )
+
+def convert_to_integer_toward_negative(self):
+    """
+    Round 'self' to a Python integer, using the roundTowardNegative
+    rounding direction.
+
+    In other words, return the 'floor' of 'self' as a Python integer.
+
+    """
+    return _convert_to_integer_general(
+        self,
+        rounding_direction=round_toward_negative
+    )
+
+def convert_to_integer_ties_to_away(self):
+    """
+    Round 'self' to the nearest Python integer, using the roundTiesToAway
+    rounding direction.
+
+    """
+    return _convert_to_integer_general(
+        self,
+        rounding_direction=round_ties_to_away
+    )
 
 
 # 5.6.1: Comparisons.

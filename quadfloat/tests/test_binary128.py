@@ -29,6 +29,12 @@ from quadfloat.binary_interchange_format import (
     compare_signaling_less_unordered,
     compare_signaling_not_less,
     compare_signaling_greater_unordered,
+
+    convert_to_integer_ties_to_even,
+    convert_to_integer_ties_to_away,
+    convert_to_integer_toward_zero,
+    convert_to_integer_toward_positive,
+    convert_to_integer_toward_negative,
 )
 from quadfloat.tests.base_test_case import BaseTestCase
 
@@ -1222,188 +1228,62 @@ class TestBinary128(BaseTestCase):
     def test_convert_to_integer_ties_to_even(self):
         nan = binary128('nan')
         with self.assertRaises(ValueError):
-            nan.convert_to_integer_ties_to_even()
+            convert_to_integer_ties_to_even(nan)
 
         inf = binary128('inf')
         with self.assertRaises(ValueError):
-            inf.convert_to_integer_ties_to_even()
+            convert_to_integer_ties_to_even(inf)
         ninf = binary128('-inf')
         with self.assertRaises(ValueError):
-            ninf.convert_to_integer_ties_to_even()
-
-        self.assertEqual(
-            binary128(-1.75).convert_to_integer_ties_to_even(), -2)
-        self.assertEqual(
-            binary128(-1.5).convert_to_integer_ties_to_even(), -2)
-        self.assertEqual(
-            binary128(-1.25).convert_to_integer_ties_to_even(), -1)
-        self.assertEqual(binary128(-1.0).convert_to_integer_ties_to_even(), -1)
-        self.assertEqual(
-            binary128(-0.75).convert_to_integer_ties_to_even(), -1)
-        self.assertEqual(binary128(-0.5).convert_to_integer_ties_to_even(), 0)
-        self.assertEqual(binary128(-0.25).convert_to_integer_ties_to_even(), 0)
-        self.assertEqual(binary128(-0.0).convert_to_integer_ties_to_even(), 0)
-        self.assertEqual(binary128(0.0).convert_to_integer_ties_to_even(), 0)
-        self.assertEqual(binary128(0.25).convert_to_integer_ties_to_even(), 0)
-        self.assertEqual(binary128(0.5).convert_to_integer_ties_to_even(), 0)
-        self.assertEqual(binary128(0.75).convert_to_integer_ties_to_even(), 1)
-        self.assertEqual(binary128(1.0).convert_to_integer_ties_to_even(), 1)
-        self.assertEqual(binary128(1.25).convert_to_integer_ties_to_even(), 1)
-        self.assertEqual(binary128(1.5).convert_to_integer_ties_to_even(), 2)
-        self.assertEqual(binary128(1.75).convert_to_integer_ties_to_even(), 2)
+            convert_to_integer_ties_to_even(ninf)
 
     def test_convert_to_integer_toward_zero(self):
         nan = binary128('nan')
         with self.assertRaises(ValueError):
-            nan.convert_to_integer_toward_zero()
+            convert_to_integer_toward_zero(nan)
 
         inf = binary128('inf')
         with self.assertRaises(ValueError):
-            inf.convert_to_integer_toward_zero()
+            convert_to_integer_toward_zero(inf)
         ninf = binary128('-inf')
         with self.assertRaises(ValueError):
-            ninf.convert_to_integer_toward_zero()
-
-        self.assertEqual(binary128(-1.75).convert_to_integer_toward_zero(), -1)
-        self.assertEqual(binary128(-1.5).convert_to_integer_toward_zero(), -1)
-        self.assertEqual(binary128(-1.25).convert_to_integer_toward_zero(), -1)
-        self.assertEqual(binary128(-1.0).convert_to_integer_toward_zero(), -1)
-        self.assertEqual(binary128(-0.75).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(binary128(-0.5).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(binary128(-0.25).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(binary128(-0.0).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(binary128(0.0).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(binary128(0.25).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(binary128(0.5).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(binary128(0.75).convert_to_integer_toward_zero(), 0)
-        self.assertEqual(binary128(1.0).convert_to_integer_toward_zero(), 1)
-        self.assertEqual(binary128(1.25).convert_to_integer_toward_zero(), 1)
-        self.assertEqual(binary128(1.5).convert_to_integer_toward_zero(), 1)
-        self.assertEqual(binary128(1.75).convert_to_integer_toward_zero(), 1)
+            convert_to_integer_toward_zero(ninf)
 
     def test_convert_to_integer_toward_positive(self):
         nan = binary128('nan')
         with self.assertRaises(ValueError):
-            nan.convert_to_integer_toward_positive()
+            convert_to_integer_toward_positive(nan)
 
         inf = binary128('inf')
         with self.assertRaises(ValueError):
-            inf.convert_to_integer_toward_positive()
+            convert_to_integer_toward_positive(inf)
         ninf = binary128('-inf')
         with self.assertRaises(ValueError):
-            ninf.convert_to_integer_toward_positive()
-
-        self.assertEqual(
-            binary128(-1.75).convert_to_integer_toward_positive(), -1)
-        self.assertEqual(
-            binary128(-1.5).convert_to_integer_toward_positive(), -1)
-        self.assertEqual(
-            binary128(-1.25).convert_to_integer_toward_positive(), -1)
-        self.assertEqual(
-            binary128(-1.0).convert_to_integer_toward_positive(), -1)
-        self.assertEqual(
-            binary128(-0.75).convert_to_integer_toward_positive(), 0)
-        self.assertEqual(
-            binary128(-0.5).convert_to_integer_toward_positive(), 0)
-        self.assertEqual(
-            binary128(-0.25).convert_to_integer_toward_positive(), 0)
-        self.assertEqual(
-            binary128(-0.0).convert_to_integer_toward_positive(), 0)
-        self.assertEqual(
-            binary128(0.0).convert_to_integer_toward_positive(), 0)
-        self.assertEqual(
-            binary128(0.25).convert_to_integer_toward_positive(), 1)
-        self.assertEqual(
-            binary128(0.5).convert_to_integer_toward_positive(), 1)
-        self.assertEqual(
-            binary128(0.75).convert_to_integer_toward_positive(), 1)
-        self.assertEqual(
-            binary128(1.0).convert_to_integer_toward_positive(), 1)
-        self.assertEqual(
-            binary128(1.25).convert_to_integer_toward_positive(), 2)
-        self.assertEqual(
-            binary128(1.5).convert_to_integer_toward_positive(), 2)
-        self.assertEqual(
-            binary128(1.75).convert_to_integer_toward_positive(), 2)
+            convert_to_integer_toward_positive(ninf)
 
     def test_convert_to_integer_toward_negative(self):
         nan = binary128('nan')
         with self.assertRaises(ValueError):
-            nan.convert_to_integer_toward_negative()
+            convert_to_integer_toward_negative(nan)
 
         inf = binary128('inf')
         with self.assertRaises(ValueError):
-            inf.convert_to_integer_toward_negative()
+            convert_to_integer_toward_negative(inf)
         ninf = binary128('-inf')
         with self.assertRaises(ValueError):
-            ninf.convert_to_integer_toward_negative()
-
-        self.assertEqual(
-            binary128(-1.75).convert_to_integer_toward_negative(), -2)
-        self.assertEqual(
-            binary128(-1.5).convert_to_integer_toward_negative(), -2)
-        self.assertEqual(
-            binary128(-1.25).convert_to_integer_toward_negative(), -2)
-        self.assertEqual(
-            binary128(-1.0).convert_to_integer_toward_negative(), -1)
-        self.assertEqual(
-            binary128(-0.75).convert_to_integer_toward_negative(), -1)
-        self.assertEqual(
-            binary128(-0.5).convert_to_integer_toward_negative(), -1)
-        self.assertEqual(
-            binary128(-0.25).convert_to_integer_toward_negative(), -1)
-        self.assertEqual(
-            binary128(-0.0).convert_to_integer_toward_negative(), 0)
-        self.assertEqual(
-            binary128(0.0).convert_to_integer_toward_negative(), 0)
-        self.assertEqual(
-            binary128(0.25).convert_to_integer_toward_negative(), 0)
-        self.assertEqual(
-            binary128(0.5).convert_to_integer_toward_negative(), 0)
-        self.assertEqual(
-            binary128(0.75).convert_to_integer_toward_negative(), 0)
-        self.assertEqual(
-            binary128(1.0).convert_to_integer_toward_negative(), 1)
-        self.assertEqual(
-            binary128(1.25).convert_to_integer_toward_negative(), 1)
-        self.assertEqual(
-            binary128(1.5).convert_to_integer_toward_negative(), 1)
-        self.assertEqual(
-            binary128(1.75).convert_to_integer_toward_negative(), 1)
+            convert_to_integer_toward_negative(ninf)
 
     def test_convert_to_integer_ties_to_away(self):
         nan = binary128('nan')
         with self.assertRaises(ValueError):
-            nan.convert_to_integer_ties_to_away()
+            convert_to_integer_ties_to_away(nan)
 
         inf = binary128('inf')
         with self.assertRaises(ValueError):
-            inf.convert_to_integer_ties_to_away()
+            convert_to_integer_ties_to_away(inf)
         ninf = binary128('-inf')
         with self.assertRaises(ValueError):
-            ninf.convert_to_integer_ties_to_away()
-
-        self.assertEqual(
-            binary128(-1.75).convert_to_integer_ties_to_away(), -2)
-        self.assertEqual(
-            binary128(-1.5).convert_to_integer_ties_to_away(), -2)
-        self.assertEqual(
-            binary128(-1.25).convert_to_integer_ties_to_away(), -1)
-        self.assertEqual(
-            binary128(-1.0).convert_to_integer_ties_to_away(), -1)
-        self.assertEqual(
-            binary128(-0.75).convert_to_integer_ties_to_away(), -1)
-        self.assertEqual(binary128(-0.5).convert_to_integer_ties_to_away(), -1)
-        self.assertEqual(binary128(-0.25).convert_to_integer_ties_to_away(), 0)
-        self.assertEqual(binary128(-0.0).convert_to_integer_ties_to_away(), 0)
-        self.assertEqual(binary128(0.0).convert_to_integer_ties_to_away(), 0)
-        self.assertEqual(binary128(0.25).convert_to_integer_ties_to_away(), 0)
-        self.assertEqual(binary128(0.5).convert_to_integer_ties_to_away(), 1)
-        self.assertEqual(binary128(0.75).convert_to_integer_ties_to_away(), 1)
-        self.assertEqual(binary128(1.0).convert_to_integer_ties_to_away(), 1)
-        self.assertEqual(binary128(1.25).convert_to_integer_ties_to_away(), 1)
-        self.assertEqual(binary128(1.5).convert_to_integer_ties_to_away(), 2)
-        self.assertEqual(binary128(1.75).convert_to_integer_ties_to_away(), 2)
+            convert_to_integer_ties_to_away(ninf)
 
     def test_copy(self):
         self.assertInterchangeable(binary128('-2.0').copy(), binary128('-2.0'))
