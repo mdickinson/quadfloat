@@ -1,0 +1,217 @@
+operation: convertFromInt
+operation destination: binary16
+
+attribute rounding-direction: roundTiesToEven
+
+-1 -> -0x1p0
+0 -> 0x0p0  # positive zero
+1 -> 0x1p0
+2 -> 0x2p0
+1023 -> 0x3ffp0
+1024 -> 0x400p0
+1025 -> 0x401p0
+2047 -> 0x7ffp0
+2048 -> 0x800p0
+2049 -> 0x800p0 inexact
+2050 -> 0x802p0
+2051 -> 0x804p0 inexact
+2052 -> 0x804p0
+2053 -> 0x804p0 inexact
+2054 -> 0x806p0
+2055 -> 0x808p0 inexact
+2056 -> 0x808p0
+
+4092 -> 0xffcp0
+4093 -> 0xffcp0 inexact
+4094 -> 0xffep0
+4095 -> 0x1000p0 inexact
+4096 -> 0x1000p0
+4097 -> 0x1000p0 inexact
+4098 -> 0x1000p0 inexact
+4099 -> 0x1004p0 inexact
+4100 -> 0x1004p0
+4101 -> 0x1004p0 inexact
+4102 -> 0x1008p0 inexact
+4103 -> 0x1008p0 inexact
+4104 -> 0x1008p0
+
+65504 -> 0x0.ffep16
+65519 -> 0x0.ffep16 inexact
+65520 -> Infinity inexact overflow
+65535 -> Infinity inexact overflow
+65536 -> Infinity inexact overflow
+65537 -> Infinity inexact overflow
+1000000000 -> Infinity inexact overflow
+
+# The operation should respect the rounding direction.
+
+attribute rounding-direction: roundTiesToAway
+
+-1 -> -0x1p0
+0 -> 0x0p0  # positive zero
+1 -> 0x1p0
+2 -> 0x2p0
+1023 -> 0x3ffp0
+1024 -> 0x400p0
+1025 -> 0x401p0
+2047 -> 0x7ffp0
+2048 -> 0x800p0
+2049 -> 0x802p0 inexact
+2050 -> 0x802p0
+2051 -> 0x804p0 inexact
+2052 -> 0x804p0
+2053 -> 0x806p0 inexact
+2054 -> 0x806p0
+2055 -> 0x808p0 inexact
+2056 -> 0x808p0
+
+4092 -> 0xffcp0
+4093 -> 0xffep0 inexact
+4094 -> 0xffep0
+4095 -> 0x1000p0 inexact
+4096 -> 0x1000p0
+4097 -> 0x1000p0 inexact
+4098 -> 0x1004p0 inexact
+4099 -> 0x1004p0 inexact
+4100 -> 0x1004p0
+4101 -> 0x1004p0 inexact
+4102 -> 0x1008p0 inexact
+4103 -> 0x1008p0 inexact
+4104 -> 0x1008p0
+
+65504 -> 0x0.ffep16
+65519 -> 0x0.ffep16 inexact
+65520 -> Infinity inexact overflow
+65535 -> Infinity inexact overflow
+65536 -> Infinity inexact overflow
+65537 -> Infinity inexact overflow
+1000000000 -> Infinity inexact overflow
+
+
+attribute rounding-direction: roundTowardZero
+
+-1 -> -0x1p0
+0 -> 0x0p0  # positive zero
+1 -> 0x1p0
+2 -> 0x2p0
+1023 -> 0x3ffp0
+1024 -> 0x400p0
+1025 -> 0x401p0
+2047 -> 0x7ffp0
+2048 -> 0x800p0
+2049 -> 0x800p0 inexact
+2050 -> 0x802p0
+2051 -> 0x802p0 inexact
+2052 -> 0x804p0
+2053 -> 0x804p0 inexact
+2054 -> 0x806p0
+2055 -> 0x806p0 inexact
+2056 -> 0x808p0
+
+4092 -> 0xffcp0
+4093 -> 0xffcp0 inexact
+4094 -> 0xffep0
+4095 -> 0xffep0 inexact
+4096 -> 0x1000p0
+4097 -> 0x1000p0 inexact
+4098 -> 0x1000p0 inexact
+4099 -> 0x1000p0 inexact
+4100 -> 0x1004p0
+4101 -> 0x1004p0 inexact
+4102 -> 0x1004p0 inexact
+4103 -> 0x1004p0 inexact
+4104 -> 0x1008p0
+
+65504 -> 0x0.ffep16
+65519 -> 0x0.ffep16 inexact
+65520 -> 0x0.ffep16 inexact
+65535 -> 0x0.ffep16 inexact
+65536 -> 0x0.ffep16 inexact overflow
+65537 -> 0x0.ffep16 inexact overflow
+1000000000 -> 0x0.ffep16 inexact overflow
+
+
+attribute rounding-direction: roundTowardNegative
+
+-1 -> -0x1p0
+0 -> 0x0p0  # positive zero
+1 -> 0x1p0
+2 -> 0x2p0
+1023 -> 0x3ffp0
+1024 -> 0x400p0
+1025 -> 0x401p0
+2047 -> 0x7ffp0
+2048 -> 0x800p0
+2049 -> 0x800p0 inexact
+2050 -> 0x802p0
+2051 -> 0x802p0 inexact
+2052 -> 0x804p0
+2053 -> 0x804p0 inexact
+2054 -> 0x806p0
+2055 -> 0x806p0 inexact
+2056 -> 0x808p0
+
+4092 -> 0xffcp0
+4093 -> 0xffcp0 inexact
+4094 -> 0xffep0
+4095 -> 0xffep0 inexact
+4096 -> 0x1000p0
+4097 -> 0x1000p0 inexact
+4098 -> 0x1000p0 inexact
+4099 -> 0x1000p0 inexact
+4100 -> 0x1004p0
+4101 -> 0x1004p0 inexact
+4102 -> 0x1004p0 inexact
+4103 -> 0x1004p0 inexact
+4104 -> 0x1008p0
+
+65504 -> 0x0.ffep16
+65519 -> 0x0.ffep16 inexact
+65520 -> 0x0.ffep16 inexact
+65535 -> 0x0.ffep16 inexact
+65536 -> 0x0.ffep16 inexact overflow
+65537 -> 0x0.ffep16 inexact overflow
+1000000000 -> 0x0.ffep16 inexact overflow
+
+
+attribute rounding-direction: roundTowardPositive
+
+-1 -> -0x1p0
+0 -> 0x0p0  # positive zero
+1 -> 0x1p0
+2 -> 0x2p0
+1023 -> 0x3ffp0
+1024 -> 0x400p0
+1025 -> 0x401p0
+2047 -> 0x7ffp0
+2048 -> 0x800p0
+2049 -> 0x802p0 inexact
+2050 -> 0x802p0
+2051 -> 0x804p0 inexact
+2052 -> 0x804p0
+2053 -> 0x806p0 inexact
+2054 -> 0x806p0
+2055 -> 0x808p0 inexact
+2056 -> 0x808p0
+
+4092 -> 0xffcp0
+4093 -> 0xffep0 inexact
+4094 -> 0xffep0
+4095 -> 0x1000p0 inexact
+4096 -> 0x1000p0
+4097 -> 0x1004p0 inexact
+4098 -> 0x1004p0 inexact
+4099 -> 0x1004p0 inexact
+4100 -> 0x1004p0
+4101 -> 0x1008p0 inexact
+4102 -> 0x1008p0 inexact
+4103 -> 0x1008p0 inexact
+4104 -> 0x1008p0
+
+65504 -> 0x0.ffep16
+65519 -> Infinity inexact overflow
+65520 -> Infinity inexact overflow
+65535 -> Infinity inexact overflow
+65536 -> Infinity inexact overflow
+65537 -> Infinity inexact overflow
+1000000000 -> Infinity inexact overflow

@@ -250,6 +250,15 @@ def logB(source):
     )
 
 
+def convert_from_int(destination):
+    destination_format = binary_format(destination)
+    return TestOperation(
+        operation=FormatOfOperation(destination_format, 'convert_from_int'),
+        operand_conversions=[int],
+        result_conversion=binary_conversion(destination_format),
+    )
+
+
 def convert_to_integer(name):
     def integer_operation_factory(source):
         source_format = binary_format(source)
@@ -305,4 +314,6 @@ operation_factories = {
         'convert_to_integer_exact_toward_positive'),
     'convertToIntegerExactTowardNegative': convert_to_integer(
         'convert_to_integer_exact_toward_negative'),
+
+    'convertFromInt': convert_from_int,
 }
