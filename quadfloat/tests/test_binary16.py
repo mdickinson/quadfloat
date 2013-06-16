@@ -1,5 +1,3 @@
-import decimal
-
 from quadfloat import binary16, binary32, binary64
 from quadfloat.arithmetic import _divide_nearest
 from quadfloat.binary_interchange_format import (
@@ -11,7 +9,23 @@ from quadfloat.binary_interchange_format import (
     max_num_mag,
 )
 from quadfloat.compat import _bytes_from_iterable
+from quadfloat.parsing import parse_finite_decimal
 from quadfloat.tests.base_test_case import BaseTestCase
+
+
+def string_to_decimal(s):
+    # Normalized version of parse_finite_decimal.
+    sign, exponent, coefficient = parse_finite_decimal(s)
+
+    # Normalize: use an exponent of 0 for zeros, and
+    # the largest exponent possible otherwise.
+    if coefficient == 0:
+        exponent = 0
+    else:
+        while coefficient % 10 == 0:
+            coefficient //= 10
+            exponent += 1
+    return sign, exponent, coefficient
 
 
 # binary16 details:
@@ -296,8 +310,8 @@ class TestBinary16(BaseTestCase):
         for input, output_string in test_pairs:
             input_string = str(input)
             self.assertEqual(
-                decimal.Decimal(input_string),
-                decimal.Decimal(output_string),
+                string_to_decimal(input_string),
+                string_to_decimal(output_string),
             )
 
         # Exhaustive testing for 3-digit decimal -> binary16 -> decimal
@@ -327,8 +341,8 @@ class TestBinary16(BaseTestCase):
                 output_string.startswith('-'),
             )
             self.assertEqual(
-                decimal.Decimal(input_string),
-                decimal.Decimal(output_string),
+                string_to_decimal(input_string),
+                string_to_decimal(output_string),
             )
 
     def test_short_float_repr_subnormal_corner_case(self):
@@ -369,10 +383,11 @@ class TestBinary16(BaseTestCase):
             # If the returned string has only one digit, it should be
             # equal to the closest string.
             output_str = str(binary_value)
-            if len(decimal.Decimal(output_str)._int.strip('0')) == 1:
+            _, _, output_coeff = string_to_decimal(output_str)
+            if len(str(output_coeff)) == 1:
                 self.assertEqual(
-                    decimal.Decimal(output_str),
-                    decimal.Decimal(best_str),
+                    string_to_decimal(output_str),
+                    string_to_decimal(best_str),
                 )
 
     def _comparison_test_values(self):

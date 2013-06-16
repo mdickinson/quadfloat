@@ -6,8 +6,6 @@ Bugs
 
 * Special methods aren't correctly returning NotImplemented.
 
-* There's a test failure on Python 3.3, due to access of Decimal internals.
-
 * Lots of public methods are missing docstrings.
 
 * Missing documentation.
@@ -45,8 +43,6 @@ Internal refactoring
 --------------------
 
 * Get rid of signal_underflow, etc., in favour of a single 'signal' function.
-
-* Remove dependence on decimal.
 
 * Be consistent about internal uses of is_finite, is_infinite versus ._type
   tests.

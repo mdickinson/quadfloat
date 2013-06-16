@@ -1,8 +1,8 @@
-import decimal
 import unittest
 
 
 from quadfloat.binary_interchange_format import BinaryInterchangeFormat
+from quadfloat.parsing import parse_finite_decimal
 
 
 class TestShortRepr(unittest.TestCase):
@@ -33,6 +33,6 @@ class TestShortRepr(unittest.TestCase):
             # XXX Conversion is slow!
             input_string = str(input)
             self.assertEqual(
-                decimal.Decimal(input_string),
-                decimal.Decimal(output_string),
+                parse_finite_decimal(input_string),
+                parse_finite_decimal(output_string),
             )
