@@ -42,8 +42,6 @@ Features
 Internal refactoring
 --------------------
 
-* Get rid of signal_underflow, etc., in favour of a single 'signal' function.
-
 * Be consistent about internal uses of is_finite, is_infinite versus ._type
   tests.
 
