@@ -39,7 +39,6 @@ from quadfloat.exceptions import (
     UnderflowException,
     SignalingNaNException,
     DivideByZeroException,
-    signal,
 )
 from quadfloat.interval import Interval as _Interval
 from quadfloat.parsing import (
@@ -58,8 +57,12 @@ from quadfloat.rounding_direction import (
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
 
-def exception_default_handler(exception):
-    return exception.default_handler()
+def signal(exception):
+    return exception.signal(get_current_attributes())
+
+
+def exception_default_handler(exception, attributes):
+    return exception.default_handler(attributes)
 
 
 _default_attributes = Attributes(

@@ -2,9 +2,6 @@
 Standard exceptions.
 
 """
-from quadfloat.attributes import get_current_attributes
-
-
 class InvalidOperationException(object):
     """
     Class representing an InvalidOperation exception.
@@ -13,7 +10,7 @@ class InvalidOperationException(object):
     def __init__(self, format):
         self.format = format
 
-    def default_handler(self):
+    def default_handler(self, attributes):
         return self.format._nan(
             sign=False,
             signaling=False,
@@ -21,7 +18,7 @@ class InvalidOperationException(object):
         )
 
     def signal(self, attributes):
-        return attributes.invalid_operation_handler(self)
+        return attributes.invalid_operation_handler(self, attributes)
 
 
 class InvalidIntegerOperationException(object):
@@ -33,22 +30,22 @@ class InvalidIntegerOperationException(object):
         # 'payload' is the value to return in non-stop mode.
         self.payload = payload
 
-    def default_handler(self):
+    def default_handler(self, attributes):
         return self.payload
 
     def signal(self, attributes):
-        return attributes.invalid_operation_handler(self)
+        return attributes.invalid_operation_handler(self, attributes)
 
 
 class InvalidBooleanOperationException(object):
     def __init__(self):
         pass
 
-    def default_handler(self):
+    def default_handler(self, attributes):
         raise ValueError("Invalid operation returning a boolean.")
 
     def signal(self, attributes):
-        return attributes.invalid_operation_handler(self)
+        return attributes.invalid_operation_handler(self, attributes)
 
 
 class SignalingNaNException(object):
@@ -62,11 +59,11 @@ class SignalingNaNException(object):
         # The signaling NaN that caused this exception.
         self.snan = snan
 
-    def default_handler(self):
+    def default_handler(self, attributes):
         return self.format(self.snan._quieten_nan())
 
     def signal(self, attributes):
-        return attributes.invalid_operation_handler(self)
+        return attributes.invalid_operation_handler(self, attributes)
 
 
 class InexactException(object):
@@ -77,11 +74,11 @@ class InexactException(object):
     def __init__(self, rounded):
         self.rounded = rounded
 
-    def default_handler(self):
+    def default_handler(self, attributes):
         return self.rounded
 
     def signal(self, attributes):
-        return attributes.inexact_handler(self)
+        return attributes.inexact_handler(self, attributes)
 
 
 class UnderflowException(object):
@@ -93,14 +90,15 @@ class UnderflowException(object):
         self.rounded = rounded
         self.inexact = inexact
 
-    def default_handler(self):
+    def default_handler(self, attributes):
         if self.inexact:
-            return signal(InexactException(self.rounded))
+            inexact_exception = InexactException(self.rounded)
+            return inexact_exception.signal(attributes)
         else:
             return self.rounded
 
     def signal(self, attributes):
-        return attributes.underflow_handler(self)
+        return attributes.underflow_handler(self, attributes)
 
 
 class OverflowException(object):
@@ -111,11 +109,12 @@ class OverflowException(object):
     def __init__(self, rounded):
         self.rounded = rounded
 
-    def default_handler(self):
-        return signal(InexactException(self.rounded))
+    def default_handler(self, attributes):
+        inexact_exception = InexactException(self.rounded)
+        return inexact_exception.signal(attributes)
 
     def signal(self, attributes):
-        return attributes.overflow_handler(self)
+        return attributes.overflow_handler(self, attributes)
 
 
 class DivideByZeroException(object):
@@ -128,12 +127,8 @@ class DivideByZeroException(object):
         self.sign = sign
         self.format = format
 
-    def default_handler(self):
+    def default_handler(self, attributes):
         return self.format._infinite(self.sign)
 
     def signal(self, attributes):
-        return attributes.divide_by_zero_handler(self)
-
-
-def signal(exception):
-    return exception.signal(get_current_attributes())
+        return attributes.divide_by_zero_handler(self, attributes)

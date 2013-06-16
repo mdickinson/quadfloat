@@ -72,9 +72,9 @@ def binary_conversion(format):
 # Attributes used when reading a RHS.
 
 
-def raising_inexact_handler(exc):
+def raising_inexact_handler(exception, attributes):
     raise ValueError(
-        "Got inexact value; rounded value is {0}".format(exc.rounded)
+        "Got inexact value; rounded value is {0}".format(exception.rounded)
     )
 
 

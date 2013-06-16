@@ -40,9 +40,9 @@ class SignalCollector(object):
         )
 
     def set_flag(self, flag):
-        def exception_handler(exc):
+        def exception_handler(exception, attributes):
             self.flags.add(flag)
-            return exc.default_handler()
+            return exception.default_handler(attributes)
         return exception_handler
 
     def __enter__(self):
