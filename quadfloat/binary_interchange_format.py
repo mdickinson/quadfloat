@@ -13,15 +13,10 @@ from quadfloat.arithmetic import (
     _rshift_to_odd,
 )
 from quadfloat.attributes import (
-    _signal_invalid_operation,
-    _signal_inexact,
-    _signal_overflow,
-    _signal_underflow,
-    _signal_divide_by_zero,
-    get_current_attributes,
-    set_current_attributes,
     Attributes,
+    get_current_attributes,
     partial_attributes,
+    set_current_attributes,
 )
 from quadfloat.compat import (
     bit_length,
@@ -44,6 +39,7 @@ from quadfloat.exceptions import (
     UnderflowException,
     SignalingNaNException,
     DivideByZeroException,
+    signal,
 )
 from quadfloat.interval import Interval as _Interval
 from quadfloat.parsing import (
@@ -523,7 +519,7 @@ class BinaryInterchangeFormat(object):
                 rounded = self._infinite(sign)
             else:
                 rounded = self._largest_finite(sign)
-            rounded = _signal_overflow(OverflowException(rounded))
+            rounded = signal(OverflowException(rounded))
         else:
             inexact = (adj < 0) - (adj > 0) if sign else (adj > 0) - (adj < 0)
             rounded = self._finite(
@@ -532,11 +528,11 @@ class BinaryInterchangeFormat(object):
                 significand=q,
             )
             if underflow:
-                rounded = _signal_underflow(
+                rounded = signal(
                     UnderflowException(rounded, inexact != 0)
                 )
             elif inexact:
-                rounded = _signal_inexact(InexactException(rounded))
+                rounded = signal(InexactException(rounded))
 
         return inexact, rounded
 
@@ -577,7 +573,7 @@ class BinaryInterchangeFormat(object):
         for source in sources:
             if source._type == _NAN and source._signaling:
                 exception = SignalingNaNException(self, source)
-                return _signal_invalid_operation(exception)
+                return signal(exception)
 
         # All operands are quiet NaNs; return a result based on the first of
         # these.
@@ -719,7 +715,7 @@ class BinaryInterchangeFormat(object):
                 return self._zero(sign=sign)
 
         if source2.is_zero():
-            return _signal_divide_by_zero(DivideByZeroException(sign, self))
+            return signal(DivideByZeroException(sign, self))
 
         # Finite / finite case.
 
@@ -1001,7 +997,7 @@ class BinaryInterchangeFormat(object):
         """
         # XXX All uses of this function should be replaced with something
         # that signals a particular subclass of InvalidOperationException.
-        return _signal_invalid_operation(InvalidOperationException(self))
+        return signal(InvalidOperationException(self))
 
     def _encode_as_int(self, source):
         """
@@ -1189,7 +1185,7 @@ class _BinaryFloat(object):
         # instances are immutable.
         if self.is_subnormal():
             exception = UnderflowException(self, False)
-            return _signal_underflow(exception)
+            return signal(exception)
         else:
             return self
 
@@ -1724,7 +1720,7 @@ def _round_to_integral_general(self, rounding_direction, quiet):
         rounded = self._format._finite(self._sign, -shift, q << shift)
 
     if inexact:
-        return _signal_inexact(InexactException(rounded))
+        return signal(InexactException(rounded))
     else:
         return rounded
 
@@ -2135,7 +2131,7 @@ def _handle_invalid_bool(default_bool):
     are comparisons involving a signaling NaN.
 
     """
-    return _signal_invalid_operation(InvalidBooleanOperationException())
+    return signal(InvalidBooleanOperationException())
 
 
 def _handle_invalid_int(payload):
@@ -2144,7 +2140,7 @@ def _handle_invalid_int(payload):
     int signals invalid operation.
 
     """
-    return _signal_invalid_operation(InvalidIntegerOperationException(payload))
+    return signal(InvalidIntegerOperationException(payload))
 
 
 def _compare_quiet_general(source1, source2, operator, unordered_result):

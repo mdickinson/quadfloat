@@ -2,6 +2,7 @@
 Standard exceptions.
 
 """
+from quadfloat.attributes import get_current_attributes
 
 
 class InvalidOperationException(object):
@@ -19,6 +20,9 @@ class InvalidOperationException(object):
             payload=0,
         )
 
+    def signal(self, attributes):
+        return attributes.invalid_operation_handler(self)
+
 
 class InvalidIntegerOperationException(object):
     """
@@ -32,6 +36,9 @@ class InvalidIntegerOperationException(object):
     def default_handler(self):
         return self.payload
 
+    def signal(self, attributes):
+        return attributes.invalid_operation_handler(self)
+
 
 class InvalidBooleanOperationException(object):
     def __init__(self):
@@ -39,6 +46,9 @@ class InvalidBooleanOperationException(object):
 
     def default_handler(self):
         raise ValueError("Invalid operation returning a boolean.")
+
+    def signal(self, attributes):
+        return attributes.invalid_operation_handler(self)
 
 
 class SignalingNaNException(object):
@@ -55,6 +65,9 @@ class SignalingNaNException(object):
     def default_handler(self):
         return self.format(self.snan._quieten_nan())
 
+    def signal(self, attributes):
+        return attributes.invalid_operation_handler(self)
+
 
 class InexactException(object):
     """
@@ -67,6 +80,9 @@ class InexactException(object):
     def default_handler(self):
         return self.rounded
 
+    def signal(self, attributes):
+        return attributes.inexact_handler(self)
+
 
 class UnderflowException(object):
     """
@@ -78,12 +94,13 @@ class UnderflowException(object):
         self.inexact = inexact
 
     def default_handler(self):
-        # Local import to avoid circular imports.
-        from quadfloat.attributes import _signal_inexact
         if self.inexact:
-            return _signal_inexact(InexactException(self.rounded))
+            return signal(InexactException(self.rounded))
         else:
             return self.rounded
+
+    def signal(self, attributes):
+        return attributes.underflow_handler(self)
 
 
 class OverflowException(object):
@@ -95,9 +112,10 @@ class OverflowException(object):
         self.rounded = rounded
 
     def default_handler(self):
-        # Local import to avoid circular imports.
-        from quadfloat.attributes import _signal_inexact
-        return _signal_inexact(InexactException(self.rounded))
+        return signal(InexactException(self.rounded))
+
+    def signal(self, attributes):
+        return attributes.overflow_handler(self)
 
 
 class DivideByZeroException(object):
@@ -112,3 +130,10 @@ class DivideByZeroException(object):
 
     def default_handler(self):
         return self.format._infinite(self.sign)
+
+    def signal(self, attributes):
+        return attributes.divide_by_zero_handler(self)
+
+
+def signal(exception):
+    return exception.signal(get_current_attributes())
