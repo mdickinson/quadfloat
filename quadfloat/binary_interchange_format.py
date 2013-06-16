@@ -36,11 +36,6 @@ from quadfloat.compat import (
     INTEGER_TYPES,
 )
 from quadfloat.exceptions import (
-    default_inexact_handler,
-    default_invalid_operation_handler,
-    default_overflow_handler,
-    default_underflow_handler,
-    default_divide_by_zero_handler,
     InexactException,
     InvalidBooleanOperationException,
     InvalidIntegerOperationException,
@@ -67,14 +62,18 @@ from quadfloat.rounding_direction import (
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
 
+def exception_default_handler(exception):
+    return exception.default_handler()
+
+
 _default_attributes = Attributes(
     rounding_direction=round_ties_to_even,
     tininess_detection=AFTER_ROUNDING,
-    inexact_handler=default_inexact_handler,
-    invalid_operation_handler=default_invalid_operation_handler,
-    overflow_handler=default_overflow_handler,
-    underflow_handler=default_underflow_handler,
-    divide_by_zero_handler=default_divide_by_zero_handler,
+    inexact_handler=exception_default_handler,
+    invalid_operation_handler=exception_default_handler,
+    overflow_handler=exception_default_handler,
+    underflow_handler=exception_default_handler,
+    divide_by_zero_handler=exception_default_handler,
 )
 
 set_current_attributes(_default_attributes)

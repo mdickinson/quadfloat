@@ -1,3 +1,9 @@
+"""
+Standard exceptions.
+
+"""
+
+
 class InvalidOperationException(object):
     """
     Class representing an InvalidOperation exception.
@@ -105,16 +111,4 @@ class DivideByZeroException(object):
         self.format = format
 
     def default_handler(self):
-        # Local import to avoid circular imports.
         return self.format._infinite(self.sign)
-
-
-def _default_handler(exception):
-    return exception.default_handler()
-
-
-default_invalid_operation_handler = _default_handler
-default_inexact_handler = _default_handler
-default_overflow_handler = _default_handler
-default_underflow_handler = _default_handler
-default_divide_by_zero_handler = _default_handler
