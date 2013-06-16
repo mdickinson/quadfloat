@@ -1635,7 +1635,7 @@ def _round_to_integral_general(self, rounding_direction, quiet):
 
     # Then round to the nearest integer, using the prescribed rounding
     # direction.
-    q = rounding_direction._rounder(to_quarter, self._sign)
+    q = rounding_direction.round_quarters(to_quarter, self._sign)
 
     # Signal inexact if necessary.
 
@@ -2017,7 +2017,8 @@ def log_b(self):
         return _handle_invalid_int(-limit)
 
 
-# 5.4.1 Arithmetic operations (conversions to integer).
+# 5.4.1 Arithmetic operations.
+
 def _convert_to_integer_general(self, rounding_direction):
     if self._type == _NAN:
         # XXX Signaling nans should also raise the invalid operation
@@ -2031,7 +2032,7 @@ def _convert_to_integer_general(self, rounding_direction):
 
     # Round using roundInexactToOdd, with 2 extra bits.
     q = _rshift_to_odd(self._significand, -self._exponent - 2)
-    q = rounding_direction._rounder(q, self._sign)
+    q = rounding_direction.round_quarters(q, self._sign)
 
     # Use int() to convert from long if necessary
     return int(-q if self._sign else q)
@@ -2095,6 +2096,86 @@ def convert_to_integer_ties_to_away(self):
         rounding_direction=round_ties_to_away
     )
 
+
+def _convert_to_integer_exact_general(self, rounding_direction):
+    if self._type == _NAN:
+        # XXX Signaling nans should also raise the invalid operation
+        # exception.
+        raise ValueError("Cannot convert a NaN to an integer.")
+
+    if self._type == _INFINITE:
+        # NB. Python raises OverflowError here, which doesn't really
+        # seem right.
+        raise ValueError("Cannot convert an infinity to an integer.")
+
+    # Round using roundInexactToOdd, with 2 extra bits.
+    quarters = _rshift_to_odd(self._significand, -self._exponent - 2)
+    q = rounding_direction.round_quarters(quarters, self._sign)
+
+    inexact = (q << 2) != quarters
+
+    # Use int() to convert from long if necessary
+    result = int(-q if self._sign else q)
+    if inexact:
+        return signal(InexactException(result))
+    else:
+        return result
+
+
+def convert_to_integer_exact_ties_to_even(self):
+    """
+    Round 'self' to the nearest Python integer, using the roundTiesToEven
+    rounding direction.
+
+    """
+    return _convert_to_integer_exact_general(
+        self,
+        rounding_direction=round_ties_to_even,
+    )
+
+def convert_to_integer_exact_ties_to_away(self):
+    """
+    Round 'self' to the nearest Python integer, using the roundTiesToAway
+    rounding direction.
+
+    """
+    return _convert_to_integer_exact_general(
+        self,
+        rounding_direction=round_ties_to_away,
+    )
+
+def convert_to_integer_exact_toward_zero(self):
+    """
+    Round 'self' to the nearest Python integer, using the roundTowardZero
+    rounding direction.
+
+    """
+    return _convert_to_integer_exact_general(
+        self,
+        rounding_direction=round_toward_zero,
+    )
+
+def convert_to_integer_exact_toward_positive(self):
+    """
+    Round 'self' to the nearest Python integer, using the roundTowardPositive
+    rounding direction.
+
+    """
+    return _convert_to_integer_exact_general(
+        self,
+        rounding_direction=round_toward_positive,
+    )
+
+def convert_to_integer_exact_toward_negative(self):
+    """
+    Round 'self' to the nearest Python integer, using the roundTowardNegative
+    rounding direction.
+
+    """
+    return _convert_to_integer_exact_general(
+        self,
+        rounding_direction=round_toward_negative,
+    )
 
 # 5.6.1: Comparisons.
 

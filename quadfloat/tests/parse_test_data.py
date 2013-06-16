@@ -295,4 +295,14 @@ operation_factories = {
         'convert_to_integer_toward_positive'),
     'convertToIntegerTowardNegative': convert_to_integer(
         'convert_to_integer_toward_negative'),
+    'convertToIntegerExactTiesToEven': convert_to_integer(
+        'convert_to_integer_exact_ties_to_even'),
+    'convertToIntegerExactTiesToAway': convert_to_integer(
+        'convert_to_integer_exact_ties_to_away'),
+    'convertToIntegerExactTowardZero': convert_to_integer(
+        'convert_to_integer_exact_toward_zero'),
+    'convertToIntegerExactTowardPositive': convert_to_integer(
+        'convert_to_integer_exact_toward_positive'),
+    'convertToIntegerExactTowardNegative': convert_to_integer(
+        'convert_to_integer_exact_toward_negative'),
 }
