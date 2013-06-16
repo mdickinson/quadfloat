@@ -493,7 +493,7 @@ class BinaryInterchangeFormat(object):
                 q2 = attributes.rounding_direction.round_quarters(q, sign)
                 underflow = bit_length(q2) <= self.precision
             else:
-                assert False, "never get here"
+                assert False, "never get here"  # pragma: no cover
         else:
             assert e > self.qmin - 3
             underflow = False
