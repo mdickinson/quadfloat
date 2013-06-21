@@ -1,0 +1,77 @@
+operation: convertFormat
+
+attribute rounding-direction: roundTiesToEven
+attribute tininess-detection: afterRounding
+
+### 16-bit to 32-bit conversion.
+operation source: binary16
+operation destination: binary32
+
+# Zeros
+0x0p0 -> 0x0p0
+-0x0p0 -> -0x0p0
+
+# Infinities
+Infinity -> Infinity
+-Infinity -> -Infinity
+
+# Small integers
+-0x1p0 -> -0x1p0
+-0x2p0 -> -0x2p0
+-0x3p0 -> -0x3p0
+-0x4p0 -> -0x4p0
+-0x5p0 -> -0x5p0
+0x1p0 -> 0x1p0
+0x2p0 -> 0x2p0
+0x3p0 -> 0x3p0
+0x4p0 -> 0x4p0
+0x5p0 -> 0x5p0
+
+# Smallest subnormals.
+0x1p-24 -> 0x1p-24
+-0x1p-24 -> -0x1p-24
+
+# Smallest normal boundary
+0x0.ffcp-14 -> 0x0.ffcp-14
+0x1p-14 -> 0x1p-14
+0x1.004p-14 -> 0x1.004p-14
+
+-0x1p-14 -> -0x1p-14
+
+# Largest representable value.
+0x0.ffep16  -> 0x0.ffep16
+
+# Quiet NaNs
+NaN -> NaN
+-NaN(123) -> -NaN(123)
+
+# Signaling NaNs
+sNaN -> NaN(1) invalid
+-sNaN(456) -> -NaN(456) invalid
+
+
+### 16-bit to 16-bit 'conversion'.
+operation source: binary16
+operation destination: binary16
+
+# This is a general computational operation, so
+# it should re-signal the underflow operation.
+-0x1p-24 -> -0x1p-24 underflow
+0x1p-24 -> 0x1p-24 underflow
+
+0x0.ffcp-14 -> 0x0.ffcp-14 underflow
+0x1p-14 -> 0x1p-14
+0x1.004p-14 -> 0x1.004p-14
+
+-0x1p-14 -> -0x1p-14
+
+# Quiet NaNs
+NaN -> NaN
+-NaN(123) -> -NaN(123)
+
+# Signaling NaNs
+sNaN -> NaN(1) invalid
+-sNaN(456) -> -NaN(456) invalid
+
+# Largest representable value.
+0x0.ffep16  -> 0x0.ffep16

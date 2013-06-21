@@ -840,6 +840,17 @@ class BinaryInterchangeFormat(object):
             attributes=attributes,
         )[1]
 
+    def convert_format(self, source):
+        """
+        Convert another _BinaryFloat instance to this format.
+
+        """
+        if source._type == _NAN:
+            return self._handle_nans(source)
+
+        attributes = get_current_attributes()
+        return self._from_binary_float(source, attributes)[1]
+
     def convert_from_int(self, n):
         """
         Convert the integer n to this format.

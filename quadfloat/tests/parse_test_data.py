@@ -270,6 +270,16 @@ def convert_to_integer(name):
     return integer_operation_factory
 
 
+def convert_format(source, destination):
+    destination_format = binary_format(destination)
+    source_format = binary_format(source)
+    return TestOperation(
+        operation=FormatOfOperation(destination_format, 'convert_format'),
+        operand_conversions=[binary_conversion(source_format)],
+        result_conversion=binary_conversion(destination_format),
+    )
+
+
 _uso = unary_source_operation
 operation_factories = {
     # 5.3.1 General operations
@@ -316,4 +326,5 @@ operation_factories = {
         'convert_to_integer_exact_toward_negative'),
 
     'convertFromInt': convert_from_int,
+    'convertFormat': convert_format,
 }
