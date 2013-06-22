@@ -1,6 +1,8 @@
 Bugs
 ----
 
+* convert_from_hex_character from NaN(12345) to binary16 should raise.
+
 * Behaviour of __eq__ with objects of other non-compatible types should
   be examined.  Same with __lt__, etc.
 

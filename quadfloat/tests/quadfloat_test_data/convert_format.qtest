@@ -50,6 +50,45 @@ sNaN -> NaN(1) invalid
 -sNaN(456) -> -NaN(456) invalid
 
 
+### 32-bit to 16-bit conversion
+operation source: binary32
+operation destination: binary16
+
+# Values near 1.0
+0x0.ffep0 -> 0x0.ffep0
+0x0.ffefffp0 -> 0x0.ffep0 inexact
+0x0.fffp0 -> 0x1p0 inexact
+0x0.fff001p0 -> 0x1p0 inexact
+0x0.ffffffp0 -> 0x1p0 inexact
+0x1p0 -> 0x1p0
+0x1.000002p0 -> 0x1p0 inexact
+0x1.001ffep0 -> 0x1p0 inexact
+0x1.002p0 -> 0x1p0 inexact
+0x1.002002p0 -> 0x1.004p0 inexact
+0x1.004p0 -> 0x1.004p0
+
+# Overflow boundary.
+0x0.ffep16 -> 0x0.ffep16
+0x0.ffefffp16 -> 0x0.ffep16 inexact
+0x0.fffp16 -> Infinity inexact overflow  # tied case
+0x0.fff001p16 -> Infinity inexact overflow
+0x1p16 -> Infinity inexact overflow
+Infinity -> Infinity
+
+# Quiet NaNs
+NaN -> NaN
+-NaN(123) -> -NaN(123)
+
+# Signaling NaNs
+sNaN -> NaN(1) invalid
+-sNaN(456) -> -NaN(456) invalid
+
+# Quiet NaNs with out-of-range payload
+NaN(2047) -> NaN(2047)
+NaN(2048) -> NaN(2048)
+NaN(4096) -> NaN(40971234123412341234)   # Aargh!  This shouldn't pass---it's not a valid binary16 value.
+
+
 ### 16-bit to 16-bit 'conversion'.
 operation source: binary16
 operation destination: binary16
