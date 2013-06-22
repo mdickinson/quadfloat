@@ -68,8 +68,8 @@ Infinity sNaN -> NaN(1) invalid
 
 # More NaNs
 sNaN(123) sNaN(456) -> NaN(123) invalid
-NaN(234) -sNaN(567) -> -NaN(567) invalid
-sNaN(789) -NaN(123) -> NaN(789) invalid
+NaN(234) -sNaN(511) -> -NaN(511) invalid
+sNaN(489) -NaN(123) -> NaN(489) invalid
 NaN(123) NaN(456) -> NaN(123)
 NaN(123) 0x1p0 -> NaN(123)
 0x1p0 NaN(123) -> NaN(123)

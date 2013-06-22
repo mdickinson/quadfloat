@@ -5,6 +5,21 @@ from quadfloat.tests.base_test_case import BaseTestCase
 binary16_inputs = """\
 0x0p0
 0x0p1
+NaN
+-NaN
+NaN(0)
+NaN(1)
+NaN(0001)
+NaN(511)
+-NaN(0)
+-NaN(1)
+-NaN(511)
+sNaN
+-sNaN
+sNaN(1)
+sNaN(511)
+-sNaN(1)
+-sNaN(511)
 """.splitlines()
 
 
@@ -24,14 +39,20 @@ infin
 infini
 infinit
 infinityy
+-NaN(512)
+NaN(512)
+sNaN(0)
+-sNaN(0)
+sNaN(512)
+-sNaN(512)
 """.splitlines()
 
 
 class TestConvertFromHexCharacter(BaseTestCase):
     def test_invalid_inputs(self):
-        for input in binary16_invalid_inputs:
+        for invalid_input in binary16_invalid_inputs:
             with self.assertRaises(ValueError):
-                binary16.convert_from_hex_character(input)
+                binary16.convert_from_hex_character(invalid_input)
 
     def test_validity(self):
         for input in binary16_inputs:

@@ -83,7 +83,8 @@ class TestBinary128(BaseTestCase):
 
         input_string = 'nan({0})'.format(2 ** 230)
         input = binary256(input_string)
-        self.assertInterchangeable(binary128(input), binary128(input_string))
+        expected = binary128('nan({0})'.format(2 ** 111 - 1))
+        self.assertInterchangeable(binary128(input), expected)
 
     def test_construction_from_int(self):
         q = binary128(3)
@@ -178,7 +179,17 @@ class TestBinary128(BaseTestCase):
         self.assertTrue(q.is_sign_minus())
 
         # Nans with and without payloads
-        for nan_string in ['nan', 'NaN', 'NAN', 'nAN', 'nan(1)', 'nan(9999)']:
+        nan_test_strings = [
+            'nan',
+            'NaN',
+            'NAN',
+            'nAN',
+            'nan(1)',
+            'nan(9999)',
+            'nan(2596148429267413814265248164610047)',
+        ]
+
+        for nan_string in nan_test_strings:
             for prefix in '+', '-', '':
                 q = binary128(prefix + nan_string)
                 self.assertTrue(q.is_nan())
@@ -189,42 +200,34 @@ class TestBinary128(BaseTestCase):
                 self.assertTrue(q.is_nan())
                 self.assertTrue(q.is_signaling())
 
-        # Out-of-range payloads should just be clipped to be within range.
-        self.assertNotInterchangeable(
-            binary128('nan(0)'),
-            binary128('nan(1)'),
-        )
-        self.assertInterchangeable(
-            binary128('snan(0)'),
-            binary128('snan(1)'),
-        )
+        invalid_nan_test_strings = [
+            'nan()',
+            'nan(1',
+            'nan(-1)',
+            'nan(-0)',
+            'nan(+0)',
+            'nan(+123)',
+            # Out of range payload
+            'nan(2596148429267413814265248164610048)'
+            'nan(123123123123123123123123123123123123)',
+        ]
 
-        self.assertInterchangeable(
-            binary128('nan(123123123123123123123123123123123123)'),
-            binary128('nan(2596148429267413814265248164610047)'),
-        )
-        self.assertNotInterchangeable(
-            binary128('nan(123123123123123123123123123123123123)'),
-            binary128('nan(2596148429267413814265248164610046)'),
-        )
-        self.assertInterchangeable(
-            binary128('snan(123123123123123123123123123123123123)'),
-            binary128('snan(2596148429267413814265248164610047)'),
-        )
-        self.assertNotInterchangeable(
-            binary128('snan(123123123123123123123123123123123123)'),
-            binary128('snan(2596148429267413814265248164610046)'),
-        )
+        for nan_string in invalid_nan_test_strings:
+            for prefix in '+', '-', '':
+                with self.assertRaises(ValueError):
+                    binary128(prefix + nan_string)
+                with self.assertRaises(ValueError):
+                    binary128(prefix + 's' + nan_string)
 
-        # Some invalid values.
-        with self.assertRaises(ValueError):
-            binary128('nan()')
+        # Payload of 0 is fine for quiet NaNs, invalid for signaling.
+        for prefix in '+', '-', '':
+            qnan = binary128(prefix + 'nan(0)')
+            self.assertTrue(qnan.is_nan())
+            self.assertFalse(qnan.is_signaling())
 
-        with self.assertRaises(ValueError):
-            binary128('+nan()')
-
-        with self.assertRaises(ValueError):
-            binary128('+snan(1')
+        for prefix in '+', '-', '':
+            with self.assertRaises(ValueError):
+                snan = binary128(prefix + 'snan(0)')
 
     def test_bad_constructor(self):
         with self.assertRaises(TypeError):

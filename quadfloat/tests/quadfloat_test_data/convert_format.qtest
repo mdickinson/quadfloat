@@ -84,9 +84,9 @@ sNaN -> NaN(1) invalid
 -sNaN(456) -> -NaN(456) invalid
 
 # Quiet NaNs with out-of-range payload
-NaN(2047) -> NaN(2047)
-NaN(2048) -> NaN(2048)
-NaN(4096) -> NaN(40971234123412341234)   # Aargh!  This shouldn't pass---it's not a valid binary16 value.
+NaN(511) -> NaN(511)
+NaN(512) -> NaN(511)
+NaN(4096) -> NaN(511)
 
 
 ### 16-bit to 16-bit 'conversion'.

@@ -320,6 +320,7 @@ class BinaryInterchangeFormat(object):
                 sign=b._sign,
                 signaling=b._signaling,
                 payload=b._payload,
+                clip_payload=True,
             )
         elif b._type == _INFINITE:
             # Infinities convert with no loss of information.
@@ -403,6 +404,9 @@ class BinaryInterchangeFormat(object):
         except ValueError:
             pass
         else:
+            if payload is None:
+                payload = 1 if signaling else 0
+
             return self._from_nan_triple(
                 sign=sign,
                 signaling=signaling,
@@ -555,15 +559,31 @@ class BinaryInterchangeFormat(object):
         q = _rshift_to_odd(significand, e - exponent)
         return self._final_round(sign, e, q, attributes)
 
-    def _from_nan_triple(self, sign, signaling, payload):
+    def _from_nan_triple(self, sign, signaling, payload, clip_payload=False):
         """
         Given a triple representing a NaN, convert to this format.
         Clip payload to within bounds if necessary.
 
         """
-        payload = min(payload, self._max_payload)
-        if signaling and payload == 0:
-            payload = 1
+        min_payload = 1 if signaling else 0
+        max_payload = self._max_payload
+        if clip_payload:
+            if payload < min_payload:
+                payload = min_payload
+            elif payload > max_payload:
+                payload = max_payload
+        else:
+            if not min_payload <= payload <= max_payload:
+                raise ValueError(
+                    "{0} payload {1} is out of range for format {2}. "
+                    "Valid range is {3} to {4}".format(
+                        'sNaN' if signaling else 'NaN',
+                        payload,
+                        self,
+                        min_payload,
+                        max_payload,
+                    )
+                )
 
         return self._nan(
             sign=sign,
@@ -919,6 +939,9 @@ class BinaryInterchangeFormat(object):
         except ValueError:
             pass
         else:
+            if payload is None:
+                payload = 1 if signaling else 0
+
             return self._from_nan_triple(
                 sign=sign,
                 signaling=signaling,

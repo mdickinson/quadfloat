@@ -147,5 +147,8 @@ def parse_nan(s):
 
     sign = match.group('sign') == '-'
     signaling = match.group('signaling') is not None
-    payload = int(match.group('payload') or '0')
+    if match.group('payload') is None:
+        payload = None
+    else:
+        payload = int(match.group('payload'))
     return sign, signaling, payload
