@@ -179,7 +179,27 @@ class TestOperation(object):
         self.result_conversion = result_conversion
 
 
-def binary_operation_factory(method_name):
+def unary_formatof_operation(method_name):
+    """
+    Factory for unary formatOf operations.
+
+    """
+    def operation_factory(destination, source):
+        """
+        Factory for unary formatOf operations.
+
+        """
+        destination_format = binary_format(destination)
+        source_format = binary_format(source)
+        return TestOperation(
+            operation=FormatOfOperation(destination_format, method_name),
+            operand_conversions=[binary_conversion(source_format)],
+            result_conversion=binary_conversion(destination_format),
+        )
+    return operation_factory
+
+
+def binary_formatof_operation(method_name):
     """
     Factory for binary formatOf operations.
 
@@ -302,10 +322,11 @@ operation_factories = {
     'minNumMag': binary_source_operation('min_num_mag'),
     'maxNumMag': binary_source_operation('max_num_mag'),
 
-    'addition': binary_operation_factory('addition'),
-    'subtraction': binary_operation_factory('subtraction'),
-    'multiplication': binary_operation_factory('multiplication'),
-    'division': binary_operation_factory('division'),
+    'addition': binary_formatof_operation('addition'),
+    'subtraction': binary_formatof_operation('subtraction'),
+    'multiplication': binary_formatof_operation('multiplication'),
+    'division': binary_formatof_operation('division'),
+    'squareRoot': unary_formatof_operation('square_root'),
     'convertFromHexCharacter': convertFromHexCharacter,
     'scaleB': scaleB,
     'logB': logB,
