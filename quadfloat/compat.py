@@ -56,6 +56,7 @@ if sys.version_info[0] == 2:
         def bit_length(n):
             return n.bit_length()
 
+    import __builtin__ as builtins
 
 else:
     _map = map
@@ -74,3 +75,4 @@ else:
     _PyHASH_NAN = sys.hash_info.nan
 
     bit_length = int.bit_length
+    import builtins

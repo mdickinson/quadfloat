@@ -20,6 +20,7 @@ from quadfloat.attributes import (
 )
 from quadfloat.compat import (
     bit_length,
+    builtins,
     _int_from_bytes,
     _int_to_bytes,
     _PyHASH_INF,
@@ -55,6 +56,11 @@ from quadfloat.rounding_direction import (
     round_toward_zero,
 )
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
+
+
+# This module defines a function called 'abs', so we make sure to keep
+# a reference to the builtin.
+_abs = builtins.abs
 
 
 def signal(exception):
@@ -346,7 +352,7 @@ class BinaryInterchangeFormat(object):
         return self._from_triple(
             sign=n < 0,
             exponent=0,
-            significand=abs(n),
+            significand=_abs(n),
             attributes=attributes,
         )
 
@@ -444,7 +450,7 @@ class BinaryInterchangeFormat(object):
 
             # Express absolute value of incoming float in format a / b;
             # find d such that 2 ** (d - 1) <= a / b < 2 ** d.
-            a, b = abs(value).as_integer_ratio()
+            a, b = _abs(value).as_integer_ratio()
             d = bit_length(a) - bit_length(b)
             d += (a >> d if d >= 0 else a << -d) >= b
 
@@ -661,7 +667,7 @@ class BinaryInterchangeFormat(object):
         return self._from_triple(
             sign=sign,
             exponent=exponent,
-            significand=abs(significand),
+            significand=_abs(significand),
             attributes=attributes,
         )[1]
 
@@ -742,7 +748,7 @@ class BinaryInterchangeFormat(object):
 
         # Finite / finite case.
 
-        # First find d such that 2 ** (d-1) <= abs(source1) / abs(source2) <
+        # First find d such that 2 ** (d-1) <= _abs(source1) / _abs(source2) <
         # 2 ** d.
         a = source1._significand
         b = source2._significand
@@ -856,7 +862,7 @@ class BinaryInterchangeFormat(object):
         return self._from_triple(
             sign=sign,
             exponent=exponent,
-            significand=abs(significand),
+            significand=_abs(significand),
             attributes=attributes,
         )[1]
 
@@ -1622,7 +1628,7 @@ class _BinaryFloat(object):
                 # (not to mention Fraction and Decimal instances) follows if
                 # we use the formulas described in the Python docs.
                 base = 2 if self._exponent >= 0 else _PyHASH_2INV
-                exp_hash = pow(base, abs(self._exponent), _PyHASH_MODULUS)
+                exp_hash = pow(base, _abs(self._exponent), _PyHASH_MODULUS)
                 hash_ = self._significand * exp_hash % _PyHASH_MODULUS
                 ans = -hash_ if self._sign else hash_
 
@@ -1859,7 +1865,7 @@ def remainder(self, other):
             modulus,
         )
         sign = self._sign if remainder == 0 else remainder < 0
-        significand = abs(remainder)
+        significand = _abs(remainder)
 
     # Normalize result.  It doesn't matter what rounding direction
     # we use, since the result should always be exact.
