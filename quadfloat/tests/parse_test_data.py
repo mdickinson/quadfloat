@@ -170,6 +170,7 @@ def parse_test_data(test_content, source_file):
                     "file {}, line {}: {}".format(source_file, line_number, e))
             yield test_case
 
+
 # Specific operations.
 
 class TestOperation(object):

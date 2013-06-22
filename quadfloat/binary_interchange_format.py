@@ -1646,6 +1646,7 @@ class _BinaryFloat(object):
     def __ge__(self, other):
         return self._rich_compare_general(other, _operator.ge, False)
 
+
 # 5.3: Homogeneous general-computational operations
 
 # 5.3.1: General operations.
@@ -2071,6 +2072,7 @@ def _convert_to_integer_general(self, rounding_direction):
     # Use int() to convert from long if necessary
     return int(-q if self._sign else q)
 
+
 def convert_to_integer_ties_to_even(self):
     """
     Round 'self' to the nearest Python integer, using the roundTiesToEven
@@ -2082,6 +2084,7 @@ def convert_to_integer_ties_to_even(self):
         rounding_direction=round_ties_to_even
     )
 
+
 def convert_to_integer_toward_zero(self):
     """
     Round 'self' to a Python integer, using the roundTowardZero rounding
@@ -2092,6 +2095,7 @@ def convert_to_integer_toward_zero(self):
         self,
         rounding_direction=round_toward_zero
     )
+
 
 def convert_to_integer_toward_positive(self):
     """
@@ -2106,6 +2110,7 @@ def convert_to_integer_toward_positive(self):
         rounding_direction=round_toward_positive
     )
 
+
 def convert_to_integer_toward_negative(self):
     """
     Round 'self' to a Python integer, using the roundTowardNegative
@@ -2118,6 +2123,7 @@ def convert_to_integer_toward_negative(self):
         self,
         rounding_direction=round_toward_negative
     )
+
 
 def convert_to_integer_ties_to_away(self):
     """
@@ -2167,6 +2173,7 @@ def convert_to_integer_exact_ties_to_even(self):
         rounding_direction=round_ties_to_even,
     )
 
+
 def convert_to_integer_exact_ties_to_away(self):
     """
     Round 'self' to the nearest Python integer, using the roundTiesToAway
@@ -2177,6 +2184,7 @@ def convert_to_integer_exact_ties_to_away(self):
         self,
         rounding_direction=round_ties_to_away,
     )
+
 
 def convert_to_integer_exact_toward_zero(self):
     """
@@ -2189,6 +2197,7 @@ def convert_to_integer_exact_toward_zero(self):
         rounding_direction=round_toward_zero,
     )
 
+
 def convert_to_integer_exact_toward_positive(self):
     """
     Round 'self' to the nearest Python integer, using the roundTowardPositive
@@ -2199,6 +2208,7 @@ def convert_to_integer_exact_toward_positive(self):
         self,
         rounding_direction=round_toward_positive,
     )
+
 
 def convert_to_integer_exact_toward_negative(self):
     """

@@ -227,7 +227,7 @@ class TestBinary128(BaseTestCase):
 
         for prefix in '+', '-', '':
             with self.assertRaises(ValueError):
-                snan = binary128(prefix + 'snan(0)')
+                binary128(prefix + 'snan(0)')
 
     def test_bad_constructor(self):
         with self.assertRaises(TypeError):
