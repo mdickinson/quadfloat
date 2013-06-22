@@ -879,7 +879,7 @@ class BinaryInterchangeFormat(object):
         attributes = get_current_attributes()
         return self._from_int(n, attributes)[1]
 
-    def convert_to_hex_character(self, source):
+    def convert_to_hex_character_simple(self, source):
         """
         Convert the given source to this format.
 
@@ -888,7 +888,7 @@ class BinaryInterchangeFormat(object):
         # it can serve as a basis for checking that two floats
         # are equivalent.
         if source._format != self:
-            raise ValueError("Wrong format in convert_to_hex_character")
+            raise ValueError("Wrong format in convert_to_hex_character_simple")
 
         sign = '-' if source._sign else ''
         if source._type == _INFINITE:
@@ -2210,6 +2210,37 @@ def convert_to_integer_exact_toward_negative(self):
         self,
         rounding_direction=round_toward_negative,
     )
+
+
+# 5.4.3: Conversion operations for binary formats.
+
+def convert_to_hex_character(source, conversion_specification):
+    """
+    Convert the given binary float to a representative sequence,
+    using information from the given conversion specification.
+
+    """
+    sign = '-' if source._sign else ''
+
+    if source._type == _INFINITE:
+        return '{sign}Infinity'.format(sign=sign)
+
+    if source._type == _FINITE:
+        trailing = source._format.precision - 1
+        return '{sign}0x{first}.{rest:0{hex_digits}x}p{exp}'.format(
+            sign=sign,
+            first=source._significand >> trailing,
+            rest=(source._significand & ~(-1 << trailing)) << (-trailing % 4),
+            hex_digits=-(-trailing // 4),
+            exp=source._exponent + trailing,
+        )
+
+    if source._type == _NAN:
+        return '{sign}{signaling}NaN'.format(
+            sign=sign,
+            signaling='s' if source._signaling else '',
+        )
+
 
 # 5.6.1: Comparisons.
 

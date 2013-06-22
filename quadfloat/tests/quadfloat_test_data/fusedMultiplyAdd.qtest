@@ -1,0 +1,14 @@
+operation: fusedMultiplyAdd
+
+# XXX Fill out these tests.
+
+attribute rounding-direction: roundTiesToEven
+attribute tininess-detection: afterRounding
+
+operation destination: binary16
+operation source1: binary16
+operation source2: binary16
+operation source3: binary16
+
+# Zeros
+0x3p0 0x2p0 0x13p0 -> 0x19p0

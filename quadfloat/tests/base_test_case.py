@@ -87,7 +87,7 @@ class _AssertRaisesContext(_AssertRaisesBaseContext):
 def _identifying_string(binary_float):
     fmt = binary_float.format
     return "{0} (format {1})".format(
-        fmt.convert_to_hex_character(binary_float),
+        fmt.convert_to_hex_character_simple(binary_float),
         binary_float.format,
     )
 

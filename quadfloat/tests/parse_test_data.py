@@ -223,6 +223,32 @@ def binary_formatof_operation(method_name):
     return operation_factory
 
 
+def ternary_formatof_operation(method_name):
+    """
+    Factory for ternary formatOf operations.
+
+    """
+    def operation_factory(destination, source1, source2, source3):
+        """
+        Factory for ternary formatOf operations.
+
+        """
+        destination_format = binary_format(destination)
+        source1_format = binary_format(source1)
+        source2_format = binary_format(source2)
+        source3_format = binary_format(source3)
+        return TestOperation(
+            operation=FormatOfOperation(destination_format, method_name),
+            operand_conversions=[
+                binary_conversion(source1_format),
+                binary_conversion(source2_format),
+                binary_conversion(source3_format),
+            ],
+            result_conversion=binary_conversion(destination_format),
+        )
+    return operation_factory
+
+
 def unary_source_operation(method_name):
     def unary_operation_factory(source):
         source_format = binary_format(source)
@@ -245,7 +271,7 @@ def binary_source_operation(method_name):
     return binary_operation_factory
 
 
-def convertFromHexCharacter(destination):
+def convert_from_hex_character(destination):
     destination_format = binary_format(destination)
     return TestOperation(
         operation=FormatOfOperation(
@@ -305,6 +331,15 @@ def convert_format(source, destination):
     )
 
 
+def convert_to_hex_character(source):
+    source_format = binary_format(source)
+    return TestOperation(
+        operation=HomogeneousOperation('convert_to_hex_character'),
+        operand_conversions=[binary_conversion(source_format), str],
+        result_conversion=str,
+    )
+
+
 _uso = unary_source_operation
 operation_factories = {
     # 5.3.1 General operations
@@ -327,7 +362,9 @@ operation_factories = {
     'multiplication': binary_formatof_operation('multiplication'),
     'division': binary_formatof_operation('division'),
     'squareRoot': unary_formatof_operation('square_root'),
-    'convertFromHexCharacter': convertFromHexCharacter,
+    'fusedMultiplyAdd': ternary_formatof_operation('fused_multiply_add'),
+    'convertFromHexCharacter': convert_from_hex_character,
+    'convertToHexCharacter': convert_to_hex_character,
     'scaleB': scaleB,
     'logB': logB,
 
