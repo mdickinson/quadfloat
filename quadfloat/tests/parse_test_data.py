@@ -146,24 +146,29 @@ def parse_test_data(test_content, source_file):
             lhs, rhs = line.split('->')
             arguments = lhs.split()
             results = rhs.split()
-            yield ArithmeticTestCase(
-                operands=[
-                    operand_conversion(argument)
-                    for operand_conversion, argument in zip(
-                        operation.operand_conversions,
-                        arguments,
-                    )
-                ],
-                expected_result=ArithmeticTestResult(
-                    result=operation.result_conversion(results[0]),
-                    flags=set(results[1:]),
-                ),
-                operation=operation.operation,
-                attributes=attributes,
-                line_number=line_number,
-                source_file=source_file,
-            )
-
+            try:
+                test_case = ArithmeticTestCase(
+                    operands=[
+                        operand_conversion(argument)
+                        for operand_conversion, argument in zip(
+                            operation.operand_conversions,
+                            arguments,
+                        )
+                    ],
+                    expected_result=ArithmeticTestResult(
+                        result=operation.result_conversion(results[0]),
+                        flags=set(results[1:]),
+                    ),
+                    operation=operation.operation,
+                    attributes=attributes,
+                    line_number=line_number,
+                    source_file=source_file,
+                )
+            except ValueError as e:
+                raise ValueError(
+                    "Error generating testcase from "
+                    "file {}, line {}: {}".format(source_file, line_number, e))
+            yield test_case
 
 # Specific operations.
 
