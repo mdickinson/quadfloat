@@ -304,6 +304,7 @@ operation_factories = {
 
     'addition': binary_operation_factory('addition'),
     'subtraction': binary_operation_factory('subtraction'),
+    'multiplication': binary_operation_factory('multiplication'),
     'division': binary_operation_factory('division'),
     'convertFromHexCharacter': convertFromHexCharacter,
     'scaleB': scaleB,

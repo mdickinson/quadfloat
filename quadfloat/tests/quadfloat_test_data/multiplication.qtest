@@ -1,0 +1,25 @@
+operation: multiplication
+
+# XXX These tests need to be much more comprehensive.
+
+attribute rounding-direction: roundTiesToEven
+attribute tininess-detection: afterRounding
+
+operation destination: binary16
+operation source1: binary16
+operation source2: binary16
+
+# Zeros
+0x0p0 0x0p0 -> 0x0p0
+-0x0p0 -0x0p0 -> 0x0p0
+0x0p0 -0x0p0 -> -0x0p0
+-0x0p0 0x0p0 -> -0x0p0
+
+# Infinities
+Infinity Infinity -> Infinity
+-Infinity -Infinity -> Infinity
+Infinity -Infinity -> -Infinity
+-Infinity Infinity -> -Infinity
+
+0x0p0 Infinity -> NaN invalid
+Infinity 0x0p0 -> NaN invalid
