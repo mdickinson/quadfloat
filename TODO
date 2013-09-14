@@ -31,7 +31,33 @@ Features
   usual way as infix operators) that use the 'preferredWidth' attribute to
   decide which format to use.
 
-* Fill out the rest of the IEEE 754 *required* operations.
+* Fill out the rest of the IEEE 754 *required* operations.  Right now, that's:
+
+    convertToDecimalCharacter
+    is754version1985
+    is754version2008
+    class
+    radix
+    totalOrder
+    totalOrderMag
+
+* Also, add tests for the following operations that are implemented but not
+  supported by standard tests:
+
+     comparisons
+     copy
+     negate
+     abs
+     copySign
+     is_sign_minus
+     is_normal
+     is_finite
+     is_zero
+     is_subnormal
+     is_infinite
+     is_nan
+     is_signaling
+     is_canonical
 
 * Implement flags.
 
@@ -41,6 +67,11 @@ Features
 
 Internal refactoring
 --------------------
+
+* In _rich_compare_general and similar methods, use the standard methods
+  convertFormat, convertFromInteger instead of _from_int, _from_binary_float.
+  Remove the need for the 'inexact' return by using a directed rounding mode
+  and inspecting flags.
 
 * Be consistent about internal uses of is_finite, is_infinite versus ._type
   tests.
