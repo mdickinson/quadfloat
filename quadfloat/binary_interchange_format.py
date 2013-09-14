@@ -2578,3 +2578,16 @@ def total_order(source1, source2):
         key1 = _total_order_key(source1)
         key2 = _total_order_key(source2)
         return key2 <= key1 if source1._sign else key1 <= key2
+
+
+def total_order_mag(source1, source2):
+    """
+    Return True if abs(source1) <= abs(source2) under the total ordering
+    specified by IEEE 754.
+
+    """
+    if not source1._format == source2._format:
+        raise ValueError(
+            "total_order operation not implemented for mixed formats."
+        )
+    return _total_order_key(source1) <= _total_order_key(source2)

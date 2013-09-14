@@ -371,6 +371,15 @@ def total_order(source):
     )
 
 
+def total_order_mag(source):
+    source_format = binary_format(source)
+    return TestOperation(
+        operation=HomogeneousOperation('total_order_mag'),
+        operand_conversions=[binary_conversion(source_format)] * 2,
+        result_conversion=bool_conversion,
+    )
+
+
 
 _uso = unary_source_operation
 operation_factories = {
@@ -425,4 +434,5 @@ operation_factories = {
     'convertFromInt': convert_from_int,
     'convertFormat': convert_format,
     'totalOrder': total_order,
+    'totalOrderMag': total_order_mag,
 }
