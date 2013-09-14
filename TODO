@@ -49,15 +49,15 @@ Features
      negate
      abs
      copySign
-     is_sign_minus
-     is_normal
-     is_finite
-     is_zero
-     is_subnormal
-     is_infinite
-     is_nan
-     is_signaling
-     is_canonical
+     isSign_minus
+     isNormal
+     isFinite
+     isZero
+     isSubnormal
+     isInfinite
+     isNan
+     isSignaling
+     isCanonical
 
 * Implement flags.
 
