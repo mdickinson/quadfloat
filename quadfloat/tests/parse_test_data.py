@@ -380,7 +380,6 @@ def total_order_mag(source):
     )
 
 
-
 _uso = unary_source_operation
 operation_factories = {
     # 5.3.1 General operations
