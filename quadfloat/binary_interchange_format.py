@@ -2543,3 +2543,38 @@ def compare_signaling_greater_unordered(source1, source2):
 
     """
     return _compare_signaling_general(source1, source2, _operator.gt, True)
+
+
+def _total_order_key(source):
+    """
+    Key function used to compare with total ordering.
+
+    Assumes that the sign has already been dealt with.
+
+    """
+    if source._type == _FINITE:
+        return 0, source._exponent, source._significand
+    elif source._type == _INFINITE:
+        return 1,
+    else:
+        assert source._type == _NAN
+        return 2, not source._signaling, source._payload
+
+
+def total_order(source1, source2):
+    """
+    Return True if source1 <= source2 under the total ordering specified by
+    IEEE 754.
+
+    """
+    if not source1._format == source2._format:
+        raise ValueError(
+            "total_order operation not implemented for mixed formats."
+        )
+
+    if source1._sign != source2._sign:
+        return source1._sign
+    else:
+        key1 = _total_order_key(source1)
+        key2 = _total_order_key(source2)
+        return key2 <= key1 if source1._sign else key1 <= key2

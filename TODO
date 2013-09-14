@@ -38,7 +38,6 @@ Features
     is754version2008
     class
     radix
-    totalOrder
     totalOrderMag
 
 * Also, add tests for the following operations that are implemented but not

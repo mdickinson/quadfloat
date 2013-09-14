@@ -1,0 +1,146 @@
+operation: totalOrder
+operation source: binary16
+
+# Orderable numbers.
+-Infinity -Infinity -> True
+-Infinity -0x2p0 -> True
+-Infinity -0x1.8p0 -> True
+-Infinity -0x1p0 -> True
+-Infinity -0x0p0 -> True
+-Infinity 0x0p0 -> True
+-Infinity 0x1p0 -> True
+-Infinity 0x1.8p0 -> True
+-Infinity 0x2p0 -> True
+-Infinity Infinity -> True
+
+-0x2p0 -Infinity -> False
+-0x2p0 -0x2p0 -> True
+-0x2p0 -0x1.8p0 -> True
+-0x2p0 -0x1p0 -> True
+-0x2p0 -0x0p0 -> True
+-0x2p0 0x0p0 -> True
+-0x2p0 0x1p0 -> True
+-0x2p0 0x1.8p0 -> True
+-0x2p0 0x2p0 -> True
+-0x2p0 Infinity -> True
+
+-0x1.8p0 -Infinity -> False
+-0x1.8p0 -0x2p0 -> False
+-0x1.8p0 -0x1.8p0 -> True
+-0x1.8p0 -0x1p0 -> True
+-0x1.8p0 -0x0p0 -> True
+-0x1.8p0 0x0p0 -> True
+-0x1.8p0 0x1p0 -> True
+-0x1.8p0 0x1.8p0 -> True
+-0x1.8p0 0x2p0 -> True
+-0x1.8p0 Infinity -> True
+
+-0x1p0 -Infinity -> False
+-0x1p0 -0x2p0 -> False
+-0x1p0 -0x1.8p0 -> False
+-0x1p0 -0x1p0 -> True
+-0x1p0 -0x0p0 -> True
+-0x1p0 0x0p0 -> True
+-0x1p0 0x1p0 -> True
+-0x1p0 0x1.8p0 -> True
+-0x1p0 0x2p0 -> True
+-0x1p0 Infinity -> True
+
+-0x0p0 -Infinity -> False
+-0x0p0 -0x2p0 -> False
+-0x0p0 -0x1.8p0 -> False
+-0x0p0 -0x1p0 -> False
+-0x0p0 -0x0p0 -> True
+-0x0p0 0x0p0 -> True
+-0x0p0 0x1p0 -> True
+-0x0p0 0x1.8p0 -> True
+-0x0p0 0x2p0 -> True
+-0x0p0 Infinity -> True
+
+0x0p0 -Infinity -> False
+0x0p0 -0x2p0 -> False
+0x0p0 -0x1.8p0 -> False
+0x0p0 -0x1p0 -> False
+0x0p0 -0x0p0 -> False
+0x0p0 0x0p0 -> True
+0x0p0 0x1p0 -> True
+0x0p0 0x1.8p0 -> True
+0x0p0 0x2p0 -> True
+0x0p0 Infinity -> True
+
+0x1p0 -Infinity -> False
+0x1p0 -0x2p0 -> False
+0x1p0 -0x1.8p0 -> False
+0x1p0 -0x1p0 -> False
+0x1p0 -0x0p0 -> False
+0x1p0 0x0p0 -> False
+0x1p0 0x1p0 -> True
+0x1p0 0x1.8p0 -> True
+0x1p0 0x2p0 -> True
+0x1p0 Infinity -> True
+
+0x1.8p0 -Infinity -> False
+0x1.8p0 -0x2p0 -> False
+0x1.8p0 -0x1.8p0 -> False
+0x1.8p0 -0x1p0 -> False
+0x1.8p0 -0x0p0 -> False
+0x1.8p0 0x0p0 -> False
+0x1.8p0 0x1p0 -> False
+0x1.8p0 0x1.8p0 -> True
+0x1.8p0 0x2p0 -> True
+0x1.8p0 Infinity -> True
+
+0x2p0 -Infinity -> False
+0x2p0 -0x2p0 -> False
+0x2p0 -0x1.8p0 -> False
+0x2p0 -0x1p0 -> False
+0x2p0 -0x0p0 -> False
+0x2p0 0x0p0 -> False
+0x2p0 0x1p0 -> False
+0x2p0 0x1.8p0 -> False
+0x2p0 0x2p0 -> True
+0x2p0 Infinity -> True
+
+Infinity -Infinity -> False
+Infinity -0x2p0 -> False
+Infinity -0x1.8p0 -> False
+Infinity -0x1p0 -> False
+Infinity -0x0p0 -> False
+Infinity 0x0p0 -> False
+Infinity 0x1p0 -> False
+Infinity 0x1.8p0 -> False
+Infinity 0x2p0 -> False
+Infinity Infinity -> True
+
+# Negative NaNs sort before everything else; positive NaNs after.
+-NaN -Infinity -> True
+-NaN -0x1p0 -> True
+-NaN 0x1p0 -> True
+-NaN Infinity -> True
+
+NaN -Infinity -> False
+NaN -0x1p0 -> False
+NaN 0x1p0 -> False
+NaN Infinity -> False
+
+-NaN NaN -> True
+NaN -NaN -> False
+NaN NaN -> True
+-NaN -NaN -> True
+
+# Positive signaling NaNs are less than positive quiet NaNs.
+NaN sNaN -> False
+sNaN NaN -> True
+-NaN -sNaN -> True
+-sNaN -NaN -> False
+
+# Lesser payload is smaller for positive NaNs.
+NaN(123) NaN(456) -> True
+NaN(456) NaN(123) -> False
+-NaN(123) -NaN(456) -> False
+-NaN(456) -NaN(123) -> True
+
+sNaN(123) sNaN(456) -> True
+sNaN(456) sNaN(123) -> False
+-sNaN(123) -sNaN(456) -> False
+-sNaN(456) -sNaN(123) -> True

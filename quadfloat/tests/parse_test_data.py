@@ -69,8 +69,17 @@ def binary_conversion(format):
     return convert
 
 
-# Attributes used when reading a RHS.
+def bool_conversion(string):
+    string = string.lower()
+    if string == 'true':
+        return True
+    elif string == 'false':
+        return False
+    else:
+        raise ValueError("Can't interpret {!r} as a boolean.".format(string))
 
+
+# Attributes used when reading a RHS.
 
 def raising_inexact_handler(exception, attributes):
     raise ValueError(
@@ -353,6 +362,16 @@ def convert_to_hex_character(source):
     )
 
 
+def total_order(source):
+    source_format = binary_format(source)
+    return TestOperation(
+        operation=HomogeneousOperation('total_order'),
+        operand_conversions=[binary_conversion(source_format)] * 2,
+        result_conversion=bool_conversion,
+    )
+
+
+
 _uso = unary_source_operation
 operation_factories = {
     # 5.3.1 General operations
@@ -405,4 +424,5 @@ operation_factories = {
 
     'convertFromInt': convert_from_int,
     'convertFormat': convert_format,
+    'totalOrder': total_order,
 }
