@@ -283,15 +283,14 @@ class BinaryInterchangeFormat(object):
         significand = (1 << self.precision) - 1
         return self._finite(sign, exponent, significand)
 
-    def _from_value(self, value=0, attributes=None):
+    def _from_value(self, value=0):
         """
         Float<nnn>([value])
 
         Create a new Float<nnn> instance from the given input.
 
         """
-        if attributes is None:
-            attributes = get_current_attributes()
+        attributes = get_current_attributes()
 
         if isinstance(value, _BinaryFloat):
             # Initialize from another _BinaryFloat instance.
@@ -307,7 +306,7 @@ class BinaryInterchangeFormat(object):
 
         elif isinstance(value, STRING_TYPES):
             # Initialize from a string.
-            return self._from_str(value, attributes)
+            return self.convert_from_decimal_character(value)
 
         else:
             raise TypeError(
@@ -356,70 +355,34 @@ class BinaryInterchangeFormat(object):
             attributes=attributes,
         )
 
-    def _from_str(self, s, attributes):
+    def _from_scaled_fraction(self, sign, exponent,
+                              numerator, denominator, attributes):
         """
-        Convert an input string to this format.
+        Convert a number of the form +/-a/b * 2**e to this format.
 
         """
-        # Do we have a representation of a finite number?
-        try:
-            sign, exponent, significand = parse_finite_decimal(s)
-        except ValueError:
-            pass
-        else:
-            # Quick return for zeros.
-            if significand == 0:
-                return self._zero(sign)
+        a, b = numerator, denominator
 
-            # Express (absolute value of) incoming string in form a / b;
-            # find d such that 2 ** (d - 1) <= a / b < 2 ** d.
-            a = significand * 5 ** max(exponent, 0)
-            b = 5 ** max(0, -exponent)
-            exp_diff = exponent
-            d = bit_length(a) - bit_length(b)
-            d += (a >> d if d >= 0 else a << -d) >= b
-            d += exp_diff
+        if a == 0:
+            return self._zero(sign)
 
-            # Approximate a / b by number of the form q * 2 ** e.  We compute
-            # two extra bits (hence the '- 2' below) of the result and use
-            # roundInexactToOdd.
-            exponent = max(d - self.precision - 2, self.qmin - 3)
-            shift = exponent - exp_diff
-            significand = _divide_to_odd(
-                a << max(-shift, 0),
-                b << max(0, shift),
-            )
-            return self._final_round(
-                sign,
-                exponent,
-                significand,
-                attributes,
-            )[1]
+        # Find d such that 2 ** (d - 1) <= abs. value < 2 ** d.
+        d = bit_length(a) - bit_length(b)
+        d += (a >> d if d >= 0 else a << -d) >= b
+        d += exponent
 
-        # Or a representation of infinity?
-        try:
-            sign = parse_infinity(s)
-        except ValueError:
-            pass
-        else:
-            return self._infinite(sign=sign)
-
-        # Or a representation of a nan?
-        try:
-            sign, signaling, payload = parse_nan(s)
-        except ValueError:
-            pass
-        else:
-            if payload is None:
-                payload = 1 if signaling else 0
-
-            return self._from_nan_triple(
-                sign=sign,
-                signaling=signaling,
-                payload=payload,
-            )
-
-        raise ValueError('invalid numeric string: {0}'.format(s))
+        exponent_out = max(d - self.precision - 2, self.qmin - 3)
+        shift = exponent_out - exponent
+        significand = _divide_to_odd(
+            a << max(-shift, 0),
+            b << max(0, shift),
+        )
+        return self._final_round(
+            sign,
+            exponent_out,
+            significand,
+            attributes,
+        )[1]
 
     def _from_float(self, value, attributes):
         """
@@ -727,43 +690,31 @@ class BinaryInterchangeFormat(object):
             return self._handle_nans(source1, source2)
 
         sign = source1._sign ^ source2._sign
+
+        # Handle infinities.
         if source1._type == _INFINITE:
             if source2._type == _INFINITE:
                 return self._handle_invalid()
             else:
                 return self._infinite(sign=sign)
-
-        if source2._type == _INFINITE:
-            # Already handled the case where source1 is infinite.
+        elif source2._type == _INFINITE:
             return self._zero(sign=sign)
 
-        if source1.is_zero():
-            if source2.is_zero():
+        # Division by zero.
+        if source2.is_zero():
+            if source1.is_zero():
                 return self._handle_invalid()
             else:
-                return self._zero(sign=sign)
+                return signal(DivideByZeroException(sign, self))
 
-        if source2.is_zero():
-            return signal(DivideByZeroException(sign, self))
-
-        # Finite / finite case.
-
-        # First find d such that 2 ** (d-1) <= _abs(source1) / _abs(source2) <
-        # 2 ** d.
-        a = source1._significand
-        b = source2._significand
-        exp_diff = source1._exponent - source2._exponent
-        d = bit_length(a) - bit_length(b)
-        d += (a >> d if d >= 0 else a << -d) >= b
-        d += exp_diff
-
-        exponent = max(d - self.precision - 2, self.qmin - 3)
-        shift = exponent - exp_diff
-        significand = _divide_to_odd(
-            a << max(-shift, 0),
-            b << max(0, shift),
+        # Finite / finite, with the denominator non-zero.
+        return self._from_scaled_fraction(
+            sign=sign,
+            exponent=source1._exponent - source2._exponent,
+            numerator=source1._significand,
+            denominator=source2._significand,
+            attributes=attributes,
         )
-        return self._final_round(sign, exponent, significand, attributes)[1]
 
     def square_root(self, source1):
         """
@@ -913,6 +864,53 @@ class BinaryInterchangeFormat(object):
             )
         else:
             assert False, "never get here"  # pragma no cover
+
+    def convert_from_decimal_character(self, s):
+        """
+        Convert the string s to this format.
+
+        """
+        attributes = get_current_attributes()
+
+        # First attempt to interpret the string as a finite decimal.
+        try:
+            sign, exponent, significand = parse_finite_decimal(s)
+        except ValueError:
+            pass
+        else:
+            return self._from_scaled_fraction(
+                sign=sign,
+                exponent=exponent,
+                numerator=significand * 5**max(exponent, 0),
+                denominator=5**max(0, -exponent),
+                attributes=attributes,
+            )
+
+        # Then as an infinity.
+        try:
+            sign = parse_infinity(s)
+        except ValueError:
+            pass
+        else:
+            return self._infinite(sign=sign)
+
+        # Then as a NaN.
+        try:
+            sign, signaling, payload = parse_nan(s)
+        except ValueError:
+            pass
+        else:
+            if payload is None:
+                payload = 1 if signaling else 0
+
+            return self._from_nan_triple(
+                sign=sign,
+                signaling=signaling,
+                payload=payload,
+            )
+
+        # And if all those failed, raise an exception.
+        raise ValueError('invalid numeric decimal string: {0}'.format(s))
 
     def convert_from_hex_character(self, s):
         """

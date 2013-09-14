@@ -1,0 +1,110 @@
+operation: convertFromDecimalCharacter
+operation destination: binary16
+
+attribute rounding-direction: roundTiesToEven
+attribute tininess-detection: afterRounding
+
+# Small integers
+-2 -> -0x2p0
+-1 -> -0x1p0
+-0 -> -0x0p0
+0 -> 0x0p0
+1 -> 0x1p0
+2 -> 0x2p0
+
+# Variations in input format.
+2 -> 0x2p0
+2.0 -> 0x2p0
+2.00 -> 0x2p0
+02.00 -> 0x2p0
+02 -> 0x2p0
+02e0 -> 0x2p0
+0.2e1 -> 0x2p0
+20e-1 -> 0x2p0
++2 -> 0x2p0
+
+# Inexact inputs.
+2.1 -> 0x2.198p0 inexact
+
+
+# Infinities may be spelled 'inf' or 'infinity'.
+inf -> Infinity
+INF -> Infinity
+Inf -> Infinity
+infinity -> Infinity
+Infinity -> Infinity
+INFINITY -> Infinity
+# Case is unimportant.
+InF -> Infinity
+iNf -> Infinity
+iNfInITY -> Infinity
+# Optional + or - sign.
++inf -> Infinity
+-Inf -> -Infinity
++INFINITY -> Infinity
+-Infinity -> -Infinity
+
+# Quiet NaNs.
+NaN -> NaN(0)
+nan -> NaN(0)
+NAN -> NaN(0)
+Nan -> NaN(0)
++NaN -> NaN(0)
++nan -> NaN(0)
++NAN -> NaN(0)
++Nan -> NaN(0)
+-NaN -> -NaN(0)
+-nan -> -NaN(0)
+-NAN -> -NaN(0)
+-Nan -> -NaN(0)
+
+# Signaling NaNs
+sNaN -> sNaN(1)
+snan -> sNaN(1)
+SNAN -> sNaN(1)
+Snan -> sNaN(1)
++sNaN -> sNaN(1)
++snan -> sNaN(1)
++SNAN -> sNaN(1)
++Snan -> sNaN(1)
+-sNaN -> -sNaN(1)
+-snan -> -sNaN(1)
+-SNAN -> -sNaN(1)
+-Snan -> -sNaN(1)
+
+# Payloads.
+NaN(0) -> NaN(0)
+NaN(1) -> NaN(1)
+NaN(511) -> NaN(511)
+-NaN(0) -> -NaN(0)
+-NaN(1) -> -NaN(1)
+-NaN(511) -> -NaN(511)
+sNaN(1) -> sNaN(1)
+sNaN(511) -> sNaN(511)
+-sNaN(1) -> -sNaN(1)
+-sNaN(511) -> -sNaN(511)
+
+# Halfway cases.
+2049 -> 0x1p11 inexact
+2051 -> 0x1.008p11 inexact
+
+# Rounding mode should be respected.
+attribute rounding-direction: roundTiesToAway
+2.1 -> 0x2.198p0 inexact
+2049 -> 0x1.004p11 inexact
+2051 -> 0x1.008p11 inexact
+
+attribute rounding-direction: roundTowardPositive
+2.1 -> 0x2.1ap0 inexact
+2049 -> 0x1.004p11 inexact
+2051 -> 0x1.008p11 inexact
+
+attribute rounding-direction: roundTowardNegative
+2.1 -> 0x2.198p0 inexact
+2049 -> 0x1p11 inexact
+2051 -> 0x1.004p11 inexact
+
+attribute rounding-direction: roundTowardZero
+2.1 -> 0x2.198p0 inexact
+2049 -> 0x1p11 inexact
+2051 -> 0x1.004p11 inexact

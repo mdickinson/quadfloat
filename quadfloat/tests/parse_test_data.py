@@ -284,6 +284,18 @@ def convert_from_hex_character(destination):
     )
 
 
+def convert_from_decimal_character(destination):
+    destination_format = binary_format(destination)
+    return TestOperation(
+        operation=FormatOfOperation(
+            destination_format,
+            'convert_from_decimal_character',
+        ),
+        operand_conversions=[identity_conversion],
+        result_conversion=binary_conversion(destination_format),
+    )
+
+
 def scaleB(source):
     source_format = binary_format(source)
     return TestOperation(
@@ -366,6 +378,7 @@ operation_factories = {
     'fusedMultiplyAdd': ternary_formatof_operation('fused_multiply_add'),
     'convertFromHexCharacter': convert_from_hex_character,
     'convertToHexCharacter': convert_to_hex_character,
+    'convertFromDecimalCharacter': convert_from_decimal_character,
     'scaleB': scaleB,
     'logB': logB,
 
