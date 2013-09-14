@@ -83,10 +83,11 @@ NaN -> NaN
 sNaN -> NaN(1) invalid
 -sNaN(456) -> -NaN(456) invalid
 
-# Quiet NaNs with out-of-range payload
+# NaNs with out-of-range payload
 NaN(511) -> NaN(511)
 NaN(512) -> NaN(511)
 NaN(4096) -> NaN(511)
+sNaN(4096) -> NaN(511) invalid
 
 
 ### 16-bit to 16-bit 'conversion'.

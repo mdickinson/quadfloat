@@ -56,13 +56,13 @@ class SignalingNaNException(object):
     operation encountering a signaling NaN.
 
     """
-    def __init__(self, format, snan):
-        self.format = format
-        # The signaling NaN that caused this exception.
+    def __init__(self, snan):
+        # Default result.  (XXX actually a quiet NaN, not a signaling
+        # one.)
         self.snan = snan
 
     def default_handler(self, attributes):
-        return self.format(self.snan._quieten_nan())
+        return self.snan
 
     def signal(self, attributes):
         return attributes.invalid_operation_handler(self, attributes)

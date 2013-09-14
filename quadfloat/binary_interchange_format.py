@@ -564,15 +564,25 @@ class BinaryInterchangeFormat(object):
         # Look for signaling NaNs.
         for source in sources:
             if source._type == _NAN and source._signaling:
-                exception = SignalingNaNException(self, source)
+                default_result = self._from_nan_triple(
+                    sign=source._sign,
+                    signaling=False,
+                    payload=source._payload,
+                    clip_payload=True,
+                )
+                exception = SignalingNaNException(default_result)
                 return signal(exception)
 
         # All operands are quiet NaNs; return a result based on the first of
         # these.
         for source in sources:
             if source._type == _NAN:
-                # Convert to this format if necessary.
-                return self(source)
+                return self._from_nan_triple(
+                    sign=source._sign,
+                    signaling=source._signaling,
+                    payload=source._payload,
+                    clip_payload=True,
+                )
 
         # If we get here, then _handle_nans has been called with all arguments
         # non-NaN.  This shouldn't happen.
