@@ -1,0 +1,18 @@
+operation: class
+operation source: binary16
+
+NaN -> quietNaN
+sNaN -> signalingNaN
+
+-Infinity -> negativeInfinity
+-0x1p0 -> negativeNormal
+-0x1p-14 -> negativeNormal
+-0x0.ffcp-14 -> negativeSubnormal
+-0x1p-24 -> negativeSubnormal
+-0x0p0 -> negativeZero
+0x0p0 -> positiveZero
+0x1p-24 -> positiveSubnormal
+0x0.ffcp-14 -> positiveSubnormal
+0x1p-14 -> positiveNormal
+0x1p0 -> positiveNormal
+Infinity -> positiveInfinity

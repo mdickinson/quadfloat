@@ -380,6 +380,26 @@ def total_order_mag(source):
     )
 
 
+def class_(source):
+    source_format = binary_format(source)
+    return TestOperation(
+        operation=HomogeneousOperation('class_'),
+        operand_conversions=[binary_conversion(source_format)],
+        result_conversion=str,
+    )
+
+
+def unary_predicate(method_name):
+    def unary_predicate_factory(source):
+        source_format = binary_format(source)
+        return TestOperation(
+            operation=HomogeneousOperation(method_name),
+            operand_conversions=[binary_conversion(source_format)],
+            result_conversion=bool_conversion,
+        )
+    return unary_predicate_factory
+
+
 _uso = unary_source_operation
 operation_factories = {
     # 5.3.1 General operations
@@ -434,4 +454,15 @@ operation_factories = {
     'convertFormat': convert_format,
     'totalOrder': total_order,
     'totalOrderMag': total_order_mag,
+    'class': class_,
+
+    'isCanonical': unary_predicate('is_canonical'),
+    'isFinite': unary_predicate('is_finite'),
+    'isInfinite': unary_predicate('is_infinite'),
+    'isNaN': unary_predicate('is_nan'),
+    'isNormal': unary_predicate('is_normal'),
+    'isSignMinus': unary_predicate('is_sign_minus'),
+    'isSignaling': unary_predicate('is_signaling'),
+    'isSubnormal': unary_predicate('is_subnormal'),
+    'isZero': unary_predicate('is_zero'),
 }

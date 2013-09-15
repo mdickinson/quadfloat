@@ -1254,7 +1254,8 @@ class _BinaryFloat(object):
 
     def is_normal(self):
         """
-        Return True if self is subnormal, False otherwise.
+        Return True if self is normal (not zero, subnormal, infinite or NaN)
+        and False otherwise.
 
         """
         return (
@@ -2591,3 +2592,121 @@ def total_order_mag(source1, source2):
             "total_order operation not implemented for mixed formats."
         )
     return _total_order_key(source1) <= _total_order_key(source2)
+
+
+signalingNaN = 'signalingNaN'
+quietNaN = 'quietNaN'
+negativeInfinity = 'negativeInfinity'
+negativeNormal = 'negativeNormal'
+negativeSubnormal = 'negativeSubnormal'
+negativeZero = 'negativeZero'
+positiveZero = 'positiveZero'
+positiveSubnormal = 'positiveSubnormal'
+positiveNormal = 'positiveNormal'
+positiveInfinity = 'positiveInfinity'
+
+
+def is_sign_minus(source):
+    """
+    Return True if source has a negative sign, else False.
+
+    This applies to zeros and NaNs as well as infinities and nonzero finite
+    numbers.
+
+    """
+    return source.is_sign_minus()
+
+
+def is_normal(source):
+    """
+    Return True if source is normal and False otherwise.
+
+    That is, return True if the source is not zero, subnormal, infinite or NaN.
+
+    """
+    return source.is_normal()
+
+
+def is_finite(source):
+    """
+    Return True if source is finite; that is, zero, subnormal or normal (not
+    infinite or NaN).
+
+    """
+    return source._type == _FINITE
+
+
+def is_zero(source):
+    """
+    Return True if source is plus or minus 0.
+
+    """
+    return source.is_zero()
+
+
+def is_subnormal(source):
+    """
+    Return True if source is subnormal, False otherwise.
+
+    """
+    return source.is_subnormal()
+
+
+def is_infinite(source):
+    """
+    Return True if source is infinite, and False otherwise.
+
+    """
+    return source.is_infinite()
+
+
+def is_nan(source):
+    """
+    Return True if source is a NaN, and False otherwise.
+
+    """
+    return source.is_nan()
+
+
+def is_signaling(source):
+    """
+    Return True if self is a signaling NaN, and False otherwise.
+
+    """
+    return source.is_signaling()
+
+
+def is_canonical(source):
+    """
+    Return True if source is canonical.
+
+    """
+    # Currently no non-canonical values are supported.
+    return True
+
+
+def class_(source):
+    """
+    Determine which class a given number falls into.
+
+    """
+    if is_nan(source):
+        return signalingNaN if is_signaling(source) else quietNaN
+    if is_sign_minus(source):
+        if is_infinite(source):
+            return negativeInfinity
+        elif is_zero(source):
+            return negativeZero
+        elif is_subnormal(source):
+            return negativeSubnormal
+        else:
+            return negativeNormal
+    else:
+        if is_infinite(source):
+            return positiveInfinity
+        elif is_zero(source):
+            return positiveZero
+        elif is_subnormal(source):
+            return positiveSubnormal
+        else:
+            return positiveNormal

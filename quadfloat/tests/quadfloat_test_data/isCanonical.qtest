@@ -1,0 +1,20 @@
+operation: isCanonical
+operation source: binary16
+
+NaN -> True
+sNaN -> True
+-NaN -> True
+-sNaN -> True
+
+-Infinity -> True
+-0x1p0 -> True
+-0x1p-14 -> True
+-0x0.ffcp-14 -> True
+-0x1p-24 -> True
+-0x0p0 -> True
+0x0p0 -> True
+0x1p-24 -> True
+0x0.ffcp-14 -> True
+0x1p-14 -> True
+0x1p0 -> True
+Infinity -> True

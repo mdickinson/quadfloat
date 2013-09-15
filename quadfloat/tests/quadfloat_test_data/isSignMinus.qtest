@@ -1,0 +1,20 @@
+operation: isSignMinus
+operation source: binary16
+
+NaN -> False
+sNaN -> False
+-NaN -> True
+-sNaN -> True
+
+-Infinity -> True
+-0x1p0 -> True
+-0x1p-14 -> True
+-0x0.ffcp-14 -> True
+-0x1p-24 -> True
+-0x0p0 -> True
+0x0p0 -> False
+0x1p-24 -> False
+0x0.ffcp-14 -> False
+0x1p-14 -> False
+0x1p0 -> False
+Infinity -> False

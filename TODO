@@ -36,7 +36,6 @@ Features
     convertToDecimalCharacter
     is754version1985
     is754version2008
-    class
     radix
 
 * Also, add tests for the following operations that are implemented but not
@@ -47,15 +46,6 @@ Features
      negate
      abs
      copySign
-     isSign_minus
-     isNormal
-     isFinite
-     isZero
-     isSubnormal
-     isInfinite
-     isNan
-     isSignaling
-     isCanonical
 
 * Implement flags.
 
