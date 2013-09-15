@@ -17,6 +17,7 @@ from quadfloat.attributes import (
     get_current_attributes,
     partial_attributes,
     set_current_attributes,
+    temporary_attributes,
 )
 from quadfloat.compat import (
     bit_length,
@@ -40,6 +41,9 @@ from quadfloat.exceptions import (
     UnderflowException,
     SignalingNaNException,
     DivideByZeroException,
+)
+from quadfloat.status_flags import (
+    inexact as inexact_flag,
 )
 from quadfloat.interval import Interval as _Interval
 from quadfloat.parsing import (
@@ -88,10 +92,26 @@ _default_attributes = Attributes(
 set_current_attributes(_default_attributes)
 
 
+def compare_attributes():
+    return Attributes(
+        rounding_direction=round_toward_negative,
+        tininess_detection=AFTER_ROUNDING,
+        inexact_handler=exception_default_handler,
+        overflow_handler=exception_default_handler,
+        underflow_handler=exception_default_handler,
+        flag_set=set(),
+    )
+
+
 # Attributes to use for conversions during comparison.
 comparison_attributes = Attributes(
     rounding_direction=round_ties_to_even,
     tininess_detection=AFTER_ROUNDING,
+    inexact_handler=exception_default_handler,
+    flag_set=set(),
+    # XXX Add test cases that need underflow, overflow;
+    # divide_by_zero and invalid should be safe...
+    # or should they?  What about signaling NaNs?
 )
 
 
@@ -314,7 +334,7 @@ class BinaryInterchangeFormat(object):
 
         if isinstance(value, _BinaryFloat):
             # Initialize from another _BinaryFloat instance.
-            return self._from_binary_float(value, attributes)[1]
+            return self._from_binary_float(value)
 
         elif isinstance(value, float):
             # Initialize from a float.
@@ -322,7 +342,7 @@ class BinaryInterchangeFormat(object):
 
         elif isinstance(value, INTEGER_TYPES):
             # Initialize from an integer.
-            return self._from_int(value, attributes)[1]
+            return self._from_int(value)
 
         elif isinstance(value, STRING_TYPES):
             # Initialize from a string.
@@ -334,13 +354,12 @@ class BinaryInterchangeFormat(object):
                 "value of type {0}".format(type(value))
             )
 
-    def _from_binary_float(self, b, attributes):
+    def _from_binary_float(self, b):
         """
         Convert another _BinaryFloat instance to this format.
 
         """
         if b._type == _NAN:
-            inexact = None
             converted = self._from_nan_triple(
                 sign=b._sign,
                 signaling=b._signaling,
@@ -349,21 +368,19 @@ class BinaryInterchangeFormat(object):
             )
         elif b._type == _INFINITE:
             # Infinities convert with no loss of information.
-            inexact = 0
             converted = self._infinite(
                 sign=b._sign,
             )
         else:
             # Finite value.
-            inexact, converted = self._from_triple(
+            converted = self._from_triple(
                 sign=b._sign,
                 exponent=b._exponent,
                 significand=b._significand,
-                attributes=attributes,
             )
-        return inexact, converted
+        return converted
 
-    def _from_int(self, n, attributes):
+    def _from_int(self, n):
         """
         Convert the integer `n` to this format.
 
@@ -372,7 +389,6 @@ class BinaryInterchangeFormat(object):
             sign=n < 0,
             exponent=0,
             significand=_abs(n),
-            attributes=attributes,
         )
 
     def _from_scaled_fraction(self, sign, exponent,
@@ -532,7 +548,7 @@ class BinaryInterchangeFormat(object):
 
         return inexact, rounded
 
-    def _from_triple(self, sign, exponent, significand, attributes):
+    def _from_triple(self, sign, exponent, significand):
         """
         Round the value (-1) ** sign * significand * 2 ** exponent to the
         format 'self'.
@@ -546,7 +562,8 @@ class BinaryInterchangeFormat(object):
                 exponent + bit_length(significand) - self.precision - 2,
             )
         q = _rshift_to_odd(significand, e - exponent)
-        return self._final_round(sign, e, q, attributes)
+        attributes = get_current_attributes()
+        return self._final_round(sign, e, q, attributes)[1]
 
     def _from_nan_triple(self, sign, signaling, payload, clip_payload=False):
         """
@@ -661,8 +678,7 @@ class BinaryInterchangeFormat(object):
             sign=sign,
             exponent=exponent,
             significand=_abs(significand),
-            attributes=attributes,
-        )[1]
+        )
 
     def subtraction(self, source1, source2):
         """
@@ -706,8 +722,7 @@ class BinaryInterchangeFormat(object):
             sign=sign,
             exponent=exponent,
             significand=significand,
-            attributes=attributes,
-        )[1]
+        )
 
     def division(self, source1, source2):
         """
@@ -844,8 +859,7 @@ class BinaryInterchangeFormat(object):
             sign=sign,
             exponent=exponent,
             significand=_abs(significand),
-            attributes=attributes,
-        )[1]
+        )
 
     def convert_format(self, source):
         """
@@ -854,17 +868,14 @@ class BinaryInterchangeFormat(object):
         """
         if source._type == _NAN:
             return self._handle_nans(source)
-
-        attributes = get_current_attributes()
-        return self._from_binary_float(source, attributes)[1]
+        return self._from_binary_float(source)
 
     def convert_from_int(self, n):
         """
         Convert the integer n to this format.
 
         """
-        attributes = get_current_attributes()
-        return self._from_int(n, attributes)[1]
+        return self._from_int(n)
 
     def convert_to_hex_character_simple(self, source):
         """
@@ -958,8 +969,7 @@ class BinaryInterchangeFormat(object):
                 sign=sign,
                 exponent=exponent,
                 significand=significand,
-                attributes=attributes,
-            )[1]
+            )
 
         try:
             sign = parse_infinity(s)
@@ -1299,7 +1309,7 @@ class _BinaryFloat(object):
         elif isinstance(other, float):
             other = _binary64._from_float(other, attributes)[1]
         elif isinstance(other, INTEGER_TYPES):
-            other = self._format._from_int(other, attributes)[1]
+            other = self._format._from_int(other)
         else:
             raise TypeError(
                 "Can't convert operand {0} of type {1} to "
@@ -1404,16 +1414,22 @@ class _BinaryFloat(object):
 
         """
         if isinstance(other, INTEGER_TYPES):
-            inexact, other = self._format._from_int(
-                other, comparison_attributes)
+            with temporary_attributes(compare_attributes()) as attributes:
+                other = self._format._from_int(other)
+                inexact = -1 if inexact_flag in attributes.flag_set else 0
 
         elif isinstance(other, float):
+            # First convert to float64.
+
+
+
             inexact, other = self._format._from_float(
                 other, comparison_attributes)
 
         elif isinstance(other, _BinaryFloat):
-            inexact, other = self._format._from_binary_float(
-                other, comparison_attributes)
+            with temporary_attributes(compare_attributes()) as attributes:
+                other = self._format._from_binary_float(other)
+                inexact = -1 if inexact_flag in attributes.flag_set else 0
 
         else:
             raise TypeError(
@@ -1721,13 +1737,11 @@ def remainder(self, other):
             rounding_direction=round_ties_to_even,
             tininess_detection=AFTER_ROUNDING,
     ):
-        inexact, converted = format._from_triple(
-            sign,
-            exponent,
-            significand,
-            get_current_attributes(),
+        converted = format._from_triple(
+            sign=sign,
+            exponent=exponent,
+            significand=significand,
         )
-    assert not inexact
     return converted
 
 
@@ -1867,8 +1881,7 @@ def scale_b(self, n):
         sign=self._sign,
         exponent=self._exponent + n,
         significand=self._significand,
-        attributes=attributes,
-    )[1]
+    )
 
 
 def log_b(self):
@@ -2174,10 +2187,11 @@ def _compare_quiet_general(source1, source2, operator, unordered_result):
     elif source1._type == _NAN or source2._type == _NAN:
         return unordered_result
     else:
-        fmt = source1._format
-        inexact, source2 = fmt._from_binary_float(
-            source2, comparison_attributes)
-        result = _compare_ordered(source1, source2) or inexact
+        with temporary_attributes(compare_attributes()) as attributes:
+            source2 = source1._format._from_binary_float(source2)
+            inexact = inexact_flag in attributes.flag_set
+
+        result = _compare_ordered(source1, source2) or -inexact
         return operator(result, 0)
 
 
@@ -2193,9 +2207,11 @@ def _compare_signaling_general(source1, source2, operator, unordered_result):
         return _handle_invalid_bool(unordered_result)
     else:
         fmt = source1._format
-        inexact, source2 = fmt._from_binary_float(
-            source2, comparison_attributes)
-        result = _compare_ordered(source1, source2) or inexact
+        with temporary_attributes(compare_attributes()) as attributes:
+            source2 = fmt._from_binary_float(source2)
+            inexact = inexact_flag in attributes.flag_set
+
+        result = _compare_ordered(source1, source2) or -inexact
         return operator(result, 0)
 
 

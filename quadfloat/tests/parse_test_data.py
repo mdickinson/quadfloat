@@ -260,6 +260,21 @@ def ternary_formatof_operation(method_name):
     return operation_factory
 
 
+def comparison(method_name):
+    def comparison_factory(source1, source2):
+        source1_format = binary_format(source1)
+        source2_format = binary_format(source2)
+        return TestOperation(
+            operation=HomogeneousOperation(method_name),
+            operand_conversions=[
+                binary_conversion(source1_format),
+                binary_conversion(source2_format),
+            ],
+            result_conversion=bool_conversion,
+        )
+    return comparison_factory
+
+
 def unary_source_operation(method_name):
     def unary_operation_factory(source):
         source_format = binary_format(source)
@@ -470,4 +485,7 @@ operation_factories = {
     'abs': unary_source_operation('abs'),
     'copy': unary_source_operation('copy'),
     'negate': unary_source_operation('negate'),
+
+    'compareQuietLess': comparison('compare_quiet_less'),
+    'compareQuietLessEqual': comparison('compare_quiet_less_equal'),
 }

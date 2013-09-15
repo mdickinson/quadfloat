@@ -5,7 +5,6 @@ Helper class for representing a single test.
 from quadfloat.attributes import (
     partial_attributes,
     temporary_attributes,
-    get_current_attributes,
 )
 from quadfloat.status_flags import underflow
 

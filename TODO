@@ -10,6 +10,8 @@ Bugs
 
 * Missing documentation.
 
+* _convert_other doesn't always respect its attributes input.
+
 
 Documentation
 -------------

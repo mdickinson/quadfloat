@@ -1,0 +1,21 @@
+operation: compareQuietLessEqual
+operation source1: binary16
+operation source2: binary32
+
+0x1p0 0x2p0 -> True
+0x2p0 0x1p0 -> False
+0x1p0 0x1p0 -> True
+
+# Operations that involve a conversion of the second operand.
+0x1p0 0x0.ffffp0 -> False
+0x1p0 0x1.0001p0 -> True
+
+# Operations where that conversion generates underflow / overflow.
+0x1p0 0x0.fffffp-14 -> False
+0x1p0 0x1p-24 -> False
+0x1p0 0x1p16 -> True
+
+Infinity Infinity -> True
+Infinity 0x1p127 -> False
+-Infinity -0x1p127 -> True
+-Infinity -Infinity -> True
