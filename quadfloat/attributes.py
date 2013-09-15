@@ -86,7 +86,7 @@ def temporary_attributes(attrs):
     stored = get_current_attributes()
     set_current_attributes(attrs)
     try:
-        yield
+        yield attrs
     finally:
         set_current_attributes(stored)
 
@@ -98,5 +98,5 @@ def partial_attributes(**attrs):
 
     """
     new_attribute_stack = get_current_attributes().push(**attrs)
-    with temporary_attributes(new_attribute_stack):
-        yield
+    with temporary_attributes(new_attribute_stack) as attributes:
+        yield attributes

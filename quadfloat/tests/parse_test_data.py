@@ -93,6 +93,7 @@ READ_ATTRIBUTES = Attributes(
     # Handlers for inexact, underflow.  We shouldn't encounter overflow.
     inexact_handler=raising_inexact_handler,
     underflow_handler=UnderflowException.default_handler,
+    flag_set = set(),
 )
 
 

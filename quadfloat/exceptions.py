@@ -2,6 +2,13 @@
 Standard exceptions.
 
 """
+from quadfloat.status_flags import (
+    divideByZero,
+    inexact,
+    invalid,
+    overflow,
+    underflow,
+)
 
 
 class InvalidOperationException(object):
@@ -13,6 +20,7 @@ class InvalidOperationException(object):
         self.format = format
 
     def default_handler(self, attributes):
+        attributes.flag_set.add(invalid)
         return self.format._nan(
             sign=False,
             signaling=False,
@@ -33,6 +41,7 @@ class InvalidIntegerOperationException(object):
         self.payload = payload
 
     def default_handler(self, attributes):
+        attributes.flag_set.add(invalid)
         return self.payload
 
     def signal(self, attributes):
@@ -44,6 +53,7 @@ class InvalidBooleanOperationException(object):
         pass
 
     def default_handler(self, attributes):
+        attributes.flag_set.add(invalid)
         raise ValueError("Invalid operation returning a boolean.")
 
     def signal(self, attributes):
@@ -62,6 +72,7 @@ class SignalingNaNException(object):
         self.snan = snan
 
     def default_handler(self, attributes):
+        attributes.flag_set.add(invalid)
         return self.snan
 
     def signal(self, attributes):
@@ -77,6 +88,7 @@ class InexactException(object):
         self.rounded = rounded
 
     def default_handler(self, attributes):
+        attributes.flag_set.add(inexact)
         return self.rounded
 
     def signal(self, attributes):
@@ -94,9 +106,11 @@ class UnderflowException(object):
 
     def default_handler(self, attributes):
         if self.inexact:
+            attributes.flag_set.add(underflow)
             inexact_exception = InexactException(self.rounded)
             return inexact_exception.signal(attributes)
         else:
+            # underflow flag *not* raised, as per section 7.5
             return self.rounded
 
     def signal(self, attributes):
@@ -112,6 +126,7 @@ class OverflowException(object):
         self.rounded = rounded
 
     def default_handler(self, attributes):
+        attributes.flag_set.add(overflow)
         inexact_exception = InexactException(self.rounded)
         return inexact_exception.signal(attributes)
 
@@ -130,6 +145,7 @@ class DivideByZeroException(object):
         self.format = format
 
     def default_handler(self, attributes):
+        attributes.flag_set.add(divideByZero)
         return self.format._infinite(self.sign)
 
     def signal(self, attributes):

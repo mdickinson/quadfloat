@@ -71,6 +71,9 @@ def exception_default_handler(exception, attributes):
     return exception.default_handler(attributes)
 
 
+_default_flag_set = set()
+
+
 _default_attributes = Attributes(
     rounding_direction=round_ties_to_even,
     tininess_detection=AFTER_ROUNDING,
@@ -79,6 +82,7 @@ _default_attributes = Attributes(
     overflow_handler=exception_default_handler,
     underflow_handler=exception_default_handler,
     divide_by_zero_handler=exception_default_handler,
+    flag_set=_default_flag_set,
 )
 
 set_current_attributes(_default_attributes)

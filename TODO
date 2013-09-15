@@ -25,7 +25,7 @@ Features
 
 * The non formatOf operations should be exposed as functions, as well as or
   instead of as methods.  It's more natural to do remainder(x, y) than
-  x.remainder(y).
+  x.remainder(y).  DONE.
 
 * Similarly, the formatOf operations should be exposed as methods (or in the
   usual way as infix operators) that use the 'preferredWidth' attribute to
@@ -42,9 +42,6 @@ Features
   supported by standard tests:
 
      comparisons
-     copy
-     negate
-     abs
      copySign
 
 * Implement flags.

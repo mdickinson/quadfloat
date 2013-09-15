@@ -13,10 +13,10 @@ operation source2: binary16
 -0x0p0 -0x1p0 -> 0x0p0
 
 # Division by zero.
-0x1p0 0x0p0 -> Infinity zero-division
--0x1p0 0x0p0 -> -Infinity zero-division
-0x1p0 -0x0p0 -> -Infinity zero-division
--0x1p0 -0x0p0 -> Infinity zero-division
+0x1p0 0x0p0 -> Infinity divideByZero
+-0x1p0 0x0p0 -> -Infinity divideByZero
+0x1p0 -0x0p0 -> -Infinity divideByZero
+-0x1p0 -0x0p0 -> Infinity divideByZero
 
 0x0p0 0x0p0 -> NaN invalid
 -0x0p0 0x0p0 -> NaN invalid  # should these be -NaN?

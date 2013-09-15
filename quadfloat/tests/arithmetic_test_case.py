@@ -5,7 +5,10 @@ Helper class for representing a single test.
 from quadfloat.attributes import (
     partial_attributes,
     temporary_attributes,
+    get_current_attributes,
 )
+from quadfloat.status_flags import underflow
+
 import quadfloat.binary_interchange_format
 
 
@@ -31,29 +34,24 @@ def identifying_string(binary_float):
     )
 
 
-class SignalCollector(object):
-    def __init__(self):
-        self.flags = set()
-        self.set_handlers = partial_attributes(
-            inexact_handler=self.set_flag('inexact'),
-            invalid_operation_handler=self.set_flag('invalid'),
-            overflow_handler=self.set_flag('overflow'),
-            underflow_handler=self.set_flag('underflow'),
-            divide_by_zero_handler=self.set_flag('zero-division')
+def exception_default_handler(exception, attributes):
+    return exception.default_handler(attributes)
+
+
+def flagging_underflow_handler(exception, attributes):
+    attributes.flag_set.add(underflow)
+    return exception.default_handler(attributes)
+
+
+def collect_signals():
+        return partial_attributes(
+            divide_by_zero_handler=exception_default_handler,
+            inexact_handler=exception_default_handler,
+            invalid_operation_handler=exception_default_handler,
+            overflow_handler=exception_default_handler,
+            underflow_handler=flagging_underflow_handler,
+            flag_set=set(),
         )
-
-    def set_flag(self, flag):
-        def exception_handler(exception, attributes):
-            self.flags.add(flag)
-            return exception.default_handler(attributes)
-        return exception_handler
-
-    def __enter__(self):
-        self.set_handlers.__enter__()
-        return self.flags
-
-    def __exit__(self, *exc_info):
-        return self.set_handlers.__exit__(*exc_info)
 
 
 class ArithmeticOperation(object):
@@ -142,8 +140,9 @@ class ArithmeticTestCase(object):
 
         """
         with temporary_attributes(self.attributes):
-            with SignalCollector() as actual_flags:
+            with collect_signals() as attributes:
                 actual_result = self.operation(*self.operands)
+                actual_flags = attributes.flag_set
         return ArithmeticTestResult(
             result=actual_result,
             flags=actual_flags,
