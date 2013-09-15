@@ -79,6 +79,18 @@ def bool_conversion(string):
         raise ValueError("Can't interpret {!r} as a boolean.".format(string))
 
 
+def int_or_value_error(string):
+    try:
+        return int(string)
+    except ValueError:
+        pass
+
+    if string == "ValueError":
+        return string
+    else:
+        raise ValueError("Can't interpret {!r}.".format(string))
+
+
 # Attributes used when reading a RHS.
 
 def raising_inexact_handler(exception, attributes):
@@ -93,7 +105,7 @@ READ_ATTRIBUTES = Attributes(
     # Handlers for inexact, underflow.  We shouldn't encounter overflow.
     inexact_handler=raising_inexact_handler,
     underflow_handler=UnderflowException.default_handler,
-    flag_set = set(),
+    flag_set=set(),
 )
 
 
@@ -354,7 +366,7 @@ def convert_to_integer(name):
         return TestOperation(
             operation=HomogeneousOperation(name),
             operand_conversions=[binary_conversion(source_format)],
-            result_conversion=int,
+            result_conversion=int_or_value_error,
         )
     return integer_operation_factory
 

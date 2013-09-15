@@ -6,6 +6,7 @@ from quadfloat.attributes import (
     partial_attributes,
     temporary_attributes,
 )
+from quadfloat.binary_interchange_format import convert_to_hex_character_simple
 from quadfloat.status_flags import underflow
 
 import quadfloat.binary_interchange_format
@@ -26,9 +27,8 @@ def identifying_string(binary_float):
     if isinstance(binary_float, str):
         return binary_float
 
-    fmt = binary_float.format
     return "{0} (format {1})".format(
-        fmt.convert_to_hex_character_simple(binary_float),
+        convert_to_hex_character_simple(binary_float),
         binary_float.format,
     )
 
@@ -75,7 +75,12 @@ class HomogeneousOperation(ArithmeticOperation):
 
     def __call__(self, *args):
         method = getattr(quadfloat.binary_interchange_format, self.method_name)
-        return method(*args)
+        try:
+            result = method(*args)
+        except ValueError:
+            return "ValueError"
+        else:
+            return result
 
 
 class FormatOfOperation(ArithmeticOperation):

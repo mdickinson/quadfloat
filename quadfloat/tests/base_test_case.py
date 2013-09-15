@@ -1,6 +1,8 @@
 import re
 import unittest
 
+from quadfloat.binary_interchange_format import convert_to_hex_character_simple
+
 
 _MAX_LENGTH = 80
 
@@ -85,9 +87,8 @@ class _AssertRaisesContext(_AssertRaisesBaseContext):
 
 
 def _identifying_string(binary_float):
-    fmt = binary_float.format
     return "{0} (format {1})".format(
-        fmt.convert_to_hex_character_simple(binary_float),
+        convert_to_hex_character_simple(binary_float),
         binary_float.format,
     )
 

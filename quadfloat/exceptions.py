@@ -60,6 +60,20 @@ class InvalidBooleanOperationException(object):
         return attributes.invalid_operation_handler(self, attributes)
 
 
+class InvalidInvalidOperationException(object):
+    """
+    Class representing an invalid operation that has no meaningful return
+    value.
+
+    """
+    def default_handler(self, attributes):
+        attributes.flag_set.add(invalid)
+        raise ValueError("Invalid operation returning an integer.")
+
+    def signal(self, attributes):
+        return attributes.invalid_operation_handler(self, attributes)
+
+
 class SignalingNaNException(object):
     """
     InvalidOperation exception signaled as a result of an arithmetic

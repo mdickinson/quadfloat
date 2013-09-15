@@ -54,3 +54,8 @@ operation source: binary16
 0x1.004p-14 -> 0
 
 0x1p-13 -> 0
+
+# NaNs and infinities
+Infinity -> ValueError
+NaN -> ValueError
+sNaN -> ValueError invalid

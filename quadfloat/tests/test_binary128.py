@@ -45,7 +45,10 @@ from quadfloat.binary_interchange_format import (
     abs,
     copy,
     negate,
-    copy_sign
+    copy_sign,
+
+    total_order,
+    total_order_mag,
 )
 from quadfloat.compat import builtins
 from quadfloat.tests.base_test_case import BaseTestCase
@@ -1240,6 +1243,22 @@ class TestBinary128(BaseTestCase):
             abs(binary128('-snan(123)')), binary128('snan(123)'))
         self.assertInterchangeable(
             abs(binary128('snan(123)')), binary128('snan(123)'))
+
+    def test_total_order(self):
+        # Mixed formats should raise.
+        x, y = binary128('2.3'), binary64('-3.5')
+        with self.assertRaises(ValueError):
+            total_order(x, y)
+        with self.assertRaises(ValueError):
+            total_order(y, x)
+
+    def test_total_order_mag(self):
+        # Mixed formats should raise.
+        x, y = binary128('2.3'), binary64('-3.5')
+        with self.assertRaises(ValueError):
+            total_order_mag(x, y)
+        with self.assertRaises(ValueError):
+            total_order_mag(y, x)
 
     def test_copy_sign(self):
         x, y = binary128('2.3'), binary64('-3.5')

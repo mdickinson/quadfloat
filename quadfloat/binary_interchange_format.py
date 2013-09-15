@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
 
@@ -35,6 +34,7 @@ from quadfloat.exceptions import (
     InexactException,
     InvalidBooleanOperationException,
     InvalidIntegerOperationException,
+    InvalidInvalidOperationException,
     InvalidOperationException,
     OverflowException,
     UnderflowException,
@@ -61,11 +61,6 @@ from quadfloat.rounding_direction import (
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
 
-# This module defines a function called 'abs', so we make sure to keep
-# a reference to the builtin.
-_abs = builtins.abs
-
-
 def signal(exception):
     return exception.signal(get_current_attributes())
 
@@ -74,21 +69,17 @@ def exception_default_handler(exception, attributes):
     return exception.default_handler(attributes)
 
 
-_default_flag_set = set()
-
-
-_default_attributes = Attributes(
-    rounding_direction=round_ties_to_even,
-    tininess_detection=AFTER_ROUNDING,
-    inexact_handler=exception_default_handler,
-    invalid_operation_handler=exception_default_handler,
-    overflow_handler=exception_default_handler,
-    underflow_handler=exception_default_handler,
-    divide_by_zero_handler=exception_default_handler,
-    flag_set=_default_flag_set,
-)
-
-set_current_attributes(_default_attributes)
+def default_attributes():
+    return Attributes(
+        rounding_direction=round_ties_to_even,
+        tininess_detection=AFTER_ROUNDING,
+        inexact_handler=exception_default_handler,
+        invalid_operation_handler=exception_default_handler,
+        overflow_handler=exception_default_handler,
+        underflow_handler=exception_default_handler,
+        divide_by_zero_handler=exception_default_handler,
+        flag_set=set(),
+    )
 
 
 def compare_attributes():
@@ -102,16 +93,7 @@ def compare_attributes():
     )
 
 
-# Attributes to use for conversions during comparison.
-comparison_attributes = Attributes(
-    rounding_direction=round_ties_to_even,
-    tininess_detection=AFTER_ROUNDING,
-    inexact_handler=exception_default_handler,
-    flag_set=set(),
-    # XXX Add test cases that need underflow, overflow;
-    # divide_by_zero and invalid should be safe...
-    # or should they?  What about signaling NaNs?
-)
+set_current_attributes(default_attributes())
 
 
 # Constants, utility functions.
@@ -488,11 +470,8 @@ class BinaryInterchangeFormat(object):
         """
         min_payload = 1 if signaling else 0
         max_payload = self._max_payload
-        if clip_payload:
-            if payload < min_payload:
-                payload = min_payload
-            elif payload > max_payload:
-                payload = max_payload
+        if clip_payload and payload > max_payload:
+            payload = max_payload
         else:
             if not min_payload <= payload <= max_payload:
                 raise ValueError(
@@ -591,7 +570,7 @@ class BinaryInterchangeFormat(object):
         return self._from_triple(
             sign=sign,
             exponent=exponent,
-            significand=_abs(significand),
+            significand=builtins.abs(significand),
         )
 
     def subtraction(self, source1, source2):
@@ -763,7 +742,7 @@ class BinaryInterchangeFormat(object):
         return self._from_triple(
             sign=sign,
             exponent=exponent,
-            significand=_abs(significand),
+            significand=builtins.abs(significand),
         )
 
     def convert_format(self, source):
@@ -791,37 +770,8 @@ class BinaryInterchangeFormat(object):
         return self._from_triple(
             sign=n < 0,
             exponent=0,
-            significand=_abs(n),
+            significand=builtins.abs(n),
         )
-
-    def convert_to_hex_character_simple(self, source):
-        """
-        Convert the given source to this format.
-
-        """
-        # This function deliberately kept extremely simple, so that
-        # it can serve as a basis for checking that two floats
-        # are equivalent.
-        if source._format != self:
-            raise ValueError("Wrong format in convert_to_hex_character_simple")
-
-        sign = '-' if source._sign else ''
-        if source._type == _INFINITE:
-            return '{sign}Infinity'.format(sign=sign)
-        elif source._type == _NAN:
-            return '{sign}{signaling}NaN({payload})'.format(
-                sign=sign,
-                signaling='s' if source._signaling else '',
-                payload=source._payload,
-            )
-        elif source._type == _FINITE:
-            return '{sign}0x{significand:x}p{exponent}'.format(
-                sign=sign,
-                significand=source._significand,
-                exponent=source._exponent,
-            )
-        else:
-            assert False, "never get here"  # pragma no cover
 
     def convert_from_decimal_character(self, s):
         """
@@ -1155,18 +1105,6 @@ class _BinaryFloat(object):
     def __str__(self):
         return self._to_short_str()
 
-    def _quieten_nan(self):
-        """
-        Quieten a NaN in this format.
-
-        """
-        assert is_signaling(self)
-        return self._format._nan(
-            sign=self._sign,
-            signaling=False,
-            payload=self._payload,
-        )
-
     def _loud_copy(self):
         """
         Return a float identical to self, but re-signal any relevant
@@ -1395,7 +1333,8 @@ class _BinaryFloat(object):
                 # (not to mention Fraction and Decimal instances) follows if
                 # we use the formulas described in the Python docs.
                 base = 2 if self._exponent >= 0 else _PyHASH_2INV
-                exp_hash = pow(base, _abs(self._exponent), _PyHASH_MODULUS)
+                exponent = builtins.abs(self._exponent)
+                exp_hash = pow(base, exponent, _PyHASH_MODULUS)
                 hash_ = self._significand * exp_hash % _PyHASH_MODULUS
                 ans = -hash_ if self._sign else hash_
 
@@ -1632,7 +1571,7 @@ def remainder(self, other):
             modulus,
         )
         sign = self._sign if remainder == 0 else remainder < 0
-        significand = _abs(remainder)
+        significand = builtins.abs(remainder)
 
     # Normalize result.  It doesn't matter what rounding direction
     # we use, since the result should always be exact.
@@ -1794,11 +1733,11 @@ def log_b(self):
         # Finite nonzero case.
         return self._exponent + bit_length(self._significand) - 1
 
-    # Exceptional cases.  The standard says: "logB(NaN), logB(∞), and
-    # logB(0) return language-defined values outside the range ±2 × (emax +
+    # Exceptional cases.  The standard says: "logB(NaN), logB(infinity), and
+    # logB(0) return language-defined values outside the range +/-2 * (emax +
     # p - 1) and signal the invalid operation exception."  The integer
     # format used for the output of logB is required to include the
-    # range ±2 × (emax + p) inclusive.  If we stick within that range,
+    # range +/-2 * (emax + p) inclusive.  If we stick within that range,
     # that leaves us 4 values to play with for the exceptional cases
     # of 0, infinity, and signaling and quiet NaNs.
     format = self._format
@@ -1822,170 +1761,174 @@ def log_b(self):
 
 # 5.4.1 Arithmetic operations.
 
-def _convert_to_integer_general(self, rounding_direction):
-    if self._type == _NAN:
+def _convert_to_integer_general(source, rounding_direction):
+    if source._type == _NAN:
         # XXX Signaling nans should also raise the invalid operation
         # exception.
-        raise ValueError("Cannot convert a NaN to an integer.")
+        if is_signaling(source):
+            return signal(InvalidInvalidOperationException())
+        else:
+            raise ValueError("Cannot convert a NaN to an integer.")
 
-    if self._type == _INFINITE:
+    if source._type == _INFINITE:
         # NB. Python raises OverflowError here, which doesn't really
         # seem right.
         raise ValueError("Cannot convert an infinity to an integer.")
 
     # Round using roundInexactToOdd, with 2 extra bits.
-    q = _rshift_to_odd(self._significand, -self._exponent - 2)
-    q = rounding_direction.round_quarters(q, self._sign)
+    q = _rshift_to_odd(source._significand, -source._exponent - 2)
+    q = rounding_direction.round_quarters(q, source._sign)
 
     # Use int() to convert from long if necessary
-    return int(-q if self._sign else q)
+    return int(-q if source._sign else q)
 
 
-def convert_to_integer_ties_to_even(self):
+def convert_to_integer_ties_to_even(source):
     """
-    Round 'self' to the nearest Python integer, using the roundTiesToEven
+    Round 'source' to the nearest Python integer, using the roundTiesToEven
     rounding direction.
 
     """
     return _convert_to_integer_general(
-        self,
+        source,
         rounding_direction=round_ties_to_even
     )
 
 
-def convert_to_integer_toward_zero(self):
+def convert_to_integer_toward_zero(source):
     """
-    Round 'self' to a Python integer, using the roundTowardZero rounding
+    Round 'source' to a Python integer, using the roundTowardZero rounding
     direction.
 
     """
     return _convert_to_integer_general(
-        self,
+        source,
         rounding_direction=round_toward_zero
     )
 
 
-def convert_to_integer_toward_positive(self):
+def convert_to_integer_toward_positive(source):
     """
-    Round 'self' to a Python integer, using the roundTowardPositive
+    Round 'source' to a Python integer, using the roundTowardPositive
     rounding direction.
 
-    In other words, return the 'ceiling' of 'self' as a Python integer.
+    In other words, return the 'ceiling' of 'source' as a Python integer.
 
     """
     return _convert_to_integer_general(
-        self,
+        source,
         rounding_direction=round_toward_positive
     )
 
 
-def convert_to_integer_toward_negative(self):
+def convert_to_integer_toward_negative(source):
     """
-    Round 'self' to a Python integer, using the roundTowardNegative
+    Round 'source' to a Python integer, using the roundTowardNegative
     rounding direction.
 
-    In other words, return the 'floor' of 'self' as a Python integer.
+    In other words, return the 'floor' of 'source' as a Python integer.
 
     """
     return _convert_to_integer_general(
-        self,
+        source,
         rounding_direction=round_toward_negative
     )
 
 
-def convert_to_integer_ties_to_away(self):
+def convert_to_integer_ties_to_away(source):
     """
-    Round 'self' to the nearest Python integer, using the roundTiesToAway
+    Round 'source' to the nearest Python integer, using the roundTiesToAway
     rounding direction.
 
     """
     return _convert_to_integer_general(
-        self,
+        source,
         rounding_direction=round_ties_to_away
     )
 
 
-def _convert_to_integer_exact_general(self, rounding_direction):
-    if self._type == _NAN:
-        # XXX Signaling nans should also raise the invalid operation
-        # exception.
-        raise ValueError("Cannot convert a NaN to an integer.")
+def _convert_to_integer_exact_general(source, rounding_direction):
+    if source._type == _NAN:
+        if is_signaling(source):
+            return signal(InvalidInvalidOperationException())
+        else:
+            raise ValueError("Cannot convert a NaN to an integer.")
 
-    if self._type == _INFINITE:
+    if source._type == _INFINITE:
         # NB. Python raises OverflowError here, which doesn't really
         # seem right.
         raise ValueError("Cannot convert an infinity to an integer.")
 
     # Round using roundInexactToOdd, with 2 extra bits.
-    quarters = _rshift_to_odd(self._significand, -self._exponent - 2)
-    q = rounding_direction.round_quarters(quarters, self._sign)
+    quarters = _rshift_to_odd(source._significand, -source._exponent - 2)
+    q = rounding_direction.round_quarters(quarters, source._sign)
 
     inexact = (q << 2) != quarters
 
     # Use int() to convert from long if necessary
-    result = int(-q if self._sign else q)
+    result = int(-q if source._sign else q)
     if inexact:
         return signal(InexactException(result))
     else:
         return result
 
 
-def convert_to_integer_exact_ties_to_even(self):
+def convert_to_integer_exact_ties_to_even(source):
     """
-    Round 'self' to the nearest Python integer, using the roundTiesToEven
+    Round 'source' to the nearest Python integer, using the roundTiesToEven
     rounding direction.
 
     """
     return _convert_to_integer_exact_general(
-        self,
+        source,
         rounding_direction=round_ties_to_even,
     )
 
 
-def convert_to_integer_exact_ties_to_away(self):
+def convert_to_integer_exact_ties_to_away(source):
     """
-    Round 'self' to the nearest Python integer, using the roundTiesToAway
+    Round 'source' to the nearest Python integer, using the roundTiesToAway
     rounding direction.
 
     """
     return _convert_to_integer_exact_general(
-        self,
+        source,
         rounding_direction=round_ties_to_away,
     )
 
 
-def convert_to_integer_exact_toward_zero(self):
+def convert_to_integer_exact_toward_zero(source):
     """
-    Round 'self' to the nearest Python integer, using the roundTowardZero
+    Round 'source' to the nearest Python integer, using the roundTowardZero
     rounding direction.
 
     """
     return _convert_to_integer_exact_general(
-        self,
+        source,
         rounding_direction=round_toward_zero,
     )
 
 
-def convert_to_integer_exact_toward_positive(self):
+def convert_to_integer_exact_toward_positive(source):
     """
-    Round 'self' to the nearest Python integer, using the roundTowardPositive
+    Round 'source' to the nearest Python integer, using the roundTowardPositive
     rounding direction.
 
     """
     return _convert_to_integer_exact_general(
-        self,
+        source,
         rounding_direction=round_toward_positive,
     )
 
 
-def convert_to_integer_exact_toward_negative(self):
+def convert_to_integer_exact_toward_negative(source):
     """
-    Round 'self' to the nearest Python integer, using the roundTowardNegative
+    Round 'source' to the nearest Python integer, using the roundTowardNegative
     rounding direction.
 
     """
     return _convert_to_integer_exact_general(
-        self,
+        source,
         rounding_direction=round_toward_negative,
     )
 
@@ -1999,10 +1942,6 @@ def convert_to_hex_character(source, conversion_specification):
 
     """
     sign = '-' if source._sign else ''
-
-    if source._type == _INFINITE:
-        return '{sign}Infinity'.format(sign=sign)
-
     if source._type == _FINITE:
         trailing = source._format.precision - 1
         return '{sign}0x{first}.{rest:0{hex_digits}x}p{exp}'.format(
@@ -2012,12 +1951,40 @@ def convert_to_hex_character(source, conversion_specification):
             hex_digits=-(-trailing // 4),
             exp=source._exponent + trailing,
         )
-
-    if source._type == _NAN:
+    elif source._type == _INFINITE:
+        return '{sign}Infinity'.format(sign=sign)
+    elif source._type == _NAN:
         return '{sign}{signaling}NaN'.format(
             sign=sign,
             signaling='s' if source._signaling else '',
         )
+
+
+def convert_to_hex_character_simple(source):
+    """
+    Convert the given source to this format.
+
+    """
+    # This function deliberately kept extremely simple, so that
+    # it can serve as a basis for checking that two floats
+    # are equivalent.
+    sign = '-' if source._sign else ''
+    if source._type == _INFINITE:
+        return '{sign}Infinity'.format(sign=sign)
+    elif source._type == _NAN:
+        return '{sign}{signaling}NaN({payload})'.format(
+            sign=sign,
+            signaling='s' if source._signaling else '',
+            payload=source._payload,
+        )
+    elif source._type == _FINITE:
+        return '{sign}0x{significand:x}p{exponent}'.format(
+            sign=sign,
+            significand=source._significand,
+            exponent=source._exponent,
+        )
+    else:
+        assert False, "never get here"  # pragma no cover
 
 
 # 5.6.1: Comparisons.
@@ -2030,7 +1997,7 @@ def _compare_ordered(source1, source2):
     """
     # This function should only ever be called for two _BinaryFloat
     # instances with the same underlying format.
-    assert source1._format == source2._format
+    _check_common_format(source1, source2)
 
     # Compare as though we've inverted the signs of both source1 and source2 if
     # necessary so that source1._sign is False.
@@ -2107,7 +2074,6 @@ def _compare_signaling_general(source1, source2, operator, unordered_result):
     if source1._type == _NAN or source2._type == _NAN:
         return _handle_invalid_bool(unordered_result)
     else:
-        fmt = source1._format
         with temporary_attributes(compare_attributes()) as attributes:
             source2 = source1._format.convert_format(source2)
             inexact = inexact_flag in attributes.flag_set
@@ -2324,11 +2290,7 @@ def total_order(source1, source2):
     IEEE 754.
 
     """
-    if not source1._format == source2._format:
-        raise ValueError(
-            "total_order operation not implemented for mixed formats."
-        )
-
+    _check_common_format(source1, source2)
     if source1._sign != source2._sign:
         return source1._sign
     else:
@@ -2343,10 +2305,7 @@ def total_order_mag(source1, source2):
     specified by IEEE 754.
 
     """
-    if not source1._format == source2._format:
-        raise ValueError(
-            "total_order operation not implemented for mixed formats."
-        )
+    _check_common_format(source1, source2)
     return _total_order_key(source1) <= _total_order_key(source2)
 
 
@@ -2432,7 +2391,7 @@ def is_nan(source):
 
 def is_signaling(source):
     """
-    Return True if self is a signaling NaN, and False otherwise.
+    Return True if source is a signaling NaN, and False otherwise.
 
     """
     return source._type == _NAN and source._signaling
@@ -2566,24 +2525,20 @@ def copy_sign(source1, source2):
     source1 and source2 should have the same format.
 
     """
-    # Currently implemented only as a homogeneous operation.
-    if not source1._format == source2._format:
-        raise ValueError(
-            "copy_sign operation not implemented for mixed formats."
-        )
+    format = _check_common_format(source1, source2)
 
     if source1._type == _FINITE:
-        return source1._format._finite(
+        return format._finite(
             sign=source2._sign,
             exponent=source1._exponent,
             significand=source1._significand,
         )
     elif source1._type == _INFINITE:
-        return source1._format._infinite(
+        return format._infinite(
             sign=source2._sign,
         )
     elif source1._type == _NAN:
-        return source1._format._nan(
+        return format._nan(
             sign=source2._sign,
             signaling=source1._signaling,
             payload=source1._payload,
