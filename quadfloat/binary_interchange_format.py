@@ -274,13 +274,29 @@ class BinaryInterchangeFormat(object):
         """
         return (1 << self.precision - 2) - 1
 
+    @property
+    def _min_normal_significand(self):
+        """
+        Minimum possible significand for a normal number.
+
+        """
+        return 1 << (self.precision - 1)
+
+    @property
+    def _max_significand(self):
+        """
+        Maximum possible significand.
+
+        """
+        return (1 << self.precision) - 1
+
     def _largest_finite(self, sign):
         """
         Largest representable finite value in this format, with the given sign.
 
         """
         exponent = self.qmax
-        significand = (1 << self.precision) - 1
+        significand = self._max_significand
         return self._finite(sign, exponent, significand)
 
     def _from_value(self, value=0):
@@ -593,9 +609,9 @@ class BinaryInterchangeFormat(object):
 
         # If we've got a combination of a quiet NaN and a non-NaN, return the
         # non-NaN.
-        if source1._is_quiet() and not source2.is_nan():
+        if source1._is_quiet() and source2._type != _NAN:
             return source2
-        elif source2._is_quiet() and not source1.is_nan():
+        elif source2._is_quiet() and source1._type != _NAN:
             return source1
         else:
             return self._handle_nans(source1, source2)
@@ -668,13 +684,13 @@ class BinaryInterchangeFormat(object):
 
         sign = source1._sign ^ source2._sign
         if source1._type == _INFINITE:
-            if source2.is_zero():
+            if is_zero(source2):
                 return self._handle_invalid()
             else:
                 return self._infinite(sign=sign)
 
         if source2._type == _INFINITE:
-            if source1.is_zero():
+            if is_zero(source1):
                 return self._handle_invalid()
             else:
                 return self._infinite(sign=sign)
@@ -711,8 +727,8 @@ class BinaryInterchangeFormat(object):
             return self._zero(sign=sign)
 
         # Division by zero.
-        if source2.is_zero():
-            if source1.is_zero():
+        if is_zero(source2):
+            if is_zero(source1):
                 return self._handle_invalid()
             else:
                 return signal(DivideByZeroException(sign, self))
@@ -737,7 +753,7 @@ class BinaryInterchangeFormat(object):
             return self._handle_nans(source1)
 
         # sqrt(+-0) is +-0.
-        if source1.is_zero():
+        if is_zero(source1):
             return self._zero(sign=source1._sign)
 
         # Any nonzero negative number is invalid.
@@ -788,19 +804,19 @@ class BinaryInterchangeFormat(object):
 
         # Deal with infinities in the first two arguments.
         if source1._type == _INFINITE:
-            if source2.is_zero():
+            if is_zero(source2):
                 return self._handle_invalid()
             else:
                 return self.addition(self._infinite(sign12), source3)
 
         if source2._type == _INFINITE:
-            if source1.is_zero():
+            if is_zero(source1):
                 return self._handle_invalid()
             else:
                 return self.addition(self._infinite(sign12), source3)
 
         # Deal with zeros in the first two arguments.
-        if source1.is_zero() or source2.is_zero():
+        if is_zero(source1) or is_zero(source2):
             return self.addition(self._zero(sign12), source3)
 
         # Infinite 3rd argument.
@@ -1012,12 +1028,12 @@ class BinaryInterchangeFormat(object):
         # public API, any error here is mine.  Hence the assert.
         if not self.qmin <= exponent <= self.qmax:
             assert False, "exponent out of range"  # pragma no cover
-        if not 0 <= significand < 1 << self.precision:
+        if not 0 <= significand <= self._max_significand:
             assert False, "significand out of range"  # pragma no cover
 
         # Check normalization.
         normalized = (
-            significand >= 1 << self.precision - 1 or
+            significand >= self._min_normal_significand or
             exponent == self.qmin
         )
         if not normalized:
@@ -1161,7 +1177,7 @@ class _BinaryFloat(object):
 
         """
         is_boundary_case = (
-            self._significand == 1 << (self._format.precision - 1) and
+            self._significand == self._format._min_normal_significand and
             self._exponent > self._format.qmin
         )
 
@@ -1218,7 +1234,7 @@ class _BinaryFloat(object):
         Quieten a NaN in this format.
 
         """
-        assert self.is_signaling()
+        assert is_signaling(self)
         return self._format._nan(
             sign=self._sign,
             signaling=False,
@@ -1234,7 +1250,7 @@ class _BinaryFloat(object):
         # The only possible relevant exception is 'underflow'.  We don't
         # actually create a copy here: there's no need, since these
         # instances are immutable.
-        if self.is_subnormal():
+        if is_subnormal(self):
             exception = UnderflowException(self, False)
             return signal(exception)
         else:
@@ -1242,90 +1258,12 @@ class _BinaryFloat(object):
 
     # IEEE 754 5.7.2: General operations.
 
-    def is_sign_minus(self):
-        """
-        Return True if self has a negative sign, else False.
-
-        This applies to zeros and NaNs as well as infinities and nonzero finite
-        numbers.
-
-        """
-        return self._sign
-
-    def is_normal(self):
-        """
-        Return True if self is normal (not zero, subnormal, infinite or NaN)
-        and False otherwise.
-
-        """
-        return (
-            self._type == _FINITE and
-            1 << self._format.precision - 1 <= self._significand
-        )
-
-    def is_finite(self):
-        """
-        Return True if self is finite; that is, zero, subnormal or normal (not
-        infinite or NaN).
-
-        """
-        return self._type == _FINITE
-
-    def is_zero(self):
-        """
-        Return True if self is plus or minus 0.
-
-        """
-        return (
-            self._type == _FINITE and
-            self._significand == 0
-        )
-
-    def is_subnormal(self):
-        """
-        Return True if self is subnormal, False otherwise.
-
-        """
-        return (
-            self._type == _FINITE and
-            0 < self._significand < 1 << self._format.precision - 1
-        )
-
-    def is_infinite(self):
-        """
-        Return True if self is infinite, and False otherwise.
-
-        """
-        return self._type == _INFINITE
-
-    def is_nan(self):
-        """
-        Return True if self is a NaN, and False otherwise.
-
-        """
-        return self._type == _NAN
-
-    def is_signaling(self):
-        """
-        Return True if self is a signaling NaN, and False otherwise.
-
-        """
-        return self._type == _NAN and self._signaling
-
     def _is_quiet(self):
         """
         Return True if self is a quiet NaN, and False otherwise.
 
         """
         return self._type == _NAN and not self._signaling
-
-    def is_canonical(self):
-        """
-        Return True if self is canonical.
-
-        """
-        # Currently no non-canonical values are supported.
-        return True
 
     def encode(self):
         """
@@ -1585,7 +1523,7 @@ class _BinaryFloat(object):
                 )
             )
 
-        if self.is_signaling() or other.is_signaling():
+        if is_signaling(self) or is_signaling(other):
             return _handle_invalid_bool(unordered_result)
         elif self._type == _NAN or other._type == _NAN:
             return unordered_result
@@ -1677,7 +1615,7 @@ def _round_to_integral_general(self, rounding_direction, quiet):
         return self._format._handle_nans(self)
 
     # Infinities, zeros, and integral values are returned unchanged.
-    if self._type == _INFINITE or self.is_zero() or self._exponent >= 0:
+    if self._type == _INFINITE or is_zero(self) or self._exponent >= 0:
         return self
 
     # Round to a number of the form n / 4 using roundInexactToOdd.
@@ -1803,7 +1741,7 @@ def next_up(self):
         return self
 
     # Negative zero is treated in the same way as positive zero.
-    if self.is_zero() and self._sign:
+    if is_zero(self) and self._sign:
         self = self._format._zero(sign=False)
 
     # Now we can cheat: encode as an integer, and then simply
@@ -1828,7 +1766,7 @@ def next_down(self):
         return self
 
     # Positive zero is treated in the same way as negative zero.
-    if self.is_zero() and not self._sign:
+    if is_zero(self) and not self._sign:
         self = self._format._zero(sign=True)
 
     # Now we can cheat: encode as an integer, and then simply
@@ -1852,7 +1790,7 @@ def remainder(self, other):
         return format._handle_nans(self, other)
 
     # remainder(+/-inf, y) and remainder(x, 0) are invalid
-    if self._type == _INFINITE or other.is_zero():
+    if self._type == _INFINITE or is_zero(other):
         return format._handle_invalid()
 
     # remainder(x, +/-inf) is x for any finite x.  Similarly, if x is
@@ -1943,7 +1881,7 @@ def min_num(self, other):
 
     # Special behaviour for NaNs:  if one operand is a quiet NaN and
     # the other is not, return the non-NaN operand.
-    if self.is_nan() or other.is_nan():
+    if self._type == _NAN or other._type == _NAN:
         return format._handle_nans_min_max(self, other)
 
     return _min_max_num(self, other)[0]._loud_copy()
@@ -1962,7 +1900,7 @@ def max_num(self, other):
 
     # Special behaviour for NaNs:  if one operand is a quiet NaN and
     # the other is not, return the non-NaN operand.
-    if self.is_nan() or other.is_nan():
+    if self._type == _NAN or other._type == _NAN:
         return format._handle_nans_min_max(self, other)
 
     return _min_max_num(self, other)[1]._loud_copy()
@@ -1981,7 +1919,7 @@ def min_num_mag(self, other):
 
     # Special behaviour for NaNs:  if one operand is a quiet NaN and
     # the other is not, return the non-NaN operand.
-    if self.is_nan() or other.is_nan():
+    if self._type == _NAN or other._type == _NAN:
         return format._handle_nans_min_max(self, other)
 
     return _min_max_num_mag(self, other)[0]._loud_copy()
@@ -2000,7 +1938,7 @@ def max_num_mag(self, other):
 
     # Special behaviour for NaNs:  if one operand is a quiet NaN and
     # the other is not, return the non-NaN operand.
-    if self.is_nan() or other.is_nan():
+    if self._type == _NAN or other._type == _NAN:
         return format._handle_nans_min_max(self, other)
 
     return _min_max_num_mag(self, other)[1]._loud_copy()
@@ -2020,7 +1958,7 @@ def scale_b(self, n):
         return self._format._handle_nans(self)
 
     # Infinities and zeros are unchanged.
-    if self._type == _INFINITE or self.is_zero():
+    if self._type == _INFINITE or is_zero(self):
         return self
 
     # Finite case.
@@ -2053,7 +1991,7 @@ def log_b(self):
 
     # Zeros and infinities; return values that are at the appropriate
     # extremes of the finite result range.
-    if self.is_zero():
+    if is_zero(self):
         return _handle_invalid_int(-limit + 1)
     elif self._type == _INFINITE:
         return _handle_invalid_int(limit - 1)
@@ -2061,7 +1999,7 @@ def log_b(self):
     # NaNs.  We somewhat arbitrarily map signaling NaNs to the max
     # available value, and quiet NaNs to the min.
     assert self._type == _NAN
-    if self.is_signaling():
+    if is_signaling(self):
         return _handle_invalid_int(limit)
     else:
         return _handle_invalid_int(-limit)
@@ -2281,7 +2219,7 @@ def _compare_ordered(source1, source2):
 
     # Compare as though we've inverted the signs of both source1 and source2 if
     # necessary so that source1._sign is False.
-    if source1.is_zero() and source2.is_zero():
+    if is_zero(source1) and is_zero(source2):
         # Zeros are considered equal, regardless of sign.
         cmp = 0
     elif source1._sign != source2._sign:
@@ -2330,7 +2268,7 @@ def _compare_quiet_general(source1, source2, operator, unordered_result):
     either source1 or source2 *is* a NaN.
 
     """
-    if source1.is_signaling() or source2.is_signaling():
+    if is_signaling(source1) or is_signaling(source2):
         return _handle_invalid_bool(unordered_result)
     elif source1._type == _NAN or source2._type == _NAN:
         return unordered_result
@@ -2614,7 +2552,7 @@ def is_sign_minus(source):
     numbers.
 
     """
-    return source.is_sign_minus()
+    return source._sign
 
 
 def is_normal(source):
@@ -2624,7 +2562,10 @@ def is_normal(source):
     That is, return True if the source is not zero, subnormal, infinite or NaN.
 
     """
-    return source.is_normal()
+    return (
+        source._type == _FINITE and
+        source._format._min_normal_significand <= source._significand
+    )
 
 
 def is_finite(source):
@@ -2641,7 +2582,7 @@ def is_zero(source):
     Return True if source is plus or minus 0.
 
     """
-    return source.is_zero()
+    return source._type == _FINITE and source._significand == 0
 
 
 def is_subnormal(source):
@@ -2649,7 +2590,10 @@ def is_subnormal(source):
     Return True if source is subnormal, False otherwise.
 
     """
-    return source.is_subnormal()
+    return (
+        source._type == _FINITE and
+        0 < source._significand < source._format._min_normal_significand
+    )
 
 
 def is_infinite(source):
@@ -2657,7 +2601,7 @@ def is_infinite(source):
     Return True if source is infinite, and False otherwise.
 
     """
-    return source.is_infinite()
+    return source._type == _INFINITE
 
 
 def is_nan(source):
@@ -2665,7 +2609,7 @@ def is_nan(source):
     Return True if source is a NaN, and False otherwise.
 
     """
-    return source.is_nan()
+    return source._type == _NAN
 
 
 def is_signaling(source):
@@ -2673,7 +2617,7 @@ def is_signaling(source):
     Return True if self is a signaling NaN, and False otherwise.
 
     """
-    return source.is_signaling()
+    return source._type == _NAN and source._signaling
 
 
 def is_canonical(source):
@@ -2690,23 +2634,31 @@ def class_(source):
     Determine which class a given number falls into.
 
     """
-    if is_nan(source):
-        return signalingNaN if is_signaling(source) else quietNaN
-    if is_sign_minus(source):
-        if is_infinite(source):
+    if source._type == _NAN:
+        if source._signaling:
+            return signalingNaN
+        else:
+            return quietNaN
+    elif source._type == _INFINITE:
+        if source._sign:
             return negativeInfinity
-        elif is_zero(source):
-            return negativeZero
-        elif is_subnormal(source):
-            return negativeSubnormal
         else:
-            return negativeNormal
-    else:
-        if is_infinite(source):
             return positiveInfinity
-        elif is_zero(source):
-            return positiveZero
-        elif is_subnormal(source):
-            return positiveSubnormal
+    else:
+        assert source._type == _FINITE
+        fmt = source._format
+        if source._significand == 0:
+            if source._sign:
+                return negativeZero
+            else:
+                return positiveZero
+        elif source._significand < fmt._min_normal_significand:
+            if source._sign:
+                return negativeSubnormal
+            else:
+                return positiveSubnormal
         else:
-            return positiveNormal
+            if source._sign:
+                return negativeNormal
+            else:
+                return positiveNormal

@@ -35,6 +35,12 @@ from quadfloat.binary_interchange_format import (
     convert_to_integer_toward_zero,
     convert_to_integer_toward_positive,
     convert_to_integer_toward_negative,
+
+    is_finite,
+    is_infinite,
+    is_nan,
+    is_sign_minus,
+    is_signaling,
 )
 from quadfloat.tests.base_test_case import BaseTestCase
 
@@ -119,10 +125,10 @@ class TestBinary128(BaseTestCase):
         self.assertInterchangeable(q, binary128(-13))
         q = binary128(float('inf'))
         self.assertInterchangeable(q, binary128('inf'))
-        self.assertTrue(q.is_infinite())
+        self.assertTrue(is_infinite(q))
         q = binary128(float('-inf'))
         self.assertInterchangeable(q, binary128('-inf'))
-        self.assertTrue(q.is_infinite())
+        self.assertTrue(is_infinite(q))
 
     def test_construction_from_str(self):
         q = binary128('0.0')
@@ -156,27 +162,27 @@ class TestBinary128(BaseTestCase):
 
         # Huge values.
         q = binary128('1.1897e+4932')  # should be within range.
-        self.assertTrue(q.is_finite())
+        self.assertTrue(is_finite(q))
 
         q = binary128('1.1898e+4932')  # just overflows the range.
-        self.assertTrue(q.is_infinite())
+        self.assertTrue(is_infinite(q))
 
         # Infinities
         q = binary128('Inf')
-        self.assertTrue(q.is_infinite())
-        self.assertFalse(q.is_sign_minus())
+        self.assertTrue(is_infinite(q))
+        self.assertFalse(is_sign_minus(q))
 
         q = binary128('infinity')
-        self.assertTrue(q.is_infinite())
-        self.assertFalse(q.is_sign_minus())
+        self.assertTrue(is_infinite(q))
+        self.assertFalse(is_sign_minus(q))
 
         q = binary128('-inf')
-        self.assertTrue(q.is_infinite())
-        self.assertTrue(q.is_sign_minus())
+        self.assertTrue(is_infinite(q))
+        self.assertTrue(is_sign_minus(q))
 
         q = binary128('-INFINITY')
-        self.assertTrue(q.is_infinite())
-        self.assertTrue(q.is_sign_minus())
+        self.assertTrue(is_infinite(q))
+        self.assertTrue(is_sign_minus(q))
 
         # Nans with and without payloads
         nan_test_strings = [
@@ -192,13 +198,13 @@ class TestBinary128(BaseTestCase):
         for nan_string in nan_test_strings:
             for prefix in '+', '-', '':
                 q = binary128(prefix + nan_string)
-                self.assertTrue(q.is_nan())
-                self.assertFalse(q.is_signaling())
+                self.assertTrue(is_nan(q))
+                self.assertFalse(is_signaling(q))
 
             for prefix in '+', '-', '':
                 q = binary128(prefix + 's' + nan_string)
-                self.assertTrue(q.is_nan())
-                self.assertTrue(q.is_signaling())
+                self.assertTrue(is_nan(q))
+                self.assertTrue(is_signaling(q))
 
         invalid_nan_test_strings = [
             'nan()',
@@ -222,8 +228,8 @@ class TestBinary128(BaseTestCase):
         # Payload of 0 is fine for quiet NaNs, invalid for signaling.
         for prefix in '+', '-', '':
             qnan = binary128(prefix + 'nan(0)')
-            self.assertTrue(qnan.is_nan())
-            self.assertFalse(qnan.is_signaling())
+            self.assertTrue(is_nan(qnan))
+            self.assertFalse(is_signaling(qnan))
 
         for prefix in '+', '-', '':
             with self.assertRaises(ValueError):
@@ -235,136 +241,6 @@ class TestBinary128(BaseTestCase):
 
         with self.assertRaises(TypeError):
             binary128([1, 2, 3])
-
-    def test_is_canonical(self):
-        self.assertTrue(binary128('0.0').is_canonical())
-        self.assertTrue(binary128('-0.0').is_canonical())
-        self.assertTrue(binary128('8e-4933').is_canonical())
-        self.assertTrue(binary128('-8e-4933').is_canonical())
-        self.assertTrue(binary128('2.3').is_canonical())
-        self.assertTrue(binary128('-2.3').is_canonical())
-        self.assertTrue(binary128('Infinity').is_canonical())
-        self.assertTrue(binary128('-Infinity').is_canonical())
-        self.assertTrue(binary128('NaN').is_canonical())
-        self.assertTrue(binary128('-NaN').is_canonical())
-        self.assertTrue(binary128('sNaN').is_canonical())
-        self.assertTrue(binary128('-sNaN').is_canonical())
-
-    def test_is_finite(self):
-        self.assertTrue(binary128('0.0').is_finite())
-        self.assertTrue(binary128('-0.0').is_finite())
-        self.assertTrue(binary128('8e-4933').is_finite())
-        self.assertTrue(binary128('-8e-4933').is_finite())
-        self.assertTrue(binary128('2.3').is_finite())
-        self.assertTrue(binary128('-2.3').is_finite())
-        self.assertFalse(binary128('Infinity').is_finite())
-        self.assertFalse(binary128('-Infinity').is_finite())
-        self.assertFalse(binary128('NaN').is_finite())
-        self.assertFalse(binary128('-NaN').is_finite())
-        self.assertFalse(binary128('sNaN').is_finite())
-        self.assertFalse(binary128('-sNaN').is_finite())
-
-    def test_is_subnormal(self):
-        self.assertFalse(binary128('0.0').is_subnormal())
-        self.assertFalse(binary128('-0.0').is_subnormal())
-        self.assertTrue(binary128('3.3e-4932').is_subnormal())
-        self.assertTrue(binary128('-3.3e-4932').is_subnormal())
-        self.assertFalse(binary128('3.4e-4932').is_subnormal())
-        self.assertFalse(binary128('-3.4e-4932').is_subnormal())
-        self.assertFalse(binary128('2.3').is_subnormal())
-        self.assertFalse(binary128('-2.3').is_subnormal())
-        self.assertFalse(binary128('Infinity').is_subnormal())
-        self.assertFalse(binary128('-Infinity').is_subnormal())
-        self.assertFalse(binary128('NaN').is_subnormal())
-        self.assertFalse(binary128('-NaN').is_subnormal())
-        self.assertFalse(binary128('sNaN').is_subnormal())
-        self.assertFalse(binary128('-sNaN').is_subnormal())
-
-    def test_is_normal(self):
-        self.assertFalse(binary128('0.0').is_normal())
-        self.assertFalse(binary128('-0.0').is_normal())
-        self.assertFalse(binary128('3.3e-4932').is_normal())
-        self.assertFalse(binary128('-3.3e-4932').is_normal())
-        self.assertTrue(binary128('3.4e-4932').is_normal())
-        self.assertTrue(binary128('-3.4e-4932').is_normal())
-        self.assertTrue(binary128('2.3').is_normal())
-        self.assertTrue(binary128('-2.3').is_normal())
-        self.assertFalse(binary128('Infinity').is_normal())
-        self.assertFalse(binary128('-Infinity').is_normal())
-        self.assertFalse(binary128('NaN').is_normal())
-        self.assertFalse(binary128('-NaN').is_normal())
-        self.assertFalse(binary128('sNaN').is_normal())
-        self.assertFalse(binary128('-sNaN').is_normal())
-
-    def test_is_sign_minus(self):
-        self.assertFalse(binary128('0.0').is_sign_minus())
-        self.assertTrue(binary128('-0.0').is_sign_minus())
-        self.assertFalse(binary128('8e-4933').is_sign_minus())
-        self.assertTrue(binary128('-8e-4933').is_sign_minus())
-        self.assertFalse(binary128('2.3').is_sign_minus())
-        self.assertTrue(binary128('-2.3').is_sign_minus())
-        self.assertFalse(binary128('Infinity').is_sign_minus())
-        self.assertTrue(binary128('-Infinity').is_sign_minus())
-        self.assertFalse(binary128('NaN').is_sign_minus())
-        self.assertTrue(binary128('-NaN').is_sign_minus())
-        self.assertFalse(binary128('sNaN').is_sign_minus())
-        self.assertTrue(binary128('-sNaN').is_sign_minus())
-
-    def test_is_infinite(self):
-        self.assertFalse(binary128('0.0').is_infinite())
-        self.assertFalse(binary128('-0.0').is_infinite())
-        self.assertFalse(binary128('8e-4933').is_infinite())
-        self.assertFalse(binary128('-8e-4933').is_infinite())
-        self.assertFalse(binary128('2.3').is_infinite())
-        self.assertFalse(binary128('-2.3').is_infinite())
-        self.assertTrue(binary128('Infinity').is_infinite())
-        self.assertTrue(binary128('-Infinity').is_infinite())
-        self.assertFalse(binary128('NaN').is_infinite())
-        self.assertFalse(binary128('-NaN').is_infinite())
-        self.assertFalse(binary128('sNaN').is_infinite())
-        self.assertFalse(binary128('-sNaN').is_infinite())
-
-    def test_is_nan(self):
-        self.assertFalse(binary128('0.0').is_nan())
-        self.assertFalse(binary128('-0.0').is_nan())
-        self.assertFalse(binary128('8e-4933').is_nan())
-        self.assertFalse(binary128('-8e-4933').is_nan())
-        self.assertFalse(binary128('2.3').is_nan())
-        self.assertFalse(binary128('-2.3').is_nan())
-        self.assertFalse(binary128('Infinity').is_nan())
-        self.assertFalse(binary128('-Infinity').is_nan())
-        self.assertTrue(binary128('NaN').is_nan())
-        self.assertTrue(binary128('-NaN').is_nan())
-        self.assertTrue(binary128('sNaN').is_nan())
-        self.assertTrue(binary128('-sNaN').is_nan())
-
-    def test_is_signaling(self):
-        self.assertFalse(binary128('0.0').is_signaling())
-        self.assertFalse(binary128('-0.0').is_signaling())
-        self.assertFalse(binary128('8e-4933').is_signaling())
-        self.assertFalse(binary128('-8e-4933').is_signaling())
-        self.assertFalse(binary128('2.3').is_signaling())
-        self.assertFalse(binary128('-2.3').is_signaling())
-        self.assertFalse(binary128('Infinity').is_signaling())
-        self.assertFalse(binary128('-Infinity').is_signaling())
-        self.assertFalse(binary128('NaN').is_signaling())
-        self.assertFalse(binary128('-NaN').is_signaling())
-        self.assertTrue(binary128('sNaN').is_signaling())
-        self.assertTrue(binary128('-sNaN').is_signaling())
-
-    def test_is_zero(self):
-        self.assertTrue(binary128('0.0').is_zero())
-        self.assertTrue(binary128('-0.0').is_zero())
-        self.assertFalse(binary128('8e-4933').is_zero())
-        self.assertFalse(binary128('-8e-4933').is_zero())
-        self.assertFalse(binary128('2.3').is_zero())
-        self.assertFalse(binary128('-2.3').is_zero())
-        self.assertFalse(binary128('Infinity').is_zero())
-        self.assertFalse(binary128('-Infinity').is_zero())
-        self.assertFalse(binary128('NaN').is_zero())
-        self.assertFalse(binary128('-NaN').is_zero())
-        self.assertFalse(binary128('sNaN').is_zero())
-        self.assertFalse(binary128('-sNaN').is_zero())
 
     def test_encode(self):
         test_values = [
@@ -542,8 +418,8 @@ class TestBinary128(BaseTestCase):
 
         a = binary128('0.0')
         b = binary128('inf')
-        self.assertTrue((binary128.multiplication(a, b)).is_nan())
-        self.assertTrue((binary128.multiplication(b, a)).is_nan())
+        self.assertTrue(is_nan(binary128.multiplication(a, b)))
+        self.assertTrue(is_nan(binary128.multiplication(b, a)))
 
         a = binary128('0.0')
         b = binary128('0.0')
@@ -1003,19 +879,19 @@ class TestBinary128(BaseTestCase):
         # Zero divided by zero.
         a = binary128('0.0')
         b = binary128('0.0')
-        self.assertTrue(binary128.division(a, b).is_nan())
+        self.assertTrue(is_nan(binary128.division(a, b)))
 
         a = binary128('-0.0')
         b = binary128('0.0')
-        self.assertTrue(binary128.division(a, b).is_nan())
+        self.assertTrue(is_nan(binary128.division(a, b)))
 
         a = binary128('-0.0')
         b = binary128('-0.0')
-        self.assertTrue(binary128.division(a, b).is_nan())
+        self.assertTrue(is_nan(binary128.division(a, b)))
 
         a = binary128('0.0')
         b = binary128('-0.0')
-        self.assertTrue(binary128.division(a, b).is_nan())
+        self.assertTrue(is_nan(binary128.division(a, b)))
 
         # One or other arguments is infinity.
         a = binary128('inf')
@@ -1041,19 +917,19 @@ class TestBinary128(BaseTestCase):
         # Both arguments are infinity.
         a = binary128('inf')
         b = binary128('inf')
-        self.assertTrue(binary128.division(a, b).is_nan())
+        self.assertTrue(is_nan(binary128.division(a, b)))
 
         a = binary128('-inf')
         b = binary128('inf')
-        self.assertTrue(binary128.division(a, b).is_nan())
+        self.assertTrue(is_nan(binary128.division(a, b)))
 
         a = binary128('-inf')
         b = binary128('-inf')
-        self.assertTrue(binary128.division(a, b).is_nan())
+        self.assertTrue(is_nan(binary128.division(a, b)))
 
         a = binary128('inf')
         b = binary128('-inf')
-        self.assertTrue(binary128.division(a, b).is_nan())
+        self.assertTrue(is_nan(binary128.division(a, b)))
 
         # signaling nans?
         a = binary128('-snan(123)')

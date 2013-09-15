@@ -61,9 +61,6 @@ Internal refactoring
   Remove the need for the 'inexact' return by using a directed rounding mode
   and inspecting flags.
 
-* Be consistent about internal uses of is_finite, is_infinite versus ._type
-  tests.
-
 
 Performance
 -----------
