@@ -1,0 +1,24 @@
+operation: abs
+operation source: binary16
+
+NaN -> NaN
+sNaN -> sNaN
+-NaN -> NaN
+-sNaN -> sNaN
+NaN(123) -> NaN(123)
+sNaN(123) -> sNaN(123)
+-NaN(123) -> NaN(123)
+-sNaN(123) -> sNaN(123)
+
+-Infinity -> Infinity
+-0x1p0 -> 0x1p0
+-0x1p-14 -> 0x1p-14
+-0x0.ffcp-14 -> 0x0.ffcp-14
+-0x1p-24 -> 0x1p-24
+-0x0p0 -> 0x0p0
+0x0p0 -> 0x0p0
+0x1p-24 -> 0x1p-24
+0x0.ffcp-14 -> 0x0.ffcp-14
+0x1p-14 -> 0x1p-14
+0x1p0 -> 0x1p0
+Infinity -> Infinity

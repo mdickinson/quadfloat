@@ -669,8 +669,8 @@ class BinaryInterchangeFormat(object):
             return self._handle_nans(source1, source2)
 
         # For non-NaNs, subtraction(a, b) is equivalent to
-        # addition(a, b.negate())
-        return self.addition(source1, source2.negate())
+        # addition(a, -b)
+        return self.addition(source1, negate(source2))
 
     def multiplication(self, source1, source2):
         """
@@ -1273,117 +1273,14 @@ class _BinaryFloat(object):
         equivalent_int = self._format._encode_as_int(self)
         return _int_to_bytes(equivalent_int, self._format.width // 8)
 
-    def copy(self):
-        """
-        Return a copy of self.
-
-        """
-        if self._type == _FINITE:
-            return self._format._finite(
-                sign=self._sign,
-                exponent=self._exponent,
-                significand=self._significand,
-            )
-        elif self._type == _INFINITE:
-            return self._format._infinite(
-                sign=self._sign,
-            )
-        elif self._type == _NAN:
-            return self._format._nan(
-                sign=self._sign,
-                signaling=self._signaling,
-                payload=self._payload,
-            )
-        else:  # pragma: no cover
-            assert False, "shouldn't get here"
-
-    def negate(self):
-        """
-        Return the negation of self.
-
-        """
-        if self._type == _FINITE:
-            return self._format._finite(
-                sign=not self._sign,
-                exponent=self._exponent,
-                significand=self._significand,
-            )
-        elif self._type == _INFINITE:
-            return self._format._infinite(
-                sign=not self._sign,
-            )
-
-        elif self._type == _NAN:
-            return self._format._nan(
-                sign=not self._sign,
-                signaling=self._signaling,
-                payload=self._payload,
-            )
-        else:  # pragma: no cover
-            assert False, "shouldn't get here"
-
-    def abs(self):
-        """
-        Return the absolute value of self.
-
-        """
-        if self._type == _FINITE:
-            return self._format._finite(
-                sign=False,
-                exponent=self._exponent,
-                significand=self._significand,
-            )
-        elif self._type == _INFINITE:
-            return self._format._infinite(
-                sign=False,
-            )
-        elif self._type == _NAN:
-            return self._format._nan(
-                sign=False,
-                signaling=self._signaling,
-                payload=self._payload,
-            )
-        else:  # pragma: no cover
-            assert False, "shouldn't get here"
-
-    def copy_sign(self, other):
-        """
-        Return a value with the same format as self, but the sign bit of other.
-
-        """
-        # Currently implemented only as a homogeneous operation.
-        if not self._format == other._format:
-            raise ValueError(
-                "copy_sign operation not implemented for mixed formats."
-            )
-
-        if self._type == _FINITE:
-            return self._format._finite(
-                sign=other._sign,
-                exponent=self._exponent,
-                significand=self._significand,
-            )
-        elif self._type == _INFINITE:
-            return self._format._infinite(
-                sign=other._sign,
-            )
-        elif self._type == _NAN:
-            return self._format._nan(
-                sign=other._sign,
-                signaling=self._signaling,
-                payload=self._payload,
-            )
-        else:  # pragma: no cover
-            assert False, "shouldn't get here"
-
     def __pos__(self):
-        return self.copy()
+        return copy(self)
 
     def __neg__(self):
-        return self.negate()
+        return negate(self)
 
     def __abs__(self):
-        return self.abs()
+        return abs(self)
 
     def _convert_other(self, other, attributes):
         """
@@ -1853,7 +1750,7 @@ def _min_max_num_mag(self, other):
     should be non-NaN and have the same format.
 
     """
-    cmp = _compare_ordered(self.abs(), other.abs())
+    cmp = _compare_ordered(abs(self), abs(other))
     if cmp != 0:
         self_is_small = cmp < 0
     elif self._sign != other._sign:
@@ -2662,3 +2559,113 @@ def class_(source):
                 return negativeNormal
             else:
                 return positiveNormal
+
+
+def copy(source):
+    """
+    Return a copy of source.
+
+    """
+    if source._type == _FINITE:
+        return source._format._finite(
+            sign=source._sign,
+            exponent=source._exponent,
+            significand=source._significand,
+        )
+    elif source._type == _INFINITE:
+        return source._format._infinite(
+            sign=source._sign,
+        )
+    elif source._type == _NAN:
+        return source._format._nan(
+            sign=source._sign,
+            signaling=source._signaling,
+            payload=source._payload,
+        )
+    else:  # pragma: no cover
+        assert False, "shouldn't get here"
+
+
+def negate(source):
+    """
+    Return the negation of source.
+
+    """
+    if source._type == _FINITE:
+        return source._format._finite(
+            sign=not source._sign,
+            exponent=source._exponent,
+            significand=source._significand,
+        )
+    elif source._type == _INFINITE:
+        return source._format._infinite(
+            sign=not source._sign,
+        )
+
+    elif source._type == _NAN:
+        return source._format._nan(
+            sign=not source._sign,
+            signaling=source._signaling,
+            payload=source._payload,
+        )
+    else:  # pragma: no cover
+        assert False, "shouldn't get here"
+
+
+def abs(source):
+    """
+    Return the absolute value of source.
+
+    """
+    if source._type == _FINITE:
+        return source._format._finite(
+            sign=False,
+            exponent=source._exponent,
+            significand=source._significand,
+        )
+    elif source._type == _INFINITE:
+        return source._format._infinite(
+            sign=False,
+        )
+    elif source._type == _NAN:
+        return source._format._nan(
+            sign=False,
+            signaling=source._signaling,
+            payload=source._payload,
+        )
+    else:  # pragma: no cover
+        assert False, "shouldn't get here"
+
+
+def copy_sign(source1, source2):
+    """
+    Return a value with the same format as source1, but the sign bit of
+    source2.
+
+    source1 and source2 should have the same format.
+
+    """
+    # Currently implemented only as a homogeneous operation.
+    if not source1._format == source2._format:
+        raise ValueError(
+            "copy_sign operation not implemented for mixed formats."
+        )
+
+    if source1._type == _FINITE:
+        return source1._format._finite(
+            sign=source2._sign,
+            exponent=source1._exponent,
+            significand=source1._significand,
+        )
+    elif source1._type == _INFINITE:
+        return source1._format._infinite(
+            sign=source2._sign,
+        )
+    elif source1._type == _NAN:
+        return source1._format._nan(
+            sign=source2._sign,
+            signaling=source1._signaling,
+            payload=source1._payload,
+        )
+    else:  # pragma: no cover
+        assert False, "shouldn't get here"

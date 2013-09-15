@@ -465,4 +465,8 @@ operation_factories = {
     'isSignaling': unary_predicate('is_signaling'),
     'isSubnormal': unary_predicate('is_subnormal'),
     'isZero': unary_predicate('is_zero'),
+
+    'abs': unary_source_operation('abs'),
+    'copy': unary_source_operation('copy'),
+    'negate': unary_source_operation('negate'),
 }

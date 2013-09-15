@@ -41,7 +41,13 @@ from quadfloat.binary_interchange_format import (
     is_nan,
     is_sign_minus,
     is_signaling,
+
+    abs,
+    copy,
+    negate,
+    copy_sign
 )
+from quadfloat.compat import builtins
 from quadfloat.tests.base_test_case import BaseTestCase
 
 
@@ -62,7 +68,7 @@ class TestBinary128(BaseTestCase):
         q = binary128(input)
         # Value of q should be approximately 2.3; it won't
         # be exactly equal.
-        absdiff = abs(q - binary128('2.3'))
+        absdiff = builtins.abs(q - binary128('2.3'))
         self.assertLess(absdiff, 1e-15)
 
         # From larger.
@@ -1165,148 +1171,149 @@ class TestBinary128(BaseTestCase):
             convert_to_integer_ties_to_away(ninf)
 
     def test_copy(self):
-        self.assertInterchangeable(binary128('-2.0').copy(), binary128('-2.0'))
-        self.assertInterchangeable(binary128('2.0').copy(), binary128('2.0'))
-        self.assertInterchangeable(binary128('-0.0').copy(), binary128('-0.0'))
-        self.assertInterchangeable(binary128('0.0').copy(), binary128('0.0'))
-        self.assertInterchangeable(binary128('-inf').copy(), binary128('-inf'))
-        self.assertInterchangeable(binary128('inf').copy(), binary128('inf'))
-        self.assertInterchangeable(binary128('-nan').copy(), binary128('-nan'))
-        self.assertInterchangeable(binary128('nan').copy(), binary128('nan'))
+        self.assertInterchangeable(copy(binary128('-2.0')), binary128('-2.0'))
+        self.assertInterchangeable(copy(binary128('2.0')), binary128('2.0'))
+        self.assertInterchangeable(copy(binary128('-0.0')), binary128('-0.0'))
+        self.assertInterchangeable(copy(binary128('0.0')), binary128('0.0'))
+        self.assertInterchangeable(copy(binary128('-inf')), binary128('-inf'))
+        self.assertInterchangeable(copy(binary128('inf')), binary128('inf'))
+        self.assertInterchangeable(copy(binary128('-nan')), binary128('-nan'))
+        self.assertInterchangeable(copy(binary128('nan')), binary128('nan'))
         self.assertInterchangeable(
-            binary128('-snan').copy(), binary128('-snan'))
-        self.assertInterchangeable(binary128('snan').copy(), binary128('snan'))
+            copy(binary128('-snan')), binary128('-snan'))
+        self.assertInterchangeable(copy(binary128('snan')), binary128('snan'))
         self.assertInterchangeable(
-            binary128('-nan(123)').copy(), binary128('-nan(123)'))
+            copy(binary128('-nan(123)')), binary128('-nan(123)'))
         self.assertInterchangeable(
-            binary128('nan(123)').copy(), binary128('nan(123)'))
+            copy(binary128('nan(123)')), binary128('nan(123)'))
         self.assertInterchangeable(
-            binary128('-snan(123)').copy(), binary128('-snan(123)'))
+            copy(binary128('-snan(123)')), binary128('-snan(123)'))
         self.assertInterchangeable(
-            binary128('snan(123)').copy(), binary128('snan(123)'))
+            copy(binary128('snan(123)')), binary128('snan(123)'))
 
     def test_negate(self):
         self.assertInterchangeable(
-            binary128('-2.0').negate(), binary128('2.0'))
+            negate(binary128('-2.0')), binary128('2.0'))
         self.assertInterchangeable(
-            binary128('2.0').negate(), binary128('-2.0'))
+            negate(binary128('2.0')), binary128('-2.0'))
         self.assertInterchangeable(
-            binary128('-0.0').negate(), binary128('0.0'))
+            negate(binary128('-0.0')), binary128('0.0'))
         self.assertInterchangeable(
-            binary128('0.0').negate(), binary128('-0.0'))
+            negate(binary128('0.0')), binary128('-0.0'))
         self.assertInterchangeable(
-            binary128('-inf').negate(), binary128('inf'))
+            negate(binary128('-inf')), binary128('inf'))
         self.assertInterchangeable(
-            binary128('inf').negate(), binary128('-inf'))
+            negate(binary128('inf')), binary128('-inf'))
         self.assertInterchangeable(
-            binary128('-nan').negate(), binary128('nan'))
+            negate(binary128('-nan')), binary128('nan'))
         self.assertInterchangeable(
-            binary128('nan').negate(), binary128('-nan'))
+            negate(binary128('nan')), binary128('-nan'))
         self.assertInterchangeable(
-            binary128('-snan').negate(), binary128('snan'))
+            negate(binary128('-snan')), binary128('snan'))
         self.assertInterchangeable(
-            binary128('snan').negate(), binary128('-snan'))
+            negate(binary128('snan')), binary128('-snan'))
         self.assertInterchangeable(
-            binary128('-nan(123)').negate(), binary128('nan(123)'))
+            negate(binary128('-nan(123)')), binary128('nan(123)'))
         self.assertInterchangeable(
-            binary128('nan(123)').negate(), binary128('-nan(123)'))
+            negate(binary128('nan(123)')), binary128('-nan(123)'))
         self.assertInterchangeable(
-            binary128('-snan(123)').negate(), binary128('snan(123)'))
+            negate(binary128('-snan(123)')), binary128('snan(123)'))
         self.assertInterchangeable(
-            binary128('snan(123)').negate(), binary128('-snan(123)'))
+            negate(binary128('snan(123)')), binary128('-snan(123)'))
 
     def test_abs(self):
-        self.assertInterchangeable(binary128('-2.0').abs(), binary128('2.0'))
-        self.assertInterchangeable(binary128('2.0').abs(), binary128('2.0'))
-        self.assertInterchangeable(binary128('-0.0').abs(), binary128('0.0'))
-        self.assertInterchangeable(binary128('0.0').abs(), binary128('0.0'))
-        self.assertInterchangeable(binary128('-inf').abs(), binary128('inf'))
-        self.assertInterchangeable(binary128('inf').abs(), binary128('inf'))
-        self.assertInterchangeable(binary128('-nan').abs(), binary128('nan'))
-        self.assertInterchangeable(binary128('nan').abs(), binary128('nan'))
-        self.assertInterchangeable(binary128('-snan').abs(), binary128('snan'))
-        self.assertInterchangeable(binary128('snan').abs(), binary128('snan'))
+        self.assertInterchangeable(abs(binary128('-2.0')), binary128('2.0'))
+        self.assertInterchangeable(abs(binary128('2.0')), binary128('2.0'))
+        self.assertInterchangeable(abs(binary128('-0.0')), binary128('0.0'))
+        self.assertInterchangeable(abs(binary128('0.0')), binary128('0.0'))
+        self.assertInterchangeable(abs(binary128('-inf')), binary128('inf'))
+        self.assertInterchangeable(abs(binary128('inf')), binary128('inf'))
+        self.assertInterchangeable(abs(binary128('-nan')), binary128('nan'))
+        self.assertInterchangeable(abs(binary128('nan')), binary128('nan'))
+        self.assertInterchangeable(abs(binary128('-snan')), binary128('snan'))
+        self.assertInterchangeable(abs(binary128('snan')), binary128('snan'))
         self.assertInterchangeable(
-            binary128('-nan(123)').abs(), binary128('nan(123)'))
+            abs(binary128('-nan(123)')), binary128('nan(123)'))
         self.assertInterchangeable(
-            binary128('nan(123)').abs(), binary128('nan(123)'))
+            abs(binary128('nan(123)')), binary128('nan(123)'))
         self.assertInterchangeable(
-            binary128('-snan(123)').abs(), binary128('snan(123)'))
+            abs(binary128('-snan(123)')), binary128('snan(123)'))
         self.assertInterchangeable(
-            binary128('snan(123)').abs(), binary128('snan(123)'))
+            abs(binary128('snan(123)')), binary128('snan(123)'))
 
     def test_copy_sign(self):
         x, y = binary128('2.3'), binary64('-3.5')
         with self.assertRaises(ValueError):
-            x.copy_sign(y)
+            copy_sign(x, y)
         with self.assertRaises(ValueError):
-            y.copy_sign(x)
+            copy_sign(y, x)
 
         self.assertInterchangeable(
-            binary128('-2.0').copy_sign(binary128('1.0')), binary128('2.0'))
+            copy_sign(binary128('-2.0'), binary128('1.0')), binary128('2.0'))
         self.assertInterchangeable(
-            binary128('2.0').copy_sign(binary128('1.0')), binary128('2.0'))
+            copy_sign(binary128('2.0'), binary128('1.0')), binary128('2.0'))
         self.assertInterchangeable(
-            binary128('-0.0').copy_sign(binary128('1.0')), binary128('0.0'))
+            copy_sign(binary128('-0.0'), binary128('1.0')), binary128('0.0'))
         self.assertInterchangeable(
-            binary128('0.0').copy_sign(binary128('1.0')), binary128('0.0'))
+            copy_sign(binary128('0.0'), binary128('1.0')), binary128('0.0'))
         self.assertInterchangeable(
-            binary128('-inf').copy_sign(binary128('1.0')), binary128('inf'))
+            copy_sign(binary128('-inf'), binary128('1.0')), binary128('inf'))
         self.assertInterchangeable(
-            binary128('inf').copy_sign(binary128('1.0')), binary128('inf'))
+            copy_sign(binary128('inf'), binary128('1.0')), binary128('inf'))
         self.assertInterchangeable(
-            binary128('-nan').copy_sign(binary128('1.0')), binary128('nan'))
+            copy_sign(binary128('-nan'), binary128('1.0')), binary128('nan'))
         self.assertInterchangeable(
-            binary128('nan').copy_sign(binary128('1.0')), binary128('nan'))
+            copy_sign(binary128('nan'), binary128('1.0')), binary128('nan'))
         self.assertInterchangeable(
-            binary128('-snan').copy_sign(binary128('1.0')), binary128('snan'))
+            copy_sign(binary128('-snan'), binary128('1.0')), binary128('snan'))
         self.assertInterchangeable(
-            binary128('snan').copy_sign(binary128('1.0')), binary128('snan'))
+            copy_sign(binary128('snan'), binary128('1.0')), binary128('snan'))
         self.assertInterchangeable(
-            binary128('-nan(123)').copy_sign(binary128('1.0')),
+            copy_sign(binary128('-nan(123)'), binary128('1.0')),
             binary128('nan(123)'))
         self.assertInterchangeable(
-            binary128('nan(123)').copy_sign(binary128('1.0')),
+            copy_sign(binary128('nan(123)'), binary128('1.0')),
             binary128('nan(123)'))
         self.assertInterchangeable(
-            binary128('-snan(123)').copy_sign(binary128('1.0')),
+            copy_sign(binary128('-snan(123)'), binary128('1.0')),
             binary128('snan(123)'))
         self.assertInterchangeable(
-            binary128('snan(123)').copy_sign(binary128('1.0')),
+            copy_sign(binary128('snan(123)'), binary128('1.0')),
             binary128('snan(123)'))
 
         self.assertInterchangeable(
-            binary128('-2.0').copy_sign(binary128('-1.0')), binary128('-2.0'))
+            copy_sign(binary128('-2.0'), binary128('-1.0')), binary128('-2.0'))
         self.assertInterchangeable(
-            binary128('2.0').copy_sign(binary128('-1.0')), binary128('-2.0'))
+            copy_sign(binary128('2.0'), binary128('-1.0')), binary128('-2.0'))
         self.assertInterchangeable(
-            binary128('-0.0').copy_sign(binary128('-1.0')), binary128('-0.0'))
+            copy_sign(binary128('-0.0'), binary128('-1.0')), binary128('-0.0'))
         self.assertInterchangeable(
-            binary128('0.0').copy_sign(binary128('-1.0')), binary128('-0.0'))
+            copy_sign(binary128('0.0'), binary128('-1.0')), binary128('-0.0'))
         self.assertInterchangeable(
-            binary128('-inf').copy_sign(binary128('-1.0')), binary128('-inf'))
+            copy_sign(binary128('-inf'), binary128('-1.0')), binary128('-inf'))
         self.assertInterchangeable(
-            binary128('inf').copy_sign(binary128('-1.0')), binary128('-inf'))
+            copy_sign(binary128('inf'), binary128('-1.0')), binary128('-inf'))
         self.assertInterchangeable(
-            binary128('-nan').copy_sign(binary128('-1.0')), binary128('-nan'))
+            copy_sign(binary128('-nan'), binary128('-1.0')), binary128('-nan'))
         self.assertInterchangeable(
-            binary128('nan').copy_sign(binary128('-1.0')), binary128('-nan'))
+            copy_sign(binary128('nan'), binary128('-1.0')), binary128('-nan'))
         self.assertInterchangeable(
-            binary128('-snan').copy_sign(binary128('-1.0')),
+            copy_sign(binary128('-snan'), binary128('-1.0')),
             binary128('-snan'))
         self.assertInterchangeable(
-            binary128('snan').copy_sign(binary128('-1.0')), binary128('-snan'))
+            copy_sign(binary128('snan'), binary128('-1.0')),
+            binary128('-snan'))
         self.assertInterchangeable(
-            binary128('-nan(123)').copy_sign(binary128('-1.0')),
+            copy_sign(binary128('-nan(123)'), binary128('-1.0')),
             binary128('-nan(123)'))
         self.assertInterchangeable(
-            binary128('nan(123)').copy_sign(binary128('-1.0')),
+            copy_sign(binary128('nan(123)'), binary128('-1.0')),
             binary128('-nan(123)'))
         self.assertInterchangeable(
-            binary128('-snan(123)').copy_sign(binary128('-1.0')),
+            copy_sign(binary128('-snan(123)'), binary128('-1.0')),
             binary128('-snan(123)'))
         self.assertInterchangeable(
-            binary128('snan(123)').copy_sign(binary128('-1.0')),
+            copy_sign(binary128('snan(123)'), binary128('-1.0')),
             binary128('-snan(123)'))
 
     def test_short_float_repr(self):
@@ -1335,7 +1342,7 @@ class TestBinary128(BaseTestCase):
             binary128('10.0'),
             binary128('Infinity'),
         ]
-        negatives = [x.negate() for x in positives[::-1]]
+        negatives = [negate(x) for x in positives[::-1]]
         nans = [binary128('nan(123)'), binary128('-nan')]
 
         # Non-nans are equal to themselves; all zeros are equal to all other
