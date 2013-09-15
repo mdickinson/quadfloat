@@ -89,7 +89,7 @@ class TestBinary128(BaseTestCase):
 
         # From a NaN; check payload is clipped.
         input = binary16('snan')
-        self.assertInterchangeable(binary128(input), binary128('snan'))
+        self.assertInterchangeable(binary128(input), binary128('nan(1)'))
         input = binary16('-nan(123)')
         self.assertInterchangeable(binary128(input), binary128('-nan(123)'))
 

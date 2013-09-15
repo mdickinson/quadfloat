@@ -331,7 +331,7 @@ class BinaryInterchangeFormat(object):
         """
         if isinstance(value, _BinaryFloat):
             # Initialize from another _BinaryFloat instance.
-            return self._from_binary_float(value)
+            return self.convert_format(value)
 
         elif isinstance(value, float):
             # Initialize from a float.
@@ -339,7 +339,7 @@ class BinaryInterchangeFormat(object):
 
         elif isinstance(value, INTEGER_TYPES):
             # Initialize from an integer.
-            return self._from_int(value)
+            return self.convert_from_int(value)
 
         elif isinstance(value, STRING_TYPES):
             # Initialize from a string.
@@ -350,43 +350,6 @@ class BinaryInterchangeFormat(object):
                 "Cannot construct a Float<nnn> instance from a "
                 "value of type {0}".format(type(value))
             )
-
-    def _from_binary_float(self, b):
-        """
-        Convert another _BinaryFloat instance to this format.
-
-        """
-        if b._type == _NAN:
-            converted = self._from_nan_triple(
-                sign=b._sign,
-                signaling=b._signaling,
-                payload=b._payload,
-                clip_payload=True,
-            )
-        elif b._type == _INFINITE:
-            # Infinities convert with no loss of information.
-            converted = self._infinite(
-                sign=b._sign,
-            )
-        else:
-            # Finite value.
-            converted = self._from_triple(
-                sign=b._sign,
-                exponent=b._exponent,
-                significand=b._significand,
-            )
-        return converted
-
-    def _from_int(self, n):
-        """
-        Convert the integer `n` to this format.
-
-        """
-        return self._from_triple(
-            sign=n < 0,
-            exponent=0,
-            significand=_abs(n),
-        )
 
     def _from_scaled_fraction(self, sign, exponent,
                               numerator, denominator):
@@ -419,7 +382,7 @@ class BinaryInterchangeFormat(object):
         """
         # Convert via string.
         value = _binary64.convert_from_hex_character(value.hex())
-        return self._from_binary_float(value)
+        return self.convert_format(value)
 
     def _final_round(self, sign, e, q):
         """
@@ -810,14 +773,26 @@ class BinaryInterchangeFormat(object):
         """
         if source._type == _NAN:
             return self._handle_nans(source)
-        return self._from_binary_float(source)
+        elif source._type == _INFINITE:
+            return self._infinite(sign=source._sign)
+        else:
+            assert source._type == _FINITE
+            return self._from_triple(
+                sign=source._sign,
+                exponent=source._exponent,
+                significand=source._significand,
+            )
 
     def convert_from_int(self, n):
         """
-        Convert the integer n to this format.
+        Convert the integer `n` to this format.
 
         """
-        return self._from_int(n)
+        return self._from_triple(
+            sign=n < 0,
+            exponent=0,
+            significand=_abs(n),
+        )
 
     def convert_to_hex_character_simple(self, source):
         """
@@ -1246,7 +1221,7 @@ class _BinaryFloat(object):
         elif isinstance(other, float):
             other = _binary64._from_float(other)
         elif isinstance(other, INTEGER_TYPES):
-            other = self._format._from_int(other)
+            other = self._format.convert_from_int(other)
         else:
             raise TypeError(
                 "Can't convert operand {0} of type {1} to "
@@ -1344,7 +1319,7 @@ class _BinaryFloat(object):
         """
         if isinstance(other, INTEGER_TYPES):
             with temporary_attributes(compare_attributes()) as attributes:
-                other = self._format._from_int(other)
+                other = self._format.convert_from_int(other)
                 inexact = -1 if inexact_flag in attributes.flag_set else 0
 
         elif isinstance(other, float):
@@ -1353,9 +1328,11 @@ class _BinaryFloat(object):
                 inexact = -1 if inexact_flag in attributes.flag_set else 0
 
         elif isinstance(other, _BinaryFloat):
-            with temporary_attributes(compare_attributes()) as attributes:
-                other = self._format._from_binary_float(other)
-                inexact = -1 if inexact_flag in attributes.flag_set else 0
+            if not is_nan(other):
+                # Leave NaNs untouched.
+                with temporary_attributes(compare_attributes()) as attributes:
+                    other = self._format.convert_format(other)
+                    inexact = -1 if inexact_flag in attributes.flag_set else 0
 
         else:
             raise TypeError(
@@ -2112,7 +2089,7 @@ def _compare_quiet_general(source1, source2, operator, unordered_result):
         return unordered_result
     else:
         with temporary_attributes(compare_attributes()) as attributes:
-            source2 = source1._format._from_binary_float(source2)
+            source2 = source1._format.convert_format(source2)
             inexact = inexact_flag in attributes.flag_set
 
         result = _compare_ordered(source1, source2) or -inexact
@@ -2132,7 +2109,7 @@ def _compare_signaling_general(source1, source2, operator, unordered_result):
     else:
         fmt = source1._format
         with temporary_attributes(compare_attributes()) as attributes:
-            source2 = fmt._from_binary_float(source2)
+            source2 = source1._format.convert_format(source2)
             inexact = inexact_flag in attributes.flag_set
 
         result = _compare_ordered(source1, source2) or -inexact
