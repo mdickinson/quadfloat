@@ -1340,8 +1340,10 @@ class _BinaryFloat(object):
     def __eq__(self, other):
         return self._rich_compare_general(other, _operator.eq, False)
 
-    def __ne__(self, other):
-        return self._rich_compare_general(other, _operator.ne, True)
+    if _sys.version_info[0] == 2:
+        # != is automatically inferred from == for Python 3.
+        def __ne__(self, other):
+            return self._rich_compare_general(other, _operator.ne, True)
 
     def __lt__(self, other):
         return self._rich_compare_general(other, _operator.lt, False)
