@@ -1174,10 +1174,6 @@ class _BinaryFloat(object):
     def __int__(self):
         return convert_to_integer_toward_zero(self)
 
-    if _sys.version_info[0] == 2:
-        def __long__(self):
-            return long(int(self))
-
     # Overload for conversion to float.
     def __float__(self):
         if self._type == _NAN:
@@ -1234,13 +1230,6 @@ class _BinaryFloat(object):
         other = self._convert_other(other)
         common_format = self._format._common_format(other._format)
         return common_format.division(other, self)
-
-    if _sys.version_info[0] == 2:
-        # Make sure that Python 2 divisions involving these types behave the
-        # same way regardless of whether the division __future__ import is in
-        # effect or not.
-        __div__ = __truediv__
-        __rdiv__ = __rtruediv__
 
     # Overloaded comparisons.
 
@@ -1310,15 +1299,42 @@ class _BinaryFloat(object):
             ans = -hash_ if self._sign else hash_
             return -2 if ans == -1 else ans
 
+    def __eq__(self, other):
+        return self._rich_compare_general(other, _operator.eq, False)
+
+    def __lt__(self, other):
+        return self._rich_compare_general(other, _operator.lt, False)
+
+    def __gt__(self, other):
+        return self._rich_compare_general(other, _operator.gt, False)
+
+    def __le__(self, other):
+        return self._rich_compare_general(other, _operator.le, False)
+
+    def __ge__(self, other):
+        return self._rich_compare_general(other, _operator.ge, False)
+
     if _sys.version_info[0] == 2:
+        def __long__(self):
+            return long(int(self))
+
+        # != is automatically inferred from == for Python 3.
+        def __ne__(self, other):
+            return self._rich_compare_general(other, _operator.ne, True)
+
+        # Make sure that Python 2 divisions involving these types behave the
+        # same way regardless of whether the division __future__ import is in
+        # effect or not.
+        __div__ = __truediv__
+        __rdiv__ = __rtruediv__
+
         # For Python 2, check whether the value matches that of
         # a Python int or float;  if so, use the hash of that.
         # We don't even try to get the hashes to match those
         # of Fraction or Decimal instances.
         #
-        # (For Python 3, the above formulas ensure that hashes
-        # of BinaryFloat instances will match those of other
-        # numeric types with equal value.)
+        # (For Python 3, the __hash__ definition already ensures
+        # matches with other numeric types of equal value.)
 
         _python3_style_hash = __hash__
 
@@ -1336,26 +1352,6 @@ class _BinaryFloat(object):
                     # XXX. This is needlessly inefficient for huge values.
                     return hash(int(self))
             return self._python3_style_hash()
-
-    def __eq__(self, other):
-        return self._rich_compare_general(other, _operator.eq, False)
-
-    if _sys.version_info[0] == 2:
-        # != is automatically inferred from == for Python 3.
-        def __ne__(self, other):
-            return self._rich_compare_general(other, _operator.ne, True)
-
-    def __lt__(self, other):
-        return self._rich_compare_general(other, _operator.lt, False)
-
-    def __gt__(self, other):
-        return self._rich_compare_general(other, _operator.gt, False)
-
-    def __le__(self, other):
-        return self._rich_compare_general(other, _operator.le, False)
-
-    def __ge__(self, other):
-        return self._rich_compare_general(other, _operator.ge, False)
 
 
 # 5.3: Homogeneous general-computational operations
