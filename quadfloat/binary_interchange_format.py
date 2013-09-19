@@ -1944,7 +1944,7 @@ def convert_to_hex_character(source, conversion_specification):
     elif source._type == _INFINITE:
         return '{sign}Infinity'.format(sign=sign)
     else:
-        assert source._type == _NAN:
+        assert source._type == _NAN
         return '{sign}{signaling}NaN'.format(
             sign=sign,
             signaling='s' if source._signaling else '',
@@ -2496,7 +2496,7 @@ def abs(source):
             sign=False,
         )
     else:
-        assert source._type == _NAN:
+        assert source._type == _NAN
         return source._format._nan(
             sign=False,
             signaling=source._signaling,
@@ -2525,7 +2525,7 @@ def copy_sign(source1, source2):
             sign=source2._sign,
         )
     else:
-        assert source1._type == _NAN:
+        assert source1._type == _NAN
         return format._nan(
             sign=source2._sign,
             signaling=source1._signaling,
