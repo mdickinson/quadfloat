@@ -497,6 +497,7 @@ operation_factories = {
     'abs': unary_source_operation('abs'),
     'copy': unary_source_operation('copy'),
     'negate': unary_source_operation('negate'),
+    'copySign': binary_source_operation('copy_sign'),
 
     'compareQuietLess': comparison('compare_quiet_less'),
     'compareQuietLessEqual': comparison('compare_quiet_less_equal'),
