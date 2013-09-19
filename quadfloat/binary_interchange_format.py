@@ -1943,7 +1943,8 @@ def convert_to_hex_character(source, conversion_specification):
         )
     elif source._type == _INFINITE:
         return '{sign}Infinity'.format(sign=sign)
-    elif source._type == _NAN:
+    else:
+        assert source._type == _NAN:
         return '{sign}{signaling}NaN'.format(
             sign=sign,
             signaling='s' if source._signaling else '',
@@ -1959,22 +1960,21 @@ def convert_to_hex_character_simple(source):
     # it can serve as a basis for checking that two floats
     # are equivalent.
     sign = '-' if source._sign else ''
-    if source._type == _INFINITE:
-        return '{sign}Infinity'.format(sign=sign)
-    elif source._type == _NAN:
-        return '{sign}{signaling}NaN({payload})'.format(
-            sign=sign,
-            signaling='s' if source._signaling else '',
-            payload=source._payload,
-        )
-    elif source._type == _FINITE:
+    if source._type == _FINITE:
         return '{sign}0x{significand:x}p{exponent}'.format(
             sign=sign,
             significand=source._significand,
             exponent=source._exponent,
         )
+    elif source._type == _INFINITE:
+        return '{sign}Infinity'.format(sign=sign)
     else:
-        assert False, "never get here"  # pragma no cover
+        assert source._type == _NAN
+        return '{sign}{signaling}NaN({payload})'.format(
+            sign=sign,
+            signaling='s' if source._signaling else '',
+            payload=source._payload,
+        )
 
 
 # 5.6.1: Comparisons.
@@ -2446,14 +2446,13 @@ def copy(source):
         return source._format._infinite(
             sign=source._sign,
         )
-    elif source._type == _NAN:
+    else:
+        assert source._type == _NAN
         return source._format._nan(
             sign=source._sign,
             signaling=source._signaling,
             payload=source._payload,
         )
-    else:  # pragma: no cover
-        assert False, "shouldn't get here"
 
 
 def negate(source):
@@ -2472,14 +2471,13 @@ def negate(source):
             sign=not source._sign,
         )
 
-    elif source._type == _NAN:
+    else:
+        assert source._type == _NAN
         return source._format._nan(
             sign=not source._sign,
             signaling=source._signaling,
             payload=source._payload,
         )
-    else:  # pragma: no cover
-        assert False, "shouldn't get here"
 
 
 def abs(source):
@@ -2497,14 +2495,13 @@ def abs(source):
         return source._format._infinite(
             sign=False,
         )
-    elif source._type == _NAN:
+    else:
+        assert source._type == _NAN:
         return source._format._nan(
             sign=False,
             signaling=source._signaling,
             payload=source._payload,
         )
-    else:  # pragma: no cover
-        assert False, "shouldn't get here"
 
 
 def copy_sign(source1, source2):
@@ -2527,11 +2524,10 @@ def copy_sign(source1, source2):
         return format._infinite(
             sign=source2._sign,
         )
-    elif source1._type == _NAN:
+    else:
+        assert source1._type == _NAN:
         return format._nan(
             sign=source2._sign,
             signaling=source1._signaling,
             payload=source1._payload,
         )
-    else:  # pragma: no cover
-        assert False, "shouldn't get here"
