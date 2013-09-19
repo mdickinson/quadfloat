@@ -1510,7 +1510,7 @@ class TestBinary128(BaseTestCase):
 
     def test_hash_matches_int(self):
         # Integers that are exactly representable in the binary128 format.
-        test_values = range(10) + [
+        test_values = list(range(10)) + [
             10**48,
             2**64 + 1,
             2**113 - 1,
