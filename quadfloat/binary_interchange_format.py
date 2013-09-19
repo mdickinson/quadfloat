@@ -1314,6 +1314,17 @@ class _BinaryFloat(object):
                     return hash(int(self))
                 elif self == float(self):
                     return hash(float(self))
+
+                # If the value doesn't match int or float, use the same
+                # algorithm as for Python 3.
+                base = 2 if self._exponent >= 0 else _PyHASH_2INV
+                exponent = builtins.abs(self._exponent)
+                exp_hash = pow(base, exponent, _PyHASH_MODULUS)
+                hash_ = self._significand * exp_hash % _PyHASH_MODULUS
+                ans = -hash_ if self._sign else hash_
+
+                return -2 if ans == -1 else ans
+
     else:
         def __hash__(self):
             """

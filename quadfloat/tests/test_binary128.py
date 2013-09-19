@@ -1507,3 +1507,54 @@ class TestBinary128(BaseTestCase):
         ]
         for function, true_relations in functions:
             self._check_signaling_compare_function(function, true_relations)
+
+    def test_hash_matches_int(self):
+        # Integers that are exactly representable in the binary128 format.
+        test_values = range(10) + [
+            10**48,
+            2**64 + 1,
+            2**113 - 1,
+            2**113,
+            2**113 + 2,
+            2**256,
+        ]
+        for test_value in test_values:
+            self.assertEqual(hash(binary128(test_value)), hash(test_value))
+            self.assertEqual(hash(binary128(-test_value)), hash(-test_value))
+
+    def test_hash_matches_float(self):
+        test_values = [
+            3.141592653589793,
+            float('nan'),
+            float('-nan'),
+            float('inf'),
+            float('-inf'),
+            0.0,
+            -0.0,
+            1.0,
+            -1.0,
+            -2.0,
+            1e100,
+            1e308,
+            1e-323,
+        ]
+        for test_value in test_values:
+            self.assertEqual(hash(binary128(test_value)), hash(test_value))
+
+    def test_hash_compatibility_across_formats(self):
+        test_value = binary16('3.1415')
+        value_hash = hash(test_value)
+        self.assertEqual(hash(binary32(test_value)), value_hash)
+        self.assertEqual(hash(binary64(test_value)), value_hash)
+        self.assertEqual(hash(binary128(test_value)), value_hash)
+
+        binary256 = BinaryInterchangeFormat(width=256)
+        test_value = binary128('3.1415926535897932384626433')
+        value_hash = hash(test_value)
+        self.assertEqual(hash(binary256(test_value)), value_hash)
+
+    def test_hash_outside_int_and_float_range(self):
+        # Regression test: previous __hash__ was broken for finite numbers that
+        # didn't exactly match a Python int / float.
+        x = binary128('1.1')
+        hash(x)

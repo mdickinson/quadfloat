@@ -28,8 +28,13 @@ if sys.version_info[0] == 2:
         return ''.join(chr(n) for n in ns)
 
     # Values used to compute hashes.
-    _PyHASH_MODULUS = None
-    _PyHASH_2INV = None
+    if sys.maxsize == 2**31 - 1:
+        _PyHASH_MODULUS = 2**31 - 1
+    elif sys.maxsize == 2**63 - 1:
+        _PyHASH_MODULUS = 2**61 - 1
+    else:
+        raise ValueError("Unexpected value for sys.maxsize.")
+    _PyHASH_2INV = pow(2, _PyHASH_MODULUS - 2, _PyHASH_MODULUS)
     _PyHASH_INF = hash(float('inf'))
     _PyHASH_NINF = hash(float('-inf'))
     _PyHASH_NAN = hash(float('nan'))
