@@ -1587,21 +1587,16 @@ def remainder(self, other):
     return converted
 
 
-def _min_max_num(self, other):
+def _min_max_num(source1, source2):
     """
-    Helper function for min_num and max_num.  self and other
+    Helper function for min_num and max_num.  source1 and source2
     should be non-NaN and have the same format.
 
     """
-    if self._sign != other._sign:
-        self_is_small = self._sign and not other._sign
+    if total_order(source1, source2):
+        return source1, source2
     else:
-        self_is_small = _compare_ordered(self, other) <= 0
-
-    if self_is_small:
-        return self, other
-    else:
-        return other, self
+        return source2, source1
 
 
 def _min_max_num_mag(self, other):
