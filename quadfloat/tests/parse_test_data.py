@@ -79,6 +79,18 @@ def bool_conversion(string):
         raise ValueError("Can't interpret {!r} as a boolean.".format(string))
 
 
+def bool_or_value_error(string):
+    try:
+        return bool_conversion(string)
+    except ValueError:
+        pass
+
+    if string == "ValueError":
+        return string
+    else:
+        raise ValueError("Can't interpret {!r}".format(string))
+
+
 def int_or_value_error(string):
     try:
         return int(string)
@@ -282,7 +294,7 @@ def comparison(method_name):
                 binary_conversion(source1_format),
                 binary_conversion(source2_format),
             ],
-            result_conversion=bool_conversion,
+            result_conversion=bool_or_value_error,
         )
     return comparison_factory
 
@@ -509,6 +521,7 @@ operation_factories = {
     'negate': unary_source_operation('negate'),
     'copySign': binary_source_operation('copy_sign'),
 
+    'compareQuietEqual': comparison('compare_quiet_equal'),
     'compareQuietLess': comparison('compare_quiet_less'),
     'compareQuietLessEqual': comparison('compare_quiet_less_equal'),
 }

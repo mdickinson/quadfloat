@@ -1,0 +1,35 @@
+operation: compareQuietEqual
+operation source1: binary16
+operation source2: binary16
+
+0x2p0 0x2p0 -> True
+0x1p0 0x2p0 -> False
+0x2p0 0x3p0 -> False
+0x2p0 0x1p0 -> False
+0x3p0 0x2p0 -> False
+0x2p0 -0x2p0 -> False
+
+# Zeros compare equal to each other.
+0x0p0 0x0p0 -> True
+0x0p0 -0x0p0 -> True
+-0x0p0 0x0p0 -> True
+-0x0p0 -0x0p0 -> True
+
+# Like-signed infinities compare equal to each other.
+Infinity Infinity -> True
+-Infinity -Infinity -> True
+-Infinity Infinity -> False
+Infinity -Infinity -> False
+
+0x0p0 Infinity -> False
+
+# NaNs compare unequal to anything else, even themselves.
+NaN NaN -> False
+NaN NaN(123) -> False
+0x0p0 NaN -> False
+NaN -0x0p0 -> False
+Infinity NaN -> False
+NaN Infinity -> False
+
+# Signalling NaNs should signal
+NaN sNaN(345) -> ValueError invalid
