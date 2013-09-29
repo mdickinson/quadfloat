@@ -428,6 +428,15 @@ def unary_predicate(method_name):
     return unary_predicate_factory
 
 
+def radix(source):
+    source_format = binary_format(source)
+    return TestOperation(
+        operation=HomogeneousOperation('radix'),
+        operand_conversions=[binary_conversion(source_format)],
+        result_conversion=int,
+    )
+
+
 _uso = unary_source_operation
 operation_factories = {
     # 5.3.1 General operations
@@ -493,6 +502,7 @@ operation_factories = {
     'isSignaling': unary_predicate('is_signaling'),
     'isSubnormal': unary_predicate('is_subnormal'),
     'isZero': unary_predicate('is_zero'),
+    'radix': radix,
 
     'abs': unary_source_operation('abs'),
     'copy': unary_source_operation('copy'),

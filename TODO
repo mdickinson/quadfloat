@@ -22,6 +22,9 @@ Documentation
 Features
 --------
 
+* All the operations should be importable from quadfloat.api, and tests
+  and examples should use quadfloat.api.
+
 * __repr__ should be changed to include the hex representation instead
   of the Decimal representation.
 
@@ -33,7 +36,6 @@ Features
     convertToDecimalCharacter
     is754version1985
     is754version2008
-    radix
 
 * Also, add tests for the following operations that are implemented but not
   supported by standard tests:

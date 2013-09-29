@@ -2531,3 +2531,7 @@ def copy_sign(source1, source2):
             signaling=source1._signaling,
             payload=source1._payload,
         )
+
+
+def radix(source1):
+    return 2

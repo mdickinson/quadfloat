@@ -1,0 +1,22 @@
+operation: radix
+
+operation source: binary16
+0x0p0 -> 2
+0x1p0 -> 2
+Infinity -> 2
+NaN -> 2
+sNaN -> 2
+
+operation source: binary32
+0x0p0 -> 2
+0x1p0 -> 2
+Infinity -> 2
+NaN -> 2
+sNaN -> 2
+
+operation source: binary64
+0x0p0 -> 2
+0x1p0 -> 2
+Infinity -> 2
+NaN -> 2
+sNaN -> 2
