@@ -2,11 +2,11 @@
 Helper class for representing a single test.
 
 """
+from quadfloat.api import BinaryInterchangeFormat
 from quadfloat.attributes import (
     Attributes,
     temporary_attributes,
 )
-from quadfloat.binary_interchange_format import BinaryInterchangeFormat
 from quadfloat.exceptions import (
     UnderflowException,
 )

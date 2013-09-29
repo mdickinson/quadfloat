@@ -1,4 +1,4 @@
-from quadfloat import binary16
+from quadfloat.api import binary16
 from quadfloat.tests.base_test_case import BaseTestCase
 
 

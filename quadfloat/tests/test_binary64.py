@@ -7,7 +7,7 @@ import math
 import random
 import struct
 
-from quadfloat.binary_interchange_format import BinaryInterchangeFormat
+from quadfloat.api import BinaryInterchangeFormat
 from quadfloat.tests.base_test_case import BaseTestCase
 
 

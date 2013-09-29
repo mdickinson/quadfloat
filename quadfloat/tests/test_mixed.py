@@ -2,7 +2,7 @@
 Tests for mixed-precision arithmetic.
 
 """
-from quadfloat import binary16, binary32, binary64, binary128
+from quadfloat.api import binary16, binary32, binary64, binary128
 from quadfloat.tests.base_test_case import BaseTestCase
 
 

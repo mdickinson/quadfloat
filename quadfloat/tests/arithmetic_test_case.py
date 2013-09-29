@@ -9,7 +9,7 @@ from quadfloat.attributes import (
 from quadfloat.binary_interchange_format import convert_to_hex_character_simple
 from quadfloat.status_flags import underflow
 
-import quadfloat.binary_interchange_format
+import quadfloat.api
 
 
 def identifying_string(binary_float):
@@ -74,7 +74,7 @@ class HomogeneousOperation(ArithmeticOperation):
         return self.method_name
 
     def __call__(self, *args):
-        method = getattr(quadfloat.binary_interchange_format, self.method_name)
+        method = getattr(quadfloat.api, self.method_name)
         try:
             result = method(*args)
         except ValueError:

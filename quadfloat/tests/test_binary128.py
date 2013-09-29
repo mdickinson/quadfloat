@@ -1,11 +1,13 @@
 import math
 import sys
 
-from quadfloat import BinaryInterchangeFormat
-from quadfloat import binary16, binary32, binary64, binary128
+from quadfloat.api import (
+    BinaryInterchangeFormat,
+    binary16,
+    binary32,
+    binary64,
+    binary128,
 
-
-from quadfloat.binary_interchange_format import (
     compare_quiet_equal,
     compare_quiet_not_equal,
     compare_quiet_greater,

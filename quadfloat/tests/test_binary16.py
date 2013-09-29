@@ -1,7 +1,9 @@
-from quadfloat import binary16, binary32, binary64
 from quadfloat.arithmetic import _divide_nearest
-from quadfloat.binary_interchange_format import (
+from quadfloat.api import (
     BinaryInterchangeFormat,
+    binary16,
+    binary32,
+    binary64,
 
     min_num,
     max_num,

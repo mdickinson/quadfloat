@@ -1,7 +1,7 @@
 import unittest
 
 
-from quadfloat.binary_interchange_format import BinaryInterchangeFormat
+from quadfloat.api import BinaryInterchangeFormat
 from quadfloat.parsing import parse_finite_decimal
 
 
