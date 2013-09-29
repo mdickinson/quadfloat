@@ -2535,3 +2535,11 @@ def copy_sign(source1, source2):
 
 def radix(source1):
     return 2
+
+
+def is_754_version_1985():
+    return False
+
+
+def is_754_version_2008():
+    return True

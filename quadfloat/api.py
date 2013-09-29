@@ -37,6 +37,8 @@ from quadfloat.binary_interchange_format import (
     convert_to_integer_toward_zero,
     copy,
     copy_sign,
+    is_754_version_1985,
+    is_754_version_2008,
     is_canonical,
     is_finite,
     is_infinite,
@@ -163,8 +165,8 @@ __all__ = [
     # 5.7 Non-computational operations
 
     # 5.7.1 Conformance predicates
-    #'is754version1985',  # Not yet implemented
-    #'is754version2008',  # Not yet implemented
+    'is_754_version_1985',
+    'is_754_version_2008',
 
     # 5.7.2 General operations
     'class_',

@@ -440,6 +440,16 @@ def unary_predicate(method_name):
     return unary_predicate_factory
 
 
+def nullary_predicate(method_name):
+    def nullary_predicate_factory():
+        return TestOperation(
+            operation=HomogeneousOperation(method_name),
+            operand_conversions=[],
+            result_conversion=bool_conversion,
+        )
+    return nullary_predicate_factory
+
+
 def radix(source):
     source_format = binary_format(source)
     return TestOperation(
@@ -524,4 +534,7 @@ operation_factories = {
     'compareQuietEqual': comparison('compare_quiet_equal'),
     'compareQuietLess': comparison('compare_quiet_less'),
     'compareQuietLessEqual': comparison('compare_quiet_less_equal'),
+
+    'is754version1985': nullary_predicate('is_754_version_1985'),
+    'is754version2008': nullary_predicate('is_754_version_2008'),
 }
