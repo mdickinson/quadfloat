@@ -10,8 +10,6 @@ Bugs
 
 * Missing documentation.
 
-* _convert_other doesn't always respect its attributes input.
-
 
 Documentation
 -------------
@@ -22,9 +20,6 @@ Documentation
 Features
 --------
 
-* All the operations should be importable from quadfloat.api, and tests
-  and examples should use quadfloat.api.
-
 * __repr__ should be changed to include the hex representation instead
   of the Decimal representation.
 
@@ -34,15 +29,13 @@ Features
 * Fill out the rest of the IEEE 754 *required* operations.  Right now, that's:
 
     convertToDecimalCharacter
-    is754version1985
-    is754version2008
 
 * Also, add tests for the following operations that are implemented but not
   supported by standard tests:
 
      comparisons
 
-* Implement flags.
+* Implement flags and flag operations.
 
 * Look at the rest of the recommended functionality (e.g., correctly-rounded
   math operations; could take some time!)
