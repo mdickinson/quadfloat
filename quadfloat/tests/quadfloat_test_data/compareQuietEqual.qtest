@@ -33,3 +33,13 @@ NaN Infinity -> False
 
 # Signalling NaNs should signal
 NaN sNaN(345) -> ValueError invalid
+sNaN(510) 0x2p0 -> ValueError invalid
+sNaN -sNaN -> ValueError invalid
+
+
+# Check cross-format comparisons.
+operation source1: binary16
+operation source2: binary32
+
+0x2p0 0x2p0 -> True
+0x2p0 0x2.001p0 -> False
