@@ -24,6 +24,7 @@ from quadfloat.binary_interchange_format import (
     compare_signaling_less_unordered,
     compare_signaling_not_less,
     compare_signaling_greater_unordered,
+    convert_to_decimal_character,
     convert_to_hex_character,
     convert_to_integer_exact_ties_to_away,
     convert_to_integer_exact_ties_to_even,
@@ -125,7 +126,7 @@ __all__ = [
 
     # 5.4.2 Conversion operations for floating-point formats and decimal
     # character sequences
-    # 'convert_to_decimal_character',  # Not yet implemented!
+    'convert_to_decimal_character',
 
     # 5.4.3 Conversion operations for binary formats
     'convert_to_hex_character',

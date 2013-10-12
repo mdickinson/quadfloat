@@ -2,6 +2,8 @@
 Helper class for representing a single test.
 
 """
+import json
+
 from quadfloat.api import BinaryInterchangeFormat
 from quadfloat.attributes import (
     Attributes,
@@ -77,6 +79,15 @@ def bool_conversion(string):
         return False
     else:
         raise ValueError("Can't interpret {!r} as a boolean.".format(string))
+
+
+def json_str(string):
+    """
+    Convert a Python string representing a JSON quoted string into
+    the underlying string object.
+
+    """
+    return json.loads(string)
 
 
 def bool_or_value_error(string):
@@ -402,6 +413,15 @@ def convert_to_hex_character(source):
     )
 
 
+def convert_to_decimal_character(source):
+    source_format = binary_format(source)
+    return TestOperation(
+        operation=HomogeneousOperation('convert_to_decimal_character'),
+        operand_conversions=[binary_conversion(source_format), json_str],
+        result_conversion=str,
+    )
+
+
 def total_order(source):
     source_format = binary_format(source)
     return TestOperation(
@@ -485,6 +505,7 @@ operation_factories = {
     'convertFromHexCharacter': convert_from_hex_character,
     'convertToHexCharacter': convert_to_hex_character,
     'convertFromDecimalCharacter': convert_from_decimal_character,
+    'convertToDecimalCharacter': convert_to_decimal_character,
     'scaleB': scaleB,
     'logB': logB,
 

@@ -2543,3 +2543,236 @@ def is_754_version_1985():
 
 def is_754_version_2008():
     return True
+
+
+###############################################################################
+# Support code for conversions to a decimal string.
+###############################################################################
+
+
+def compare_with_power_of_ten(source, n):
+    """
+    Return True iff abs(source) < 10**n.
+
+    """
+    shift = n - source._exponent
+    lhs = source._significand * 5**max(0, -n) << max(0, -shift)
+    rhs = 5**max(n, 0) << max(shift, 0)
+    return lhs < rhs
+
+
+def binary_hunt(predicate, start=0):
+    """
+    Find point at which a predicate changes from False to True.
+
+    Given a predicate `predicate` defined for all integers such that:
+
+       - predicate(n) is true for all sufficiently large n, and
+       - predicate(n) is false for all sufficiently small n,
+
+    find an integer n such that predicate(n-1) is false and predicate(n) is
+    true.
+
+    `start` should be a starting guess for the final value.  The closer it
+    is, the quicker the search will return.
+
+    """
+    low, high = start - 1, start
+    while predicate(low):
+        low = 2 * low - high
+    while not predicate(high):
+        high = 2 * high - low
+    while high - low > 1:
+        mid = (high + low) // 2
+        low, high = (low, mid) if predicate(mid) else (mid, high)
+    return high
+
+
+def base_10_exponent(source):
+    """
+    Find the smallest integer n such that abs(source) < 10**n.
+
+    Equivalently, find the unique integer n such that
+    10**(n-1) <= abs(source) < 10**n.
+
+    Assumes that source is finite and nonzero.
+
+    For numbers greater than or equal to 1.0, this amounts to
+    counting the number of decimal digits in the integer part.
+
+    """
+    if source._type != _FINITE or source._significand == 0:
+        raise ValueError(
+            "base_10_exponent may only be used for nonzero finite numbers")
+
+    return binary_hunt(lambda n: compare_with_power_of_ten(source, n))
+
+
+def fix_decimal_exponent(source, places):
+    """
+    Convert the given float to the nearest number of the
+    form +/- n * 10**places.
+
+    """
+    shift = source._exponent - places + 2
+    if places > 0:
+        q = _divide_to_odd(
+            source._significand << max(shift, 0),
+            5**places << max(0, -shift),
+        )
+    else:
+        q = _rshift_to_odd(
+            source._significand * 5**-places,
+            -shift,
+        )
+    q = round_ties_to_even.round_quarters(q, source._sign)
+    return source._sign, places, q
+
+
+def convert_to_decimal(source, exponent=None, digits=None):
+    """Convert the given finite binary float to decimal.
+
+    Returns a (sign, exponent, significand) triple.
+
+    Note that every finite binary float can be represented exactly in decimal;
+    however, the resulting representation is often unwieldy.  We can choose
+    to limit the representation in a couple of ways:
+
+      - by specifying a maximum number of digits after the point,
+        or equivalently by specifying a minimum exponent.
+      - by specifying a maximum number of significand digits.
+
+    `exponent`, if given, specifies a minimum exponent to use.
+    `digits`, if given, specifies a maximum number of significant digits.
+
+    Both `exponent` and `digits` may be specified, or neither.  In all cases,
+    the resulting value will be as exact as possible, subject to the given
+    limits.  In the case that neither `exponent` nor `digits` is specified, the
+    resulting triple gives an exact decimal representation of the float.
+
+    Assumes that source is finite.
+
+    """
+    # Special case for zeros.
+    if source._significand == 0:
+        sign, exponent, significand = source._sign, 0, 0
+
+    else:
+        # Exponent giving an exact representation.
+        target_exponent = min(source._exponent, 0)
+
+        if exponent is not None:
+            target_exponent = max(target_exponent, exponent)
+
+        if digits is not None:
+            min_exponent = base_10_exponent(source) - digits
+            target_exponent = max(target_exponent, min_exponent)
+
+        sign, exponent, significand = fix_decimal_exponent(
+            source, target_exponent)
+
+    # Normalize result.
+    if significand == 0:
+        exponent = 0
+    else:
+        while significand % 10 == 0:
+            significand //= 10
+            exponent += 1
+
+    return sign, exponent, significand
+
+
+def convert_to_decimal_character(source, conversion_specification):
+    """
+    Convert the given binary float to a representative sequence,
+    using information from the given conversion specification.
+
+    """
+    # Parse conversion specification.
+    if conversion_specification[:1] == '.':
+        conversion_type = conversion_specification[-1]
+        if conversion_type == 'f':
+            digits_after_point = int(conversion_specification[1:-1])
+        elif conversion_type == 'e':
+            significant_digits = int(conversion_specification[1:-1])
+        else:
+            raise ValueError("Invalid conversion specification")
+    else:
+        assert conversion_specification == ""
+        conversion_type = 'x'  # exact
+
+    # Deal with sign.
+    sign = '-' if source._sign else ''
+
+    if source._type == _FINITE:
+        if conversion_type == 'f':
+            omit_zero_exponent = True
+            target_exponent = -digits_after_point
+        elif conversion_type == 'e':
+            omit_zero_exponent = False
+            if source._significand == 0:
+                target_exponent = -significant_digits
+            else:
+                target_exponent = base_10_exponent(source) - significant_digits
+        elif conversion_type == 'x':
+            omit_zero_exponent = True
+            target_exponent = min(source._exponent, 0)
+
+        _, exponent, digits = fix_decimal_exponent(source, target_exponent)
+
+        if conversion_type == 'e':
+            display_exponent = exponent + significant_digits
+        elif conversion_type == 'x' or conversion_type == 'f':
+            display_exponent = 0
+
+        # Place the decimal point appropriately.
+        effective_exponent = exponent - display_exponent
+        sdigits = str(digits) if digits else ''
+        adjusted_exponent = effective_exponent + len(sdigits)
+        if effective_exponent > 0:
+            # Entire digit string is to the left of the point.
+            digits_before = sdigits + '0'*effective_exponent
+            digits_after = ''
+        elif adjusted_exponent >= 0:
+            # Digit string includes or touches the point.
+            assert adjusted_exponent <= len(sdigits)
+            digits_before = sdigits[:adjusted_exponent]
+            digits_after = sdigits[adjusted_exponent:]
+        else:
+            # Entire digit string to the right of the point.
+            digits_before = ''
+            digits_after = '0' * -adjusted_exponent + sdigits
+
+        if not digits_before:
+            digits_before = '0'
+
+        if display_exponent != 0 or not omit_zero_exponent:
+            exponent_string = "e{:+d}".format(display_exponent)
+        else:
+            exponent_string = ''
+
+        if conversion_type == 'x':
+            digits_after = digits_after.rstrip('0')
+
+        if digits_after:
+            fractional_part = '.' + digits_after
+        else:
+            fractional_part = ''
+
+        return "{}{}{}{}".format(
+            sign,
+            digits_before,
+            fractional_part,
+            exponent_string,
+        )
+
+    # XXX Code for formatting infinities and NaNs should be common to decimal
+    # and hex conversions.
+    elif source._type == _INFINITE:
+        return '{sign}Infinity'.format(sign=sign)
+    else:
+        assert source._type == _NAN
+        return '{sign}{signaling}NaN'.format(
+            sign=sign,
+            signaling='s' if source._signaling else '',
+        )
