@@ -2588,7 +2588,7 @@ def binary_hunt(predicate, start=0):
     return high
 
 
-def base_10_exponent(source):
+def _base_10_exponent(source):
     """
     Find the smallest integer n such that abs(source) < 10**n.
 
@@ -2603,12 +2603,12 @@ def base_10_exponent(source):
     """
     if source._type != _FINITE or source._significand == 0:
         raise ValueError(
-            "base_10_exponent may only be used for nonzero finite numbers")
+            "_base_10_exponent may only be used for nonzero finite numbers")
 
     return binary_hunt(lambda n: compare_with_power_of_ten(source, n))
 
 
-def fix_decimal_exponent(source, places):
+def _fix_decimal_exponent(source, places):
     """
     Convert the given float to the nearest number of the
     form +/- n * 10**places.
@@ -2626,60 +2626,7 @@ def fix_decimal_exponent(source, places):
             -shift,
         )
     q = round_ties_to_even.round_quarters(q, source._sign)
-    return source._sign, places, q
-
-
-def convert_to_decimal(source, exponent=None, digits=None):
-    """Convert the given finite binary float to decimal.
-
-    Returns a (sign, exponent, significand) triple.
-
-    Note that every finite binary float can be represented exactly in decimal;
-    however, the resulting representation is often unwieldy.  We can choose
-    to limit the representation in a couple of ways:
-
-      - by specifying a maximum number of digits after the point,
-        or equivalently by specifying a minimum exponent.
-      - by specifying a maximum number of significand digits.
-
-    `exponent`, if given, specifies a minimum exponent to use.
-    `digits`, if given, specifies a maximum number of significant digits.
-
-    Both `exponent` and `digits` may be specified, or neither.  In all cases,
-    the resulting value will be as exact as possible, subject to the given
-    limits.  In the case that neither `exponent` nor `digits` is specified, the
-    resulting triple gives an exact decimal representation of the float.
-
-    Assumes that source is finite.
-
-    """
-    # Special case for zeros.
-    if source._significand == 0:
-        sign, exponent, significand = source._sign, 0, 0
-
-    else:
-        # Exponent giving an exact representation.
-        target_exponent = min(source._exponent, 0)
-
-        if exponent is not None:
-            target_exponent = max(target_exponent, exponent)
-
-        if digits is not None:
-            min_exponent = base_10_exponent(source) - digits
-            target_exponent = max(target_exponent, min_exponent)
-
-        sign, exponent, significand = fix_decimal_exponent(
-            source, target_exponent)
-
-    # Normalize result.
-    if significand == 0:
-        exponent = 0
-    else:
-        while significand % 10 == 0:
-            significand //= 10
-            exponent += 1
-
-    return sign, exponent, significand
+    return places, q
 
 
 def convert_to_decimal_character(source, conversion_specification):
@@ -2689,45 +2636,46 @@ def convert_to_decimal_character(source, conversion_specification):
 
     """
     # Parse conversion specification.
+    min_exponent = None
+    max_digits = None
+    min_fraction_length = 0
+    use_exponent = False
+
     if conversion_specification[:1] == '.':
         conversion_type = conversion_specification[-1]
+        min_fraction_length = int(conversion_specification[1:-1])
         if conversion_type == 'f':
-            digits_after_point = int(conversion_specification[1:-1])
-        elif conversion_type == 'e':
-            significant_digits = int(conversion_specification[1:-1])
+            min_exponent = -min_fraction_length
         else:
-            raise ValueError("Invalid conversion specification")
+            assert conversion_type == 'e'
+            max_digits = min_fraction_length
+            use_exponent = True
     else:
         assert conversion_specification == ""
-        conversion_type = 'x'  # exact
 
     # Deal with sign.
     sign = '-' if source._sign else ''
 
     if source._type == _FINITE:
-        if conversion_type == 'f':
-            omit_zero_exponent = True
-            target_exponent = -digits_after_point
-        elif conversion_type == 'e':
-            omit_zero_exponent = False
-            if source._significand == 0:
-                target_exponent = -significant_digits
-            else:
-                target_exponent = base_10_exponent(source) - significant_digits
-        elif conversion_type == 'x':
-            omit_zero_exponent = True
+        # Convert to a decimal triple.
+        if source._significand == 0:
+            exponent, digits = 0, 0
+        else:
             target_exponent = min(source._exponent, 0)
-
-        _, exponent, digits = fix_decimal_exponent(source, target_exponent)
-
-        if conversion_type == 'e':
-            display_exponent = exponent + significant_digits
-        elif conversion_type == 'x' or conversion_type == 'f':
-            display_exponent = 0
+            if min_exponent is not None:
+                target_exponent = max(target_exponent, min_exponent)
+            if max_digits is not None:
+                e = _base_10_exponent(source) - max_digits
+                target_exponent = max(target_exponent, e)
+            exponent, digits = _fix_decimal_exponent(source, target_exponent)
 
         # Place the decimal point appropriately.
-        effective_exponent = exponent - display_exponent
         sdigits = str(digits) if digits else ''
+        if use_exponent and sdigits:
+            display_exponent = exponent + len(sdigits)
+        else:
+            display_exponent = 0
+        effective_exponent = exponent - display_exponent
         adjusted_exponent = effective_exponent + len(sdigits)
         if effective_exponent > 0:
             # Entire digit string is to the left of the point.
@@ -2739,29 +2687,33 @@ def convert_to_decimal_character(source, conversion_specification):
             digits_before = sdigits[:adjusted_exponent]
             digits_after = sdigits[adjusted_exponent:]
         else:
-            # Entire digit string to the right of the point.
+            # Entire digit string is to the right of the point.
             digits_before = ''
             digits_after = '0' * -adjusted_exponent + sdigits
 
+        digits_before = digits_before.lstrip('0')
         if not digits_before:
-            digits_before = '0'
-
-        if display_exponent != 0 or not omit_zero_exponent:
-            exponent_string = "e{:+d}".format(display_exponent)
+            integral_part = '0'
         else:
-            exponent_string = ''
+            integral_part = digits_before
 
-        if conversion_type == 'x':
-            digits_after = digits_after.rstrip('0')
+        digits_after = digits_after.rstrip('0')
+        if len(digits_after) < min_fraction_length:
+            digits_after += '0' * (min_fraction_length - len(digits_after))
 
         if digits_after:
             fractional_part = '.' + digits_after
         else:
             fractional_part = ''
 
+        if use_exponent:
+            exponent_string = "e{:+d}".format(display_exponent)
+        else:
+            exponent_string = ''
+
         return "{}{}{}{}".format(
             sign,
-            digits_before,
+            integral_part,
             fractional_part,
             exponent_string,
         )

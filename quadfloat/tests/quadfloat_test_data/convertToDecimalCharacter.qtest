@@ -16,6 +16,48 @@ operation source: binary16
 0xap0 ".6f" -> 10.000000
 0x0.ffep16 ".6f" -> 65504.000000
 
+-0x1p0 ".3f" -> -1.000
+-0x0p0 ".3f" -> -0.000
+0x0p0 ".3f" -> 0.000
+0x1p-24 ".3f" -> 0.000
+0x1p-14 ".3f" -> 0.000
+0x0.cccp-3 ".3f" -> 0.100
+0x0.ccep-3 ".3f" -> 0.100
+0x0.ffep0 ".3f" -> 1.000
+0x1p0 ".3f" -> 1.000
+0x1.004p0 ".3f" -> 1.001
+0x2.8p0 ".3f" -> 2.500
+0xap0 ".3f" -> 10.000
+0x0.ffep16 ".3f" -> 65504.000
+
+-0x1p0 ".0f" -> -1
+-0x0p0 ".0f" -> -0
+0x0p0 ".0f" -> 0
+0x1p-24 ".0f" -> 0
+0x1p-14 ".0f" -> 0
+0x0.cccp-3 ".0f" -> 0
+0x0.ccep-3 ".0f" -> 0
+0x0.ffep0 ".0f" -> 1
+0x1p0 ".0f" -> 1
+0x1.004p0 ".0f" -> 1
+0x2.8p0 ".0f" -> 2
+0x3.8p0 ".0f" -> 4
+0xap0 ".0f" -> 10
+0x0.ffep16 ".0f" -> 65504
+
+# Possible to give a negative number to round to
+# the nearest hundred, thousand, ...
+-0x0p0 ".-2f" -> -0
+0x0p0 ".-2f" -> 0
+0xap0 ".-2f" -> 0
+0x32p0 ".-2f" -> 0
+0x33p0 ".-2f" -> 100
+0x40p0 ".-2f" -> 100
+0x95p0 ".-2f" -> 100
+0x96p0 ".-2f" -> 200
+0x1p8 ".-2f" -> 300
+0x0.ffep16 ".-2f" -> 65500
+
 # Infinities
 -Infinity ".6f" -> -Infinity
 Infinity ".6f" -> Infinity
@@ -63,6 +105,21 @@ NaN(123) ".6e" -> NaN
 -NaN(456) ".6e" -> -NaN
 sNaN(321) ".6e" -> sNaN
 -sNaN(67) ".6e" -> -sNaN
+
+# Smaller number of significand digits.
+-0x1p0 ".3e" -> -0.100e+1
+-0x0p0 ".3e" -> -0.000e+0
+0x0p0 ".3e" -> 0.000e+0
+0x1p-24 ".3e" -> 0.596e-7
+0x1p-14 ".3e" -> 0.610e-4
+0x0.cccp-3 ".3e" -> 0.100e+0
+0x0.ccep-3 ".3e" -> 0.100e+0
+0x0.ffep0 ".3e" -> 0.100e+1
+0x1p0 ".3e" -> 0.100e+1
+0x1.004p0 ".3e" -> 0.100e+1
+0x2.8p0 ".3e" -> 0.250e+1
+0xap0 ".3e" -> 0.100e+2
+0x0.ffep16 ".3e" -> 0.655e+5
 
 # Conversion to the exact decimal output.
 -0x1p0 "" -> -1
