@@ -919,15 +919,15 @@ class BinaryInterchangeFormat(object):
         num._significand = int(significand)
         return num
 
-    def _common_format(fmt1, fmt2):
+    def _common_format(format1, format2):
         """
         Return the common BinaryInterchangeFormat suitable for mixed binary
-        operations with operands of types 'fmt1' and 'fmt2'.
+        operations with operands of types 'format1' and 'format2'.
 
-        fmt1 and fmt2 should be instances of BinaryInterchangeFormat.
+        format1 and format2 should be instances of BinaryInterchangeFormat.
 
         """
-        return fmt1 if fmt1.width >= fmt2.width else fmt2
+        return format1 if format1.width >= format2.width else format2
 
     def _handle_invalid(self):
         """
@@ -2432,13 +2432,13 @@ def class_(source):
             return positiveInfinity
     else:
         assert source._type == _FINITE
-        fmt = source._format
+        format = source._format
         if source._significand == 0:
             if source._sign:
                 return negativeZero
             else:
                 return positiveZero
-        elif source._significand < fmt._min_normal_significand:
+        elif source._significand < format._min_normal_significand:
             if source._sign:
                 return negativeSubnormal
             else:

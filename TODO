@@ -45,7 +45,6 @@ Internal refactoring
   Remove the need for the 'inexact' return by using a directed rounding mode
   and inspecting flags.
 
-* Naming: 'format', not 'fmt'.
 
 Performance
 -----------
