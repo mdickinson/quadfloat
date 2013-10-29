@@ -397,13 +397,12 @@ class BinaryInterchangeFormat(object):
         elif e == self.qmin - 3:
             if attributes.tininess_detection == BEFORE_ROUNDING:
                 underflow = True
-            elif attributes.tininess_detection == AFTER_ROUNDING:
+            else:
+                assert attributes.tininess_detection == AFTER_ROUNDING
                 # Determine whether the result computed as though the exponent
                 # range were unbounded would underflow.
                 q2 = attributes.rounding_direction.round_quarters(q, sign)
                 underflow = bit_length(q2) <= self.precision
-            else:
-                assert False, "never get here"  # pragma: no cover
         else:
             assert e > self.qmin - 3
             underflow = False
@@ -492,6 +491,10 @@ class BinaryInterchangeFormat(object):
         )
 
     def _handle_nans(self, *sources):
+        # This function is only ever called when at least one of the inputs
+        # is a NaN.
+        assert any(source._type == _NAN for source in sources)
+
         # Look for signaling NaNs.
         for source in sources:
             if source._type == _NAN and source._signaling:
@@ -514,10 +517,6 @@ class BinaryInterchangeFormat(object):
                     payload=source._payload,
                     clip_payload=True,
                 )
-
-        # If we get here, then _handle_nans has been called with all arguments
-        # non-NaN.  This shouldn't happen.
-        assert False, "never get here"  # pragma no cover
 
     def _handle_nans_min_max(self, source1, source2):
         # Handle NaNs in the manner required for min and max operations.
@@ -884,9 +883,7 @@ class BinaryInterchangeFormat(object):
 
         """
         min_payload = 1 if signaling else 0
-        if not min_payload <= payload <= self._max_payload:
-            assert False, "NaN payload out of range"  # pragma no cover
-
+        assert min_payload <= payload <= self._max_payload
         num = object.__new__(_BinaryFloat)
         num._format = self
         num._type = _NAN
@@ -902,18 +899,12 @@ class BinaryInterchangeFormat(object):
         """
         # Check ranges of inputs.  Since this isn't (currently) part of the
         # public API, any error here is mine.  Hence the assert.
-        if not self.qmin <= exponent <= self.qmax:
-            assert False, "exponent out of range"  # pragma no cover
-        if not 0 <= significand <= self._max_significand:
-            assert False, "significand out of range"  # pragma no cover
-
-        # Check normalization.
-        normalized = (
+        assert self.qmin <= exponent <= self.qmax
+        assert 0 <= significand <= self._max_significand
+        assert (
             significand >= self._min_normal_significand or
             exponent == self.qmin
         )
-        if not normalized:
-            assert False, "non-normalized input to _finite"  # pragma no cover
 
         num = object.__new__(_BinaryFloat)
         num._format = self
@@ -948,8 +939,7 @@ class BinaryInterchangeFormat(object):
 
         """
         # Should only be used when 'source' has format 'self'.
-        if not source._format == self:
-            assert False, "shouldn't get here"  # pragma no cover
+        assert source._format == self
 
         if source._type == _NAN:
             result = source._payload + self._exponent_bitmask
@@ -2601,10 +2591,8 @@ def _base_10_exponent(source):
     counting the number of decimal digits in the integer part.
 
     """
-    if source._type != _FINITE or source._significand == 0:
-        raise ValueError(
-            "_base_10_exponent may only be used for nonzero finite numbers")
-
+    # Should only be called for nonzero finite numbers.
+    assert source._type == _FINITE and source._significand != 0
     return binary_hunt(lambda n: compare_with_power_of_ten(source, n))
 
 
