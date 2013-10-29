@@ -24,7 +24,7 @@ Features
   of the Decimal representation.
 
 * Infix operators should use the 'preferredWidth' attribute to decide which
-  output format to use.
+  output format to use.  (In general, Python special methods need work.)
 
 * Add tests for the following operations that are implemented but not
   supported by standard tests:
@@ -45,6 +45,7 @@ Internal refactoring
   Remove the need for the 'inexact' return by using a directed rounding mode
   and inspecting flags.
 
+* Naming: 'format', not 'fmt'.
 
 Performance
 -----------

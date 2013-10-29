@@ -300,9 +300,14 @@ class BinaryInterchangeFormat(object):
         Largest representable finite value in this format, with the given sign.
 
         """
-        exponent = self.qmax
-        significand = self._max_significand
-        return self._finite(sign, exponent, significand)
+        return self._finite(sign, self.qmax, self._max_significand)
+
+    def _smallest_subnormal(self, sign):
+        """
+        Smallest subnormal value in this format, with the given sign.
+
+        """
+        return self._finite(sign, self.qmin, 1)
 
     def _from_value(self, value=0):
         """
@@ -1470,29 +1475,69 @@ def round_to_integral_exact(self):
     )
 
 
+def _next_up_or_down(self, up):
+    """
+    Helper function for next_up and next_down.  Gives next_up if 'up' is True,
+    and next_down if 'up' is False.
+
+    """
+    format = self._format
+    if self._type == _NAN:
+        return format._handle_nans(self)
+    elif self._type == _INFINITE:
+        if self._sign == up:
+            return format._largest_finite(self._sign)
+        else:
+            return format._infinite(self._sign)
+    elif self._sign == up:
+        # Decrement the significand if we can ...
+        if self._exponent > format.qmin:
+            min_significand = format._min_normal_significand
+        else:
+            min_significand = 0
+        if self._significand > min_significand:
+            return format._finite(
+                self._sign,
+                self._exponent,
+                self._significand - 1,
+            )
+        # ... else decrement the exponent if possible ...
+        elif self._exponent > format.qmin:
+            return format._finite(
+                self._sign,
+                self._exponent - 1,
+                format._max_significand,
+            )
+        # ... else self must be zero.
+        else:
+            return format._smallest_subnormal(not self._sign)
+    else:
+        # Increment the significand if we can ...
+        if self._significand < format._max_significand:
+            return format._finite(
+                self._sign,
+                self._exponent,
+                self._significand + 1,
+            )
+        # ... else increment the exponent if possible ...
+        elif self._exponent < format.qmax:
+            return format._finite(
+                self._sign,
+                self._exponent + 1,
+                format._min_normal_significand,
+            )
+        # ... else we're already at the max normal value.
+        else:
+            return format._infinite(self._sign)
+
+
 def next_up(self):
     """
     Return the least floating-point number in the format of 'self'
     that compares greater than 'self'.
 
     """
-    # NaNs follow the usual rules.
-    if self._type == _NAN:
-        return self._format._handle_nans(self)
-
-    # Positive infinity maps to itself.
-    if self._type == _INFINITE and not self._sign:
-        return self
-
-    # Negative zero is treated in the same way as positive zero.
-    if is_zero(self) and self._sign:
-        self = self._format._zero(sign=False)
-
-    # Now we can cheat: encode as an integer, and then simply
-    # increment or decrement the integer representation.
-    n = self._format._encode_as_int(self)
-    n += -1 if self._sign else 1
-    return self._format._decode_from_int(n)
+    return _next_up_or_down(self, up=True)
 
 
 def next_down(self):
@@ -1501,23 +1546,7 @@ def next_down(self):
     that compares less than 'self'.
 
     """
-    # NaNs follow the usual rules.
-    if self._type == _NAN:
-        return self._format._handle_nans(self)
-
-    # Negative infinity maps to itself.
-    if self._type == _INFINITE and self._sign:
-        return self
-
-    # Positive zero is treated in the same way as negative zero.
-    if is_zero(self) and not self._sign:
-        self = self._format._zero(sign=True)
-
-    # Now we can cheat: encode as an integer, and then simply
-    # increment or decrement the integer representation.
-    n = self._format._encode_as_int(self)
-    n += 1 if self._sign else -1
-    return self._format._decode_from_int(n)
+    return _next_up_or_down(self, up=False)
 
 
 def remainder(self, other):
