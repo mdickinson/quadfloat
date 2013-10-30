@@ -2642,8 +2642,7 @@ def _fix_decimal_exponent(source, places):
             source._significand * 5**-places,
             -shift,
         )
-    q = round_ties_to_even.round_quarters(q, source._sign)
-    return places, q
+    return places, round_ties_to_even.round_quarters(q, source._sign)
 
 
 def convert_to_decimal_character(source, conversion_specification):
