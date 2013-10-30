@@ -109,26 +109,6 @@ _INFINITE = 'infinite_type'
 _NAN = 'nan_type'
 
 
-# Conversions of Decimal numbers to strings.
-
-def _decimal_format(sign, exponent, digits):
-    # (-1)**sign * int(digits) * 10**exponent
-    # Format in non-scientific form.
-
-    assert not digits.startswith('0')
-    assert not digits.endswith('0')
-
-    if not digits:
-        coefficient = '0'
-    elif exponent >= 0:
-        coefficient = digits + '0' * exponent
-    elif exponent + len(digits) > 0:
-        coefficient = digits[:exponent] + '.' + digits[exponent:]
-    else:
-        coefficient = '0.' + '0' * -(exponent + len(digits)) + digits
-    return ('-' if sign else '') + coefficient
-
-
 def _check_common_format(source1, source2):
     format = source1._format
     if source2._format != format:
@@ -1073,32 +1053,14 @@ class _BinaryFloat(object):
             closed=self._significand % 2 == 0,
         )
 
-    def _to_short_str(self):
-        """
-        Convert to a shortest Decimal string that rounds back to the given
-        value.
-
-        """
-        # Quick returns for infinities and NaNs.
-        if self._type == _INFINITE:
-            return '-Infinity' if self._sign else 'Infinity'
-
-        if self._type == _NAN:
-            return '{sign}{signaling}NaN({payload})'.format(
-                sign='-' if self._sign else '',
-                signaling='s' if self._signaling else '',
-                payload=self._payload,
-            )
-
-        # Finite case.
-        sign, exponent, digits = self._shortest_decimal()
-        return _decimal_format(sign, exponent, digits)
-
     def __repr__(self):
-        return "{0!r}({1!r})".format(self._format, self._to_short_str())
+        return "{0!r}({1!r})".format(
+            self._format,
+            convert_to_decimal_character(self, 's')
+        )
 
     def __str__(self):
-        return self._to_short_str()
+        return convert_to_decimal_character(self, 's')
 
     def _loud_copy(self):
         """
@@ -2652,12 +2614,28 @@ def convert_to_decimal_character(source, conversion_specification):
 
     """
     # Parse conversion specification.
+    #
+    # XXX To do: define the conversion specification string.
     min_exponent = None
     max_digits = None
     min_fraction_length = 0
     use_exponent = False
+    shortest = False
+    show_payload = False
 
-    if conversion_specification[:1] == '.':
+    # Current: conversion specification is a string of one
+    # of the following forms:
+    #   .6e -> round to 6 significant digits (round ties to even);
+    #          the number may be any positive integer
+    #   .6f -> round to 6 digits after the point (round ties to even)
+    #          the number may be any integer (positive or negative)
+    #   s -> shortest string that rounds back to the correct value.
+    #   <empty string> -> shortest decimal giving the exact value
+    #          of the binary number.
+    if conversion_specification == 's':
+        shortest = True
+        show_payload = True
+    elif conversion_specification[:1] == '.':
         conversion_type = conversion_specification[-1]
         min_fraction_length = int(conversion_specification[1:-1])
         if conversion_type == 'f':
@@ -2676,6 +2654,8 @@ def convert_to_decimal_character(source, conversion_specification):
         # Convert to a decimal triple.
         if source._significand == 0:
             exponent, digits = 0, 0
+        elif shortest:
+            _, exponent, digits = source._shortest_decimal()
         else:
             target_exponent = min(source._exponent, 0)
             if min_exponent is not None:
@@ -2740,7 +2720,14 @@ def convert_to_decimal_character(source, conversion_specification):
         return '{sign}Infinity'.format(sign=sign)
     else:
         assert source._type == _NAN
-        return '{sign}{signaling}NaN'.format(
-            sign=sign,
-            signaling='s' if source._signaling else '',
-        )
+        if show_payload:
+            return '{sign}{signaling}NaN({payload})'.format(
+                sign=sign,
+                signaling='s' if source._signaling else '',
+                payload=source._payload,
+            )
+        else:
+            return '{sign}{signaling}NaN'.format(
+                sign=sign,
+                signaling='s' if source._signaling else '',
+            )

@@ -36,6 +36,16 @@ Features
 * Look at the rest of the recommended functionality (e.g., correctly-rounded
   math operations; could take some time!)
 
+* Expose 'encode' and 'decode' as suitable methods.  (It's odd that the
+  specification doesn't recommend methods for encoding binary floats.)  They
+  should encode to and from integers, as those are the closest thing we have to
+  bit strings in pure Python.
+
+* Define the conversionSpecification type properly.
+
+* convertToHexCharacter should get the same treatment for conversion
+  specifications as convertToDecimalCharacter.
+
 
 Internal refactoring
 --------------------
