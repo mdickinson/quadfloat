@@ -60,10 +60,6 @@ rounding_directions = {
 }
 
 
-def identity_conversion(string):
-    return string
-
-
 def binary_conversion(format):
     def convert(hex_character_sequence):
         with temporary_attributes(READ_ATTRIBUTES):
@@ -188,10 +184,10 @@ def parse_test_data(test_content, source_file):
             operation_factory = operation_factories[current_operation]
             operation = operation_factory(**current_operation_attributes)
 
-            lhs, rhs = line.split('->')
-            arguments = lhs.split()
-            results = rhs.split()
             try:
+                lhs, rhs = line.split('->')
+                arguments = lhs.split()
+                results = rhs.split()
                 test_case = ArithmeticTestCase(
                     operands=[
                         operand_conversion(argument)
@@ -339,7 +335,7 @@ def convert_from_hex_character(destination):
             destination_format,
             'convert_from_hex_character',
         ),
-        operand_conversions=[identity_conversion],
+        operand_conversions=[json_str],
         result_conversion=binary_conversion(destination_format),
     )
 
@@ -351,7 +347,7 @@ def convert_from_decimal_character(destination):
             destination_format,
             'convert_from_decimal_character',
         ),
-        operand_conversions=[identity_conversion],
+        operand_conversions=[json_str],
         result_conversion=binary_conversion(destination_format),
     )
 
@@ -408,8 +404,8 @@ def convert_to_hex_character(source):
     source_format = binary_format(source)
     return TestOperation(
         operation=HomogeneousOperation('convert_to_hex_character'),
-        operand_conversions=[binary_conversion(source_format), str],
-        result_conversion=str,
+        operand_conversions=[binary_conversion(source_format), json_str],
+        result_conversion=json_str,
     )
 
 
@@ -418,7 +414,7 @@ def convert_to_decimal_character(source):
     return TestOperation(
         operation=HomogeneousOperation('convert_to_decimal_character'),
         operand_conversions=[binary_conversion(source_format), json_str],
-        result_conversion=str,
+        result_conversion=json_str,
     )
 
 

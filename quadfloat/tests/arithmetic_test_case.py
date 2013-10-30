@@ -6,6 +6,7 @@ from quadfloat.attributes import (
     partial_attributes,
     temporary_attributes,
 )
+from quadfloat.compat import STRING_TYPES
 from quadfloat.status_flags import underflow
 
 import quadfloat.api
@@ -23,7 +24,7 @@ def identifying_string(binary_float):
     if isinstance(binary_float, int):
         return str(binary_float)
 
-    if isinstance(binary_float, str):
+    if isinstance(binary_float, STRING_TYPES):
         return binary_float
 
     return "{0} (format {1})".format(

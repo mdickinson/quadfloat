@@ -46,9 +46,6 @@ Features
 * convertToHexCharacter should get the same treatment for conversion
   specifications as convertToDecimalCharacter.
 
-* convertToDecimalCharacter and convertToHexCharacter tests should have quoted
-  strings on the RHS.
-
 
 Internal refactoring
 --------------------

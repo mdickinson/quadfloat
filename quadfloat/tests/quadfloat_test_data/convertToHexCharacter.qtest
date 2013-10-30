@@ -3,49 +3,49 @@ operation: convertToHexCharacter
 operation source: binary16  # precision 11
 
 # Finite numbers.
--0x1.004p0 default -> -0x1.004p0
+-0x1.004p0 "default" -> "-0x1.004p0"
 
-0x0p0 default -> 0x0.000p-14
-0x1p-24 default -> 0x0.004p-14
-0x0.ffcp-14 default -> 0x0.ffcp-14
-0x1p-14 default -> 0x1.000p-14
-0x1.004p-14 default -> 0x1.004p-14
-0x0.ffep0 default -> 0x1.ffcp-1
-0x1p0 default -> 0x1.000p0
-0x1.004p0 default -> 0x1.004p0
-0x2p0 default -> 0x1.000p1
-0x3p0 default -> 0x1.800p1
-0x4p0 default -> 0x1.000p2
+0x0p0 "default" -> "0x0.000p-14"
+0x1p-24 "default" -> "0x0.004p-14"
+0x0.ffcp-14 "default" -> "0x0.ffcp-14"
+0x1p-14 "default" -> "0x1.000p-14"
+0x1.004p-14 "default" -> "0x1.004p-14"
+0x0.ffep0 "default" -> "0x1.ffcp-1"
+0x1p0 "default" -> "0x1.000p0"
+0x1.004p0 "default" -> "0x1.004p0"
+0x2p0 "default" -> "0x1.000p1"
+0x3p0 "default" -> "0x1.800p1"
+0x4p0 "default" -> "0x1.000p2"
 
-0x0.ffep15 default -> 0x1.ffcp14
-0x1p15 default -> 0x1.000p15
-0x0.ffep16 default -> 0x1.ffcp15
+0x0.ffep15 "default" -> "0x1.ffcp14"
+0x1p15 "default" -> "0x1.000p15"
+0x0.ffep16 "default" -> "0x1.ffcp15"
 
 # Infinities
--Infinity default -> -Infinity
-Infinity default -> Infinity
+-Infinity "default" -> "-Infinity"
+Infinity "default" -> "Infinity"
 
 # NaNs
-NaN default -> NaN
--NaN default -> -NaN
-sNaN default -> sNaN
--sNaN default -> -sNaN
+NaN "default" -> "NaN"
+-NaN "default" -> "-NaN"
+sNaN "default" -> "sNaN"
+-sNaN "default" -> "-sNaN"
 
-# default conversion doesn't show the payload.
-NaN(123) default -> NaN
--NaN(456) default -> -NaN
-sNaN(321) default -> sNaN
--sNaN(67) default -> -sNaN
+# "default" conversion doesn't show the payload.
+NaN(123) "default" -> "NaN"
+-NaN(456) "default" -> "-NaN"
+sNaN(321) "default" -> "sNaN"
+-sNaN(67) "default" -> "-sNaN"
 
 
 operation source: binary32   # precision 24
 
-0x1p0 default -> 0x1.000000p0
-0x1.000002p0 default -> 0x1.000002p0
+0x1p0 "default" -> "0x1.000000p0"
+0x1.000002p0 "default" -> "0x1.000002p0"
 
 operation source: binary64   # precision 53
 
-0x1p-1074 default -> 0x0.0000000000001p-1022
-0x0.fffffffffffff8p0 default -> 0x1.fffffffffffffp-1
-0x1p0 default -> 0x1.0000000000000p0
-0x1.0000000000001p0 default -> 0x1.0000000000001p0
+0x1p-1074 "default" -> "0x0.0000000000001p-1022"
+0x0.fffffffffffff8p0 "default" -> "0x1.fffffffffffffp-1"
+0x1p0 "default" -> "0x1.0000000000000p0"
+0x1.0000000000001p0 "default" -> "0x1.0000000000001p0"
