@@ -6,7 +6,6 @@ from quadfloat.attributes import (
     partial_attributes,
     temporary_attributes,
 )
-from quadfloat.binary_interchange_format import convert_to_hex_character_simple
 from quadfloat.status_flags import underflow
 
 import quadfloat.api
@@ -28,7 +27,7 @@ def identifying_string(binary_float):
         return binary_float
 
     return "{0} (format {1})".format(
-        convert_to_hex_character_simple(binary_float),
+        quadfloat.api.encode(binary_float),
         binary_float.format,
     )
 

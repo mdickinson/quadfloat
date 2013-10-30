@@ -1077,8 +1077,6 @@ class _BinaryFloat(object):
         else:
             return self
 
-    # IEEE 754 5.7.2: General operations.
-
     def _is_quiet(self):
         """
         Return True if self is a quiet NaN, and False otherwise.
@@ -1932,32 +1930,6 @@ def convert_to_hex_character(source, conversion_specification):
         )
 
 
-def convert_to_hex_character_simple(source):
-    """
-    Convert the given source to this format.
-
-    """
-    # This function deliberately kept extremely simple, so that
-    # it can serve as a basis for checking that two floats
-    # are equivalent.
-    sign = '-' if source._sign else ''
-    if source._type == _FINITE:
-        return '{sign}0x{significand:x}p{exponent}'.format(
-            sign=sign,
-            significand=source._significand,
-            exponent=source._exponent,
-        )
-    elif source._type == _INFINITE:
-        return '{sign}Infinity'.format(sign=sign)
-    else:
-        assert source._type == _NAN
-        return '{sign}{signaling}NaN({payload})'.format(
-            sign=sign,
-            signaling='s' if source._signaling else '',
-            payload=source._payload,
-        )
-
-
 # 5.6.1: Comparisons.
 
 def _compare_ordered(source1, source2):
@@ -2731,3 +2703,18 @@ def convert_to_decimal_character(source, conversion_specification):
                 sign=sign,
                 signaling='s' if source._signaling else '',
             )
+
+
+# Miscellaneous functions not included in the standard.
+
+def encode(source):
+    """
+    Encode a floating-point number whose format is a BinaryInterchangeFormat.
+    The encoding of such a floating-point number is a bit-string.  We have no
+    native bit-string type in Python, so we return a pair (width, bits) where
+    `width` is the width of the bit-string and `bits` gives the bits as an
+    integer.
+
+    """
+    format = source._format
+    return format.width, format._encode_as_int(source)

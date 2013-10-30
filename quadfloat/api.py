@@ -38,6 +38,7 @@ from quadfloat.binary_interchange_format import (
     convert_to_integer_toward_zero,
     copy,
     copy_sign,
+    encode,
     is_754_version_1985,
     is_754_version_2008,
     is_canonical,
@@ -192,6 +193,8 @@ __all__ = [
     # 'restore_flags',  # Not yet implemented
     # 'save_all_flags',  # Not yet implemented
 
+    # Miscellaneous operations
+    'encode',
 ]
 
 binary16 = BinaryInterchangeFormat(width=16)
