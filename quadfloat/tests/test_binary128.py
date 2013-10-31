@@ -246,6 +246,20 @@ class TestBinary128(BaseTestCase):
             with self.assertRaises(ValueError):
                 binary128(prefix + 'snan(0)')
 
+    def test_construction_from_hex_string(self):
+        self.assertInterchangeable(
+            binary128('0x0p0'),
+            binary128(0),
+        )
+        self.assertInterchangeable(
+            binary128('0x1p0'),
+            binary128(1),
+        )
+        self.assertInterchangeable(
+            binary128('-0xdp0'),
+            binary128(-13),
+        )
+
     def test_bad_constructor(self):
         with self.assertRaises(TypeError):
             binary128(3.2j)

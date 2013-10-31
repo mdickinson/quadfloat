@@ -163,7 +163,7 @@ class BinaryInterchangeFormat(object):
     constructor to create floating-point numbers for the given format.
 
     >>> binary64('2.3')
-    BinaryInterchangeFormat(width=64)('2.3')
+    BinaryInterchangeFormat(width=64)('0x1.2666666666666p1')
     >>> str(binary64('2.3'))
     '2.3'
 
@@ -309,8 +309,12 @@ class BinaryInterchangeFormat(object):
             return self.convert_from_int(value)
 
         elif isinstance(value, STRING_TYPES):
-            # Initialize from a string.
-            return self.convert_from_decimal_character(value)
+            # Initialize from a string.  The string may be in either
+            # hexadecimal or decimal format.
+            try:
+                return self.convert_from_hex_character(value)
+            except ValueError:
+                return self.convert_from_decimal_character(value)
 
         else:
             raise TypeError(
@@ -1053,7 +1057,7 @@ class _BinaryFloat(object):
     def __repr__(self):
         return "{0!r}({1!r})".format(
             self._format,
-            convert_to_decimal_character(self, 's')
+            convert_to_hex_character(self, 'repr')
         )
 
     def __str__(self):
@@ -1907,6 +1911,11 @@ def convert_to_hex_character(source, conversion_specification):
     using information from the given conversion specification.
 
     """
+    # XXX To do: parse the conversion specification properly.
+    show_payload = False
+    if conversion_specification == 'repr':
+        show_payload = True
+
     sign = '-' if source._sign else ''
     if source._type == _FINITE:
         trailing = source._format.precision - 1
@@ -1917,14 +1926,24 @@ def convert_to_hex_character(source, conversion_specification):
             hex_digits=-(-trailing // 4),
             exp=source._exponent + trailing,
         )
+
+    # XXX Code for formatting infinities and NaNs should be common to decimal
+    # and hex conversions.
     elif source._type == _INFINITE:
         return '{sign}Infinity'.format(sign=sign)
     else:
         assert source._type == _NAN
-        return '{sign}{signaling}NaN'.format(
-            sign=sign,
-            signaling='s' if source._signaling else '',
-        )
+        if show_payload:
+            return '{sign}{signaling}NaN({payload})'.format(
+                sign=sign,
+                signaling='s' if source._signaling else '',
+                payload=source._payload,
+            )
+        else:
+            return '{sign}{signaling}NaN'.format(
+                sign=sign,
+                signaling='s' if source._signaling else '',
+            )
 
 
 # 5.6.1: Comparisons.
