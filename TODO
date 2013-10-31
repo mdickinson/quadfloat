@@ -46,14 +46,15 @@ Features
 * convertToHexCharacter should get the same treatment for conversion
   specifications as convertToDecimalCharacter.
 
+* In string display, add functionality for adding exponent for particularly
+  large or small values.
+
+* Add 'general' option for convertToDecimalCharacter, that switches to
+  scientific form for large and small values.
+
 
 Internal refactoring
 --------------------
-
-* In _rich_compare_general and similar methods, use the standard methods
-  convertFormat, convertFromInteger instead of _from_int, _from_binary_float.
-  Remove the need for the 'inexact' return by using a directed rounding mode
-  and inspecting flags.
 
 
 Performance
