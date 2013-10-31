@@ -1005,13 +1005,10 @@ class _BinaryFloat(object):
         Convert to shortest Decimal instance that rounds back to the correct
         value.
 
-        self should be finite.
+        self should be finite and nonzero.
 
         """
-        assert self._type == _FINITE
-
-        if self._significand == 0:
-            return self._sign, 0, ''
+        assert self._type == _FINITE and self._significand > 0
 
         # General nonzero finite case.
         I = self._bounding_interval()
