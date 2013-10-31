@@ -1,5 +1,11 @@
+"""
+The :mod:`quadfloat.api` package exports the public classes and functions
+for the quadfloat library.
+
+"""
 from quadfloat.binary_interchange_format import (
     abs,
+    _BinaryFloat,
     BinaryInterchangeFormat,
     class_,
     compare_quiet_equal,
@@ -83,6 +89,11 @@ __all__ = [
     'binary32',
     'binary64',
     'binary128',
+
+    ###########################################################################
+    # The BinaryFloat type
+    ###########################################################################
+    '_BinaryFloat',
 
     ###########################################################################
     # Homogeneous operations
@@ -197,7 +208,17 @@ __all__ = [
     'encode',
 ]
 
+#: Half precision binary floating-point format.
 binary16 = BinaryInterchangeFormat(width=16)
+
+#: Single precision binary floating-point format.
 binary32 = BinaryInterchangeFormat(width=32)
+
+#: Double precision binary floating-point format.
 binary64 = BinaryInterchangeFormat(width=64)
+
+#: Quadruple precision binary floating-point format.
 binary128 = BinaryInterchangeFormat(width=128)
+
+#: Testing testing testing
+bob = "BOB"

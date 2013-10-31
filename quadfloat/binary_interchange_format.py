@@ -167,6 +167,17 @@ class BinaryInterchangeFormat(object):
     >>> str(binary64('2.3'))
     '2.3'
 
+    Note however that all objects generated in this manner share the common
+    Python type :class:`_BinaryFloat`, regardless of the format used to
+    generate them.  The format of a :class:`_BinaryFloat` instance can be
+    recovered from its ``format`` attribute.
+
+    >>> x = binary64('2.3')
+    >>> type(x)
+    <class 'quadfloat.binary_interchange_format._BinaryFloat'>
+    >>> x.format
+    BinaryInterchangeFormat(width=64)
+
     """
     def __new__(cls, width):
         valid_width = width in (16, 32, 64) or width >= 128 and width % 32 == 0
@@ -991,6 +1002,16 @@ _binary64 = BinaryInterchangeFormat(64)
 
 
 class _BinaryFloat(object):
+    """
+    A binary floating-point number.
+
+    The :class:`_BinaryFloat` class itself has few public non-special methods.
+    Instead, most operations on :class:`_BinaryFloat` objects are given either
+    as methods on a :class:`BinaryInterchangeFormat` instance (where that
+    instance represents the format of the result of the operation), or as
+    functions exposed in the :mod:`quadfloat.api` package.
+
+    """
     @property
     def format(self):
         return self._format
