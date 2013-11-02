@@ -1,5 +1,5 @@
 """
-Tests for conversion of a finite _BinaryFloat object to a decimal triple.
+Tests for conversion of a finite BinaryFloat object to a decimal triple.
 These conversions form the basis for the convertToDecimalCharacter function.
 
 """

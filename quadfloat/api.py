@@ -5,7 +5,7 @@ for the quadfloat library.
 """
 from quadfloat.binary_interchange_format import (
     abs,
-    _BinaryFloat,
+    BinaryFloat,
     BinaryInterchangeFormat,
     class_,
     compare_quiet_equal,
@@ -93,7 +93,7 @@ __all__ = [
     ###########################################################################
     # The BinaryFloat type
     ###########################################################################
-    '_BinaryFloat',
+    'BinaryFloat',
 
     ###########################################################################
     # Homogeneous operations

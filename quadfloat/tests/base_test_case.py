@@ -13,7 +13,7 @@ def _identifying_string(binary_float):
 class BaseTestCase(unittest.TestCase):
     def assertInterchangeable(self, quad1, quad2, msg=None):
         """
-        Assert that two _BinaryFloat instances are interchangeable.
+        Assert that two BinaryFloat instances are interchangeable.
 
         This means more than just being numerically equal:  for example, -0.0
         and 0.0 are equal, but not interchangeable.
@@ -26,7 +26,7 @@ class BaseTestCase(unittest.TestCase):
 
     def assertNotInterchangeable(self, quad1, quad2, msg=None):
         """
-        Assert that two _BinaryFloat instances are not interchangeable.
+        Assert that two BinaryFloat instances are not interchangeable.
 
         See also: assertInterchangeable
 

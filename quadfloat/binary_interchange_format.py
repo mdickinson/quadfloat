@@ -168,13 +168,13 @@ class BinaryInterchangeFormat(object):
     '2.3'
 
     Note however that all objects generated in this manner share the common
-    Python type :class:`_BinaryFloat`, regardless of the format used to
-    generate them.  The format of a :class:`_BinaryFloat` instance can be
+    Python type :class:`BinaryFloat`, regardless of the format used to
+    generate them.  The format of a :class:`BinaryFloat` instance can be
     recovered from its ``format`` attribute.
 
     >>> x = binary64('2.3')
     >>> type(x)
-    <class 'quadfloat.binary_interchange_format._BinaryFloat'>
+    <class 'quadfloat.binary_interchange_format.BinaryFloat'>
     >>> x.format
     BinaryInterchangeFormat(width=64)
 
@@ -307,8 +307,8 @@ class BinaryInterchangeFormat(object):
         Create a new Float<nnn> instance from the given input.
 
         """
-        if isinstance(value, _BinaryFloat):
-            # Initialize from another _BinaryFloat instance.
+        if isinstance(value, BinaryFloat):
+            # Initialize from another BinaryFloat instance.
             return self.convert_format(value)
 
         elif isinstance(value, float):
@@ -746,7 +746,7 @@ class BinaryInterchangeFormat(object):
 
     def convert_format(self, source):
         """
-        Convert another _BinaryFloat instance to this format.
+        Convert another BinaryFloat instance to this format.
 
         """
         if source._type == _NAN:
@@ -871,7 +871,7 @@ class BinaryInterchangeFormat(object):
         Return a suitably-signed infinity for this format.
 
         """
-        num = object.__new__(_BinaryFloat)
+        num = object.__new__(BinaryFloat)
         num._format = self
         num._type = _INFINITE
         num._sign = bool(sign)
@@ -884,7 +884,7 @@ class BinaryInterchangeFormat(object):
         """
         min_payload = 1 if signaling else 0
         assert min_payload <= payload <= self._max_payload
-        num = object.__new__(_BinaryFloat)
+        num = object.__new__(BinaryFloat)
         num._format = self
         num._type = _NAN
         num._sign = bool(sign)
@@ -906,7 +906,7 @@ class BinaryInterchangeFormat(object):
             exponent == self.qmin
         )
 
-        num = object.__new__(_BinaryFloat)
+        num = object.__new__(BinaryFloat)
         num._format = self
         num._type = _FINITE
         num._sign = bool(sign)
@@ -1001,12 +1001,12 @@ class BinaryInterchangeFormat(object):
 _binary64 = BinaryInterchangeFormat(64)
 
 
-class _BinaryFloat(object):
+class BinaryFloat(object):
     """
     A binary floating-point number.
 
-    The :class:`_BinaryFloat` class itself has few public non-special methods.
-    Instead, most operations on :class:`_BinaryFloat` objects are given either
+    The :class:`BinaryFloat` class itself has few public non-special methods.
+    Instead, most operations on :class:`BinaryFloat` objects are given either
     as methods on a :class:`BinaryInterchangeFormat` instance (where that
     instance represents the format of the result of the operation), or as
     functions exposed in the :mod:`quadfloat.api` package.
@@ -1126,12 +1126,12 @@ class _BinaryFloat(object):
     def _convert_other(self, other):
         """
         Given numeric operands self and other, with self an instance of
-        _BinaryFloat, convert other to an operand of type _BinaryFloat
+        BinaryFloat, convert other to an operand of type BinaryFloat
         if necessary, and return the converted value.
 
         """
         # Convert other.
-        if isinstance(other, _BinaryFloat):
+        if isinstance(other, BinaryFloat):
             pass
         elif isinstance(other, float):
             other = _binary64._from_float(other)
@@ -1140,7 +1140,7 @@ class _BinaryFloat(object):
         else:
             raise TypeError(
                 "Can't convert operand {0} of type {1} to "
-                "_BinaryFloat.".format(
+                "BinaryFloat.".format(
                     other,
                     type(other),
                 )
@@ -1231,7 +1231,7 @@ class _BinaryFloat(object):
                 other = self._format._from_float(other)
                 inexact = -1 if inexact_flag in attributes.flag_set else 0
 
-        elif isinstance(other, _BinaryFloat):
+        elif isinstance(other, BinaryFloat):
             if not is_nan(other):
                 # Leave NaNs untouched.
                 with temporary_attributes(compare_attributes()) as attributes:
@@ -1241,7 +1241,7 @@ class _BinaryFloat(object):
         else:
             raise TypeError(
                 "Can't convert operand {0} of type {1} to "
-                "_BinaryFloat.".format(
+                "BinaryFloat.".format(
                     other,
                     type(other),
                 )
@@ -1975,7 +1975,7 @@ def _compare_ordered(source1, source2):
     1 according as source1 < source2, source1 == source2, or source1 > source2.
 
     """
-    # This function should only ever be called for two _BinaryFloat
+    # This function should only ever be called for two BinaryFloat
     # instances with the same underlying format.
     _check_common_format(source1, source2)
 

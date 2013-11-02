@@ -18,7 +18,7 @@ The quadfloat.api package
 
 .. autoclass:: quadfloat.api.BinaryInterchangeFormat
 
-.. autoclass:: quadfloat.api._BinaryFloat
+.. autoclass:: quadfloat.api.BinaryFloat
 
 
 The :mod:`quadfloat.api` package exports a few predefined

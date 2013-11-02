@@ -34,5 +34,5 @@ The homogenous operations are represented by module-level functions.  For exampl
     >>> print next_up(x)
     1.1000000000000000000000000000000003
 
-Note that there's a common type :class:`~quadfloat.api._BinaryFloat` for all binary
+Note that there's a common type :class:`~quadfloat.api.BinaryFloat` for all binary
 floating-point numbers, regardless of their format.
