@@ -8,6 +8,7 @@ import quadfloat.binary_interchange_format
 doctest_modules = [
     quadfloat.arithmetic,
     quadfloat.binary_interchange_format,
+    quadfloat.printing,
 ]
 
 

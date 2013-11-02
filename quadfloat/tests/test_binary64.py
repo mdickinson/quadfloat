@@ -14,6 +14,10 @@ from quadfloat.tests.base_test_case import BaseTestCase
 binary64 = BinaryInterchangeFormat(width=64)
 
 
+# Number of iterations to perform in random tests.
+ITERATIONS = 2000
+
+
 class TestBinary64(BaseTestCase):
     def random_finite_float(self):
         """
@@ -27,7 +31,7 @@ class TestBinary64(BaseTestCase):
         return struct.unpack('<d', struct.pack('<Q', equivalent_integer))[0]
 
     def test_random_additions(self):
-        for i in range(10000):
+        for i in range(ITERATIONS):
             x = self.random_finite_float()
             y = self.random_finite_float()
 
@@ -38,7 +42,7 @@ class TestBinary64(BaseTestCase):
             self.assertInterchangeable(result1, result2)
 
     def test_random_subtractions(self):
-        for i in range(10000):
+        for i in range(ITERATIONS):
             x = self.random_finite_float()
             y = self.random_finite_float()
 
@@ -49,7 +53,7 @@ class TestBinary64(BaseTestCase):
             self.assertInterchangeable(result1, result2)
 
     def test_random_multiplications(self):
-        for i in range(10000):
+        for i in range(ITERATIONS):
             x = self.random_finite_float()
             y = self.random_finite_float()
 
@@ -60,7 +64,7 @@ class TestBinary64(BaseTestCase):
             self.assertInterchangeable(result1, result2)
 
     def test_random_divisions(self):
-        for i in range(10000):
+        for i in range(ITERATIONS):
             x = self.random_finite_float()
             y = self.random_finite_float()
 
@@ -71,7 +75,7 @@ class TestBinary64(BaseTestCase):
             self.assertInterchangeable(result1, result2)
 
     def test_random_sqrt(self):
-        for i in range(10000):
+        for i in range(ITERATIONS):
             x = self.random_finite_float()
             result1 = binary64.square_root(binary64(x))
             try:

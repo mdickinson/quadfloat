@@ -41,9 +41,6 @@ from quadfloat.exceptions import (
     SignalingNaNException,
     DivideByZeroException,
 )
-from quadfloat.status_flags import (
-    inexact as inexact_flag,
-)
 from quadfloat.interval import Interval as _Interval
 from quadfloat.parsing import (
     parse_finite_decimal,
@@ -51,12 +48,18 @@ from quadfloat.parsing import (
     parse_infinity,
     parse_nan,
 )
+from quadfloat.printing import (
+    ConversionSpecification,
+)
 from quadfloat.rounding_direction import (
     round_ties_to_away,
     round_ties_to_even,
     round_toward_negative,
     round_toward_positive,
     round_toward_zero,
+)
+from quadfloat.status_flags import (
+    inexact as inexact_flag,
 )
 from quadfloat.tininess_detection import BEFORE_ROUNDING, AFTER_ROUNDING
 
@@ -2625,12 +2628,8 @@ def convert_to_decimal_character(source, conversion_specification):
     # Parse conversion specification.
     #
     # XXX To do: define the conversion specification string.
-    min_exponent = None
-    max_digits = None
-    min_fraction_length = 0
     use_exponent = False
     shortest = False
-    show_payload = False
 
     # Current: conversion specification is a string of one
     # of the following forms:
@@ -2641,23 +2640,24 @@ def convert_to_decimal_character(source, conversion_specification):
     #   s -> shortest string that rounds back to the correct value.
     #   <empty string> -> shortest decimal giving the exact value
     #          of the binary number.
+    cs = ConversionSpecification()
     if conversion_specification == 's':
         shortest = True
-        show_payload = True
+        cs.show_payload = True
     elif conversion_specification[:1] == '.':
         conversion_type = conversion_specification[-1]
-        min_fraction_length = int(conversion_specification[1:-1])
+        cs.min_fraction_length = int(conversion_specification[1:-1])
         if conversion_type == 'f':
-            min_exponent = -min_fraction_length
+            cs.min_exponent = -cs.min_fraction_length
         else:
             assert conversion_type == 'e'
-            max_digits = min_fraction_length
+            # e-style formatting: result is in scientific notation, and the
+            # given number is the number of digits *after* the point.  But
+            # there's always one digit before the point, too.
+            cs.max_digits = cs.min_fraction_length + 1
             use_exponent = True
     else:
         assert conversion_specification == ""
-
-    # Deal with sign.
-    sign = '-' if source._sign else ''
 
     if source._type == _FINITE:
         # Convert to a decimal triple.
@@ -2667,79 +2667,43 @@ def convert_to_decimal_character(source, conversion_specification):
             _, exponent, digits = source._shortest_decimal()
         else:
             target_exponent = min(source._exponent, 0)
-            if min_exponent is not None:
-                target_exponent = max(target_exponent, min_exponent)
-            if max_digits is not None:
-                e = _base_10_exponent(source) - max_digits
+            if cs.min_exponent is not None:
+                target_exponent = max(target_exponent, cs.min_exponent)
+            if cs.max_digits is not None:
+                e = _base_10_exponent(source) - cs.max_digits
                 target_exponent = max(target_exponent, e)
             exponent, digits = _fix_decimal_exponent(source, target_exponent)
 
         # Place the decimal point appropriately.
         sdigits = str(digits) if digits else ''
         if use_exponent and sdigits:
-            display_exponent = exponent + len(sdigits)
+            display_exponent = exponent + len(sdigits) - 1
         else:
             display_exponent = 0
-        effective_exponent = exponent - display_exponent
-        adjusted_exponent = effective_exponent + len(sdigits)
-        if effective_exponent > 0:
-            # Entire digit string is to the left of the point.
-            digits_before = sdigits + '0'*effective_exponent
-            digits_after = ''
-        elif adjusted_exponent >= 0:
-            # Digit string includes or touches the point.
-            assert adjusted_exponent <= len(sdigits)
-            digits_before = sdigits[:adjusted_exponent]
-            digits_after = sdigits[adjusted_exponent:]
-        else:
-            # Entire digit string is to the right of the point.
-            digits_before = ''
-            digits_after = '0' * -adjusted_exponent + sdigits
 
-        digits_before = digits_before.lstrip('0')
-        if not digits_before:
-            integral_part = '0'
-        else:
-            integral_part = digits_before
-
-        digits_after = digits_after.rstrip('0')
-        if len(digits_after) < min_fraction_length:
-            digits_after += '0' * (min_fraction_length - len(digits_after))
-
-        if digits_after:
-            fractional_part = '.' + digits_after
-        else:
-            fractional_part = ''
-
+        significand = cs.place_decimal_point(
+            sdigits, exponent - display_exponent)
         if use_exponent:
-            exponent_string = "e{:+d}".format(display_exponent)
+            exponent_string = cs.format_exponent(display_exponent)
         else:
             exponent_string = ''
-
-        return "{}{}{}{}".format(
-            sign,
-            integral_part,
-            fractional_part,
-            exponent_string,
+        return "{sign}{significand}{exponent}".format(
+            sign=cs.format_sign(source._sign),
+            significand=significand,
+            exponent=exponent_string,
         )
 
     # XXX Code for formatting infinities and NaNs should be common to decimal
     # and hex conversions.
     elif source._type == _INFINITE:
-        return '{sign}Infinity'.format(sign=sign)
+        return cs.format_infinity(sign=source._sign)
     else:
         assert source._type == _NAN
-        if show_payload:
-            return '{sign}{signaling}NaN({payload})'.format(
-                sign=sign,
-                signaling='s' if source._signaling else '',
-                payload=source._payload,
-            )
-        else:
-            return '{sign}{signaling}NaN'.format(
-                sign=sign,
-                signaling='s' if source._signaling else '',
-            )
+        return cs.format_nan(
+            sign=source._sign,
+            signaling=source._signaling,
+            payload=source._payload,
+        )
 
 
 # Miscellaneous functions not included in the standard.
