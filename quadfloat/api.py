@@ -208,17 +208,23 @@ __all__ = [
     'encode',
 ]
 
-#: Half precision binary floating-point format.
+
+#: :class:`~quadfloat.api.BinaryInterchangeFormat` object of width ``16``,
+#: representing the ``binary16`` format defined in the standard.  (Half
+#: precision binary floating-point format.)
 binary16 = BinaryInterchangeFormat(width=16)
 
-#: Single precision binary floating-point format.
+#: :class:`~quadfloat.api.BinaryInterchangeFormat` object of width ``32``,
+#: representing the ``binary32`` format defined in the standard.  (Single
+#: precision binary floating-point format.)
 binary32 = BinaryInterchangeFormat(width=32)
 
-#: Double precision binary floating-point format.
+#: :class:`~quadfloat.api.BinaryInterchangeFormat` object of width ``64``,
+#: representing the ``binary64`` format defined in the standard.  (Double
+#: precision binary floating-point format.)
 binary64 = BinaryInterchangeFormat(width=64)
 
-#: Quadruple precision binary floating-point format.
+#: :class:`~quadfloat.api.BinaryInterchangeFormat` object of width ``128``,
+#: representing the ``binary128`` format defined in the standard.  (Quadruple
+#: precision binary floating-point format.)
 binary128 = BinaryInterchangeFormat(width=128)
-
-#: Testing testing testing
-bob = "BOB"

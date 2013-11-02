@@ -5,9 +5,11 @@ Start by importing everything from :mod:`quadfloat.api`::
 
     from quadfloat.api import *
 
-This brings in constants ``binary16``, ``binary32``, ``binary64`` and
-``binary128`` representing the corresponding binary interchange formats.
-These formats are callable, and may be used to generate floating-point numbers.
+This brings in constants :data:`~quadfloat.api.binary16`,
+:data:`~quadfloat.api.binary32`, :data:`~quadfloat.api.binary64` and
+:data:`~quadfloat.api.binary128` representing the corresponding binary
+interchange formats.  These formats are callable, and may be used to generate
+floating-point numbers.
 
     >>> from quadfloat.api import *
     >>> x = binary128('1.1')  # Create from a decimal string.
@@ -32,5 +34,5 @@ The homogenous operations are represented by module-level functions.  For exampl
     >>> print next_up(x)
     1.1000000000000000000000000000000003
 
-Note that there's a common type :class:`quadfloat.api._BinaryFloat` for all binary
+Note that there's a common type :class:`~quadfloat.api._BinaryFloat` for all binary
 floating-point numbers, regardless of their format.

@@ -19,3 +19,16 @@ The quadfloat.api package
 .. autoclass:: quadfloat.api.BinaryInterchangeFormat
 
 .. autoclass:: quadfloat.api._BinaryFloat
+
+
+The :mod:`quadfloat.api` package exports a few predefined
+:class:`BinaryInterchangeFormat` objects, representing the formats described in
+section 3.6 of the standard.
+
+.. autodata:: quadfloat.api.binary16
+
+.. autodata:: quadfloat.api.binary32
+
+.. autodata:: quadfloat.api.binary64
+
+.. autodata:: quadfloat.api.binary128
