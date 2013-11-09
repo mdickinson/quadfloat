@@ -2626,44 +2626,13 @@ def convert_to_decimal_character(source, conversion_specification):
 
     """
     # Parse conversion specification.
-    #
-    # XXX To do: define the conversion specification string.
-    use_exponent = False
-    shortest = False
-
-    # Current: conversion specification is a string of one
-    # of the following forms:
-    #   .6e -> round to 6 significant digits (round ties to even);
-    #          the number may be any positive integer
-    #   .6f -> round to 6 digits after the point (round ties to even)
-    #          the number may be any integer (positive or negative)
-    #   s -> shortest string that rounds back to the correct value.
-    #   <empty string> -> shortest decimal giving the exact value
-    #          of the binary number.
-    cs = ConversionSpecification()
-    if conversion_specification == 's':
-        shortest = True
-        cs.show_payload = True
-    elif conversion_specification[:1] == '.':
-        conversion_type = conversion_specification[-1]
-        cs.min_fraction_length = int(conversion_specification[1:-1])
-        if conversion_type == 'f':
-            cs.min_exponent = -cs.min_fraction_length
-        else:
-            assert conversion_type == 'e'
-            # e-style formatting: result is in scientific notation, and the
-            # given number is the number of digits *after* the point.  But
-            # there's always one digit before the point, too.
-            cs.max_digits = cs.min_fraction_length + 1
-            use_exponent = True
-    else:
-        assert conversion_specification == ""
+    cs = ConversionSpecification.from_string(conversion_specification)
 
     if source._type == _FINITE:
         # Convert to a decimal triple.
         if source._significand == 0:
             exponent, digits = 0, 0
-        elif shortest:
+        elif cs.style == 'shortest':
             _, exponent, digits = source._shortest_decimal()
         else:
             target_exponent = min(source._exponent, 0)
@@ -2676,21 +2645,15 @@ def convert_to_decimal_character(source, conversion_specification):
 
         # Place the decimal point appropriately.
         sdigits = str(digits) if digits else ''
-        if use_exponent and sdigits:
+        if cs.use_exponent and sdigits:
             display_exponent = exponent + len(sdigits) - 1
         else:
             display_exponent = 0
 
-        significand = cs.place_decimal_point(
-            sdigits, exponent - display_exponent)
-        if use_exponent:
-            exponent_string = cs.format_exponent(display_exponent)
-        else:
-            exponent_string = ''
-        return "{sign}{significand}{exponent}".format(
+        return '{sign}{significand}{exponent}'.format(
             sign=cs.format_sign(source._sign),
-            significand=significand,
-            exponent=exponent_string,
+            significand=cs.place_decimal_point(sdigits, exponent - display_exponent),
+            exponent=cs.format_exponent(display_exponent)
         )
 
     # XXX Code for formatting infinities and NaNs should be common to decimal

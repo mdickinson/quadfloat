@@ -7,6 +7,12 @@ strings.
 
 class ConversionSpecification(object):
     def __init__(self):
+        # Overall style for printing.  This is either 'rounded' for
+        # formatting based on rounding to a particular exponent, or
+        # 'shortest' for formatting based on the shortest digit
+        # string that rounds back to the correct number.
+        self.style = 'rounded'
+
         # Minimum exponent for conversion of a nonzero finite number to
         # decimal.  Typically used for formatting with a fixed number of digits
         # after the decimal point.  None if there's no limit imposed.
@@ -17,9 +23,12 @@ class ConversionSpecification(object):
         # formatting.  None if there's no limit imposed.
         self.max_digits = None
 
+        # Whether to display an exponent or not.
+        self.use_exponent = False
+
         # Boolean indicating whether to show payloads on NaNs or not.
-        # If true, NaNs will be formatted as e.g., "NaN(123)".  If false,
-        # they're formatted simply as "NaN".
+        # If true, NaNs will be formatted as e.g., 'NaN(123)'.  If false,
+        # they're formatted simply as 'NaN'.
         self.show_payload = False
 
         # String to use for negative numbers.
@@ -47,7 +56,7 @@ class ConversionSpecification(object):
         self.snan = 'sNaN'
 
         # Boolean indicating whether to force inclusion of a decimal point (so
-        # that e.g. 123 is represented as "123." rather than "123").
+        # that e.g. 123 is represented as '123.' rather than '123').
         self.force_decimal_point = False
 
         # Minimum number of digits following the decimal point.
@@ -55,6 +64,43 @@ class ConversionSpecification(object):
 
         # Minimum number of digits preceding the decimal point.
         self.min_integral_length = 1
+
+    @classmethod
+    def from_string(cls, conversion_specification):
+        """
+        Convert the given string to a conversion specification.
+
+        """
+        # XXX To do: define the conversion specification string.
+        #
+        # Current: conversion specification is a string of one
+        # of the following forms:
+        #   .6e -> round to 6 significant digits (round ties to even);
+        #          the number may be any positive integer
+        #   .6f -> round to 6 digits after the point (round ties to even)
+        #          the number may be any integer (positive or negative)
+        #   s -> shortest string that rounds back to the correct value.
+        #   <empty string> -> shortest decimal giving the exact value
+        #          of the binary number.
+        cs = cls()
+        if conversion_specification == 's':
+            cs.style = 'shortest'
+            cs.show_payload = True
+        elif conversion_specification[:1] == '.':
+            conversion_type = conversion_specification[-1]
+            cs.min_fraction_length = int(conversion_specification[1:-1])
+            if conversion_type == 'f':
+                cs.min_exponent = -cs.min_fraction_length
+            else:
+                assert conversion_type == 'e'
+                # e-style formatting: result is in scientific notation, and the
+                # given number is the number of digits *after* the point.  But
+                # there's always one digit before the point, too.
+                cs.max_digits = cs.min_fraction_length + 1
+                cs.use_exponent = True
+        else:
+            assert conversion_specification == ''
+        return cs
 
     def format_sign(self, sign):
         """
@@ -100,12 +146,15 @@ class ConversionSpecification(object):
         Format the exponent.
 
         """
-        return "{exponent_indicator}{sign}{exponent}".format(
-            exponent='{0:0{1}d}'.format(
-                abs(exponent), self.min_exponent_digits),
-            exponent_indicator=self.exponent_indicator,
-            sign='+' if exponent >= 0 else '-',
-        )
+        if self.use_exponent:
+            return '{exponent_indicator}{sign}{exponent}'.format(
+                exponent='{0:0{1}d}'.format(
+                    abs(exponent), self.min_exponent_digits),
+                exponent_indicator=self.exponent_indicator,
+                sign='+' if exponent >= 0 else '-',
+            )
+        else:
+            return ''
 
     def place_decimal_point(self, sdigits, exponent):
         """
@@ -118,19 +167,19 @@ class ConversionSpecification(object):
         necessary to reach the decimal point.
 
         >>> cs = ConversionSpecification()
-        >>> cs.place_decimal_point("12345", 2)
+        >>> cs.place_decimal_point('12345', 2)
         '1234500'
-        >>> cs.place_decimal_point("12345", 0)
+        >>> cs.place_decimal_point('12345', 0)
         '12345'
-        >>> cs.place_decimal_point("12345", -2)
+        >>> cs.place_decimal_point('12345', -2)
         '123.45'
-        >>> cs.place_decimal_point("12345", -5)
+        >>> cs.place_decimal_point('12345', -5)
         '0.12345'
-        >>> cs.place_decimal_point("12345", -7)
+        >>> cs.place_decimal_point('12345', -7)
         '0.0012345'
-        >>> cs.place_decimal_point("0", 0)
+        >>> cs.place_decimal_point('0', 0)
         '0'
-        >>> cs.place_decimal_point("", 0)
+        >>> cs.place_decimal_point('', 0)
         '0'
 
         """
@@ -166,7 +215,7 @@ class ConversionSpecification(object):
             digits_before = '0'
 
         if digits_after or self.force_decimal_point:
-            return "{}{}{}".format(
+            return '{}{}{}'.format(
                 digits_before,
                 self.decimal_point,
                 digits_after,
