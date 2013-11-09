@@ -2652,7 +2652,8 @@ def convert_to_decimal_character(source, conversion_specification):
 
         return '{sign}{significand}{exponent}'.format(
             sign=cs.format_sign(source._sign),
-            significand=cs.place_decimal_point(sdigits, exponent - display_exponent),
+            significand=cs.place_decimal_point(
+                sdigits, exponent - display_exponent),
             exponent=cs.format_exponent(display_exponent)
         )
 
