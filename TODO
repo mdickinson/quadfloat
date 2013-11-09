@@ -43,12 +43,6 @@ Features
 * convertToHexCharacter should get the same treatment for conversion
   specifications as convertToDecimalCharacter.
 
-* In string display, add functionality for adding exponent for particularly
-  large or small values.
-
-* Add 'general' option for convertToDecimalCharacter, that switches to
-  scientific form for large and small values.
-
 * Ensure that we always return unicode strings from convertToHexCharacter and convertToDecimalCharacter.
 
 * Use enumerated type of some form for number classes.
