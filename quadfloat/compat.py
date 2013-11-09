@@ -55,7 +55,7 @@ if sys.version_info[0] == 2:
             if n < 0:
                 raise ValueError(
                     "The argument to _nbits should be nonnegative.")
-            hex_n = "%x" % n
+            hex_n = '{0:x}'.format(n)
             return 4*len(hex_n) - correction[hex_n[0]]
     else:
         def bit_length(n):
