@@ -6,10 +6,6 @@ Bugs
 
 * Special methods aren't correctly returning NotImplemented.
 
-* Lots of public methods are missing docstrings.
-
-* Missing documentation.
-
 
 Documentation
 -------------

@@ -195,10 +195,10 @@ class BinaryInterchangeFormat(object):
         return self
 
     def __repr__(self):
-        return "BinaryInterchangeFormat(width={0})".format(self.width)
+        return 'BinaryInterchangeFormat(width={0})'.format(self.width)
 
     def __str__(self):
-        return "binary{0}".format(self.width)
+        return 'binary{0}'.format(self.width)
 
     def __eq__(self, other):
         return self.width == other.width
@@ -477,9 +477,9 @@ class BinaryInterchangeFormat(object):
         else:
             if not min_payload <= payload <= max_payload:
                 raise ValueError(
-                    "{0} payload {1} is out of range for format {2}. "
+                    "{0} NaN payload {1} is out of range for format {2}. "
                     "Valid range is {3} to {4}".format(
-                        'sNaN' if signaling else 'NaN',
+                        "signaling" if signaling else "quiet",
                         payload,
                         self,
                         min_payload,
@@ -817,7 +817,7 @@ class BinaryInterchangeFormat(object):
             )
 
         # And if all those failed, raise an exception.
-        raise ValueError('invalid numeric decimal string: {0}'.format(s))
+        raise ValueError("invalid numeric decimal string: {0}".format(s))
 
     def convert_from_hex_character(self, s):
         """
@@ -856,7 +856,7 @@ class BinaryInterchangeFormat(object):
                 payload=payload,
             )
 
-        raise ValueError('invalid numeric string: {0}'.format(s))
+        raise ValueError("invalid numeric string: {0}".format(s))
 
     def _zero(self, sign):
         """
@@ -1079,7 +1079,7 @@ class BinaryFloat(object):
         )
 
     def __repr__(self):
-        return "{0!r}({1!r})".format(
+        return '{0!r}({1!r})'.format(
             self._format,
             convert_to_hex_character(self, 'repr')
         )
@@ -1267,7 +1267,7 @@ class BinaryFloat(object):
         """
         if self._type == _NAN:
             if self._signaling:
-                raise ValueError('Signaling NaNs are unhashable.')
+                raise ValueError("Signaling NaNs are unhashable.")
             return _PyHASH_NAN
         elif self._type == _INFINITE:
             return _PyHASH_NINF if self._sign else _PyHASH_INF
