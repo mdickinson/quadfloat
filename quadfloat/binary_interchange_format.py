@@ -1041,7 +1041,7 @@ class BinaryFloat(object):
         # General nonzero finite case.
         I = self._bounding_interval()
         exponent, digits = I.shortest_digit_string_floating()
-        return self._sign, exponent, digits
+        return exponent, digits
 
     def _bounding_interval(self):
         """
@@ -2633,7 +2633,7 @@ def convert_to_decimal_character(source, conversion_specification):
         if source._significand == 0:
             exponent, digits = 0, 0
         elif cs.style == 'shortest':
-            _, exponent, digits = source._shortest_decimal()
+            exponent, digits = source._shortest_decimal()
         else:
             target_exponent = min(source._exponent, 0)
             if cs.min_exponent is not None:
@@ -2642,23 +2642,11 @@ def convert_to_decimal_character(source, conversion_specification):
                 e = _base_10_exponent(source) - cs.max_digits
                 target_exponent = max(target_exponent, e)
             exponent, digits = _fix_decimal_exponent(source, target_exponent)
-
-        # Place the decimal point appropriately.
-        sdigits = str(digits) if digits else ''
-        if cs.use_exponent and sdigits:
-            display_exponent = exponent + len(sdigits) - 1
-        else:
-            display_exponent = 0
-
-        return '{sign}{significand}{exponent}'.format(
-            sign=cs.format_sign(source._sign),
-            significand=cs.place_decimal_point(
-                sdigits, exponent - display_exponent),
-            exponent=cs.format_exponent(display_exponent)
+        return cs.format_finite(
+            sign=source._sign,
+            exponent=exponent,
+            sdigits=str(digits) if digits else ''
         )
-
-    # XXX Code for formatting infinities and NaNs should be common to decimal
-    # and hex conversions.
     elif source._type == _INFINITE:
         return cs.format_infinity(sign=source._sign)
     else:

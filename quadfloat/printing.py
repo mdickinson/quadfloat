@@ -23,8 +23,18 @@ class ConversionSpecification(object):
         # formatting.  None if there's no limit imposed.
         self.max_digits = None
 
-        # Whether to display an exponent or not.
-        self.use_exponent = False
+        # Power of 10 below which to use scientific form, or None
+        # to indicate that scientific form should never be used for
+        # small values.
+        self.lower_exponent_threshold = None
+
+        # Power of 10 above which to use scientific form, or None
+        # to indicate that scientific form should never be used for
+        # large values.
+        self.upper_exponent_threshold = None
+
+        # Whether to use scientific notation for zeros
+        self.scientific_zeros = False
 
         # Boolean indicating whether to show payloads on NaNs or not.
         # If true, NaNs will be formatted as e.g., 'NaN(123)'.  If false,
@@ -75,10 +85,13 @@ class ConversionSpecification(object):
         #
         # Current: conversion specification is a string of one
         # of the following forms:
-        #   .6e -> round to 6 significant digits (round ties to even);
+        #   .6e -> round to 7 significant digits (round ties to even);
         #          the number may be any positive integer
         #   .6f -> round to 6 digits after the point (round ties to even)
         #          the number may be any integer (positive or negative)
+        #   .6g -> round to 6 significant digits; display result in
+        #          scientific notation only for especially large or
+        #          small numbers.
         #   s -> shortest string that rounds back to the correct value.
         #   <empty string> -> shortest decimal giving the exact value
         #          of the binary number.
@@ -88,16 +101,23 @@ class ConversionSpecification(object):
             cs.show_payload = True
         elif conversion_specification[:1] == '.':
             conversion_type = conversion_specification[-1]
-            cs.min_fraction_length = int(conversion_specification[1:-1])
             if conversion_type == 'f':
+                cs.min_fraction_length = int(conversion_specification[1:-1])
                 cs.min_exponent = -cs.min_fraction_length
+            elif conversion_type == 'g':
+                cs.max_digits = int(conversion_specification[1:-1])
+                cs.lower_exponent_threshold = -4
+                cs.upper_exponent_threshold = cs.max_digits
             else:
                 assert conversion_type == 'e'
                 # e-style formatting: result is in scientific notation, and the
                 # given number is the number of digits *after* the point.  But
                 # there's always one digit before the point, too.
+                cs.min_fraction_length = int(conversion_specification[1:-1])
                 cs.max_digits = cs.min_fraction_length + 1
-                cs.use_exponent = True
+                cs.lower_exponent_threshold = 0
+                cs.upper_exponent_threshold = 0
+                cs.scientific_zeros = True
         else:
             assert conversion_specification == ''
         return cs
@@ -111,6 +131,40 @@ class ConversionSpecification(object):
 
         """
         return self.negative_sign if sign else self.positive_sign
+
+    def format_finite(self, sign, exponent, sdigits):
+        """
+        Format a finite number.
+
+        """
+        # Choose whether to use scientific notation or not.
+        if sdigits:
+            # 10**(adjusted_exponent - 1) <= abs(value) < 10**adjusted_exponent
+            adjusted_exponent = exponent + len(sdigits)
+            if (self.lower_exponent_threshold is not None and
+                    adjusted_exponent <= self.lower_exponent_threshold):
+                scientific = True
+            elif (self.upper_exponent_threshold is not None and
+                    adjusted_exponent > self.upper_exponent_threshold):
+                scientific = True
+            else:
+                scientific = False
+        else:
+            scientific = self.scientific_zeros
+
+        if scientific:
+            display_exponent = exponent + len(sdigits) - 1 if sdigits else 0
+            str_exponent = self.format_exponent(display_exponent)
+        else:
+            display_exponent = 0
+            str_exponent = ''
+
+        return '{sign}{significand}{exponent}'.format(
+            sign=self.format_sign(sign),
+            significand=self.place_decimal_point(
+                sdigits, exponent - display_exponent),
+            exponent=str_exponent,
+        )
 
     def format_infinity(self, sign):
         """
@@ -146,15 +200,12 @@ class ConversionSpecification(object):
         Format the exponent.
 
         """
-        if self.use_exponent:
-            return '{exponent_indicator}{sign}{exponent}'.format(
-                exponent='{0:0{1}d}'.format(
-                    abs(exponent), self.min_exponent_digits),
-                exponent_indicator=self.exponent_indicator,
-                sign='+' if exponent >= 0 else '-',
-            )
-        else:
-            return ''
+        return '{exponent_indicator}{sign}{exponent}'.format(
+            exponent='{0:0{1}d}'.format(
+                abs(exponent), self.min_exponent_digits),
+            exponent_indicator=self.exponent_indicator,
+            sign='+' if exponent >= 0 else '-',
+        )
 
     def place_decimal_point(self, sdigits, exponent):
         """

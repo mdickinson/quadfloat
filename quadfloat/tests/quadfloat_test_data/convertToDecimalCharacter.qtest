@@ -140,7 +140,7 @@ sNaN(321) ".5e" -> "sNaN"
 -Infinity "" -> "-Infinity"
 Infinity "" -> "Infinity"
 
-# Conversion to the exact decimal output.
+# Conversion to shortest.
 -0x1p0 "s" -> "-1"
 -0x0p0 "s" -> "-0"
 0x0p0 "s" -> "0"
@@ -153,6 +153,39 @@ Infinity "" -> "Infinity"
 0x1.004p0 "s" -> "1.001"
 0x2.8p0 "s" -> "2.5"
 0xap0 "s" -> "10"
-0x0.ffep16 "s" -> "65500"
+0x0.ffep16 "s" -> "65500"   # Misleading!  We should fix this.
 -Infinity "s" -> "-Infinity"
 Infinity "s" -> "Infinity"
+
+
+# g-style formatting: the positive integer preceding the 'g' gives the number
+# of significant digits to compute.  Results are displayed in scientific form
+# for large and small exponents.
+
+operation source: binary64  # For wider range and comparison with regular Python floats.
+Infinity ".6g" -> "Infinity"
+-0x1.8p0 ".6g" -> "-1.5"
+-0x1p0 ".6g" -> "-1"
+-0x0p0 ".6g" -> "-0"
+0x0p0 ".6g" -> "0"
+0x1.6a09e667f3bcdp-14 ".6g" -> "8.63167e-05"
+0x1.a36e1334e458fp-14 ".6g" -> "9.99999e-05"
+0x1.a36e20f35445dp-14 ".6g" -> "9.99999e-05"
+0x1.a36e20f35445ep-14 ".6g" -> "0.0001"
+0x1.a36e2bf21436ap-14 ".6g" -> "0.0001"
+0x1.6a09e667f3bcdp-12 ".6g" -> "0.000345267"
+0x1.6a09e667f3bcdp-10 ".6g" -> "0.00138107"
+0x1.6a09e667f3bcdp-8 ".6g" -> "0.00552427"
+0x1.6a09e667f3bcdp-4 ".6g" -> "0.0883883"
+0x1.6a09e667f3bcdp-1 ".6g" -> "0.707107"
+0x1p0 ".6g" -> "1"
+0x1.199999999999ap0 ".6g" -> "1.1"
+0x1.6a09e667f3bcdp+0 ".6g" -> "1.41421"
+0x1.e847effffffffp+19 ".6g" -> "999999"
+0x1.e847f00000000p+19 ".6g" -> "1e+06"
+Infinity ".6g" -> "Infinity"
+
+0x1.a3387ecc8eb96p-14 ".3g" -> "9.99e-05"
+0x1.a3387ecc8eb97p-14 ".3g" -> "0.0001"
+0x1.f3bffffffffffp+9 ".3g" -> "999"
+0x1.f3cp+9 ".3g" -> "1e+03"
