@@ -140,24 +140,6 @@ sNaN(321) ".5e" -> "sNaN"
 -Infinity "" -> "-Infinity"
 Infinity "" -> "Infinity"
 
-# Conversion to shortest.
--0x1p0 "s" -> "-1"
--0x0p0 "s" -> "-0"
-0x0p0 "s" -> "0"
-0x1p-24 "s" -> "0.00000006"
-0x1p-14 "s" -> "0.00006104"
-0x0.cccp-3 "s" -> "0.1"
-0x0.ccep-3 "s" -> "0.10004"
-0x0.ffep0 "s" -> "0.9995"
-0x1p0 "s" -> "1"
-0x1.004p0 "s" -> "1.001"
-0x2.8p0 "s" -> "2.5"
-0xap0 "s" -> "10"
-0x0.ffep16 "s" -> "65500"   # Misleading!  We should fix this.
--Infinity "s" -> "-Infinity"
-Infinity "s" -> "Infinity"
-
-
 # g-style formatting: the positive integer preceding the 'g' gives the number
 # of significant digits to compute.  Results are displayed in scientific form
 # for large and small exponents.
@@ -189,3 +171,46 @@ Infinity ".6g" -> "Infinity"
 0x1.a3387ecc8eb97p-14 ".3g" -> "0.0001"
 0x1.f3bffffffffffp+9 ".3g" -> "999"
 0x1.f3cp+9 ".3g" -> "1e+03"
+
+# Conversion to shortest.
+operation source: binary16
+-0x1p0 "s" -> "-1"
+-0x0p0 "s" -> "-0"
+0x0p0 "s" -> "0"
+0x1p-24 "s" -> "6e-8"
+0x1p-14 "s" -> "6.104e-5"
+0x0.2a0p-14 "s" -> "1e-5"
+0x1.a38p-14 "s" -> "0.0001"
+0x1.064p-10 "s" -> "0.001"
+0x1.47cp-7 "s" -> "0.01"
+0x1.998p-4 "s" -> "0.1"
+0x0.cccp-3 "s" -> "0.1"
+0x0.ccep-3 "s" -> "0.10004"
+0x0.ffep0 "s" -> "0.9995"
+0x1p0 "s" -> "1"
+0x1.004p0 "s" -> "1.001"
+0x2.8p0 "s" -> "2.5"
+0xap0 "s" -> "10"
+0x64p0 "s" -> "100"
+0x3e8p0 "s" -> "1000"
+0x2708p0 "s" -> "9992"
+0x2710p0 "s" -> "1e+4"
+0x0.ffep16 "s" -> "6.55e+4"
+-Infinity "s" -> "-Infinity"
+Infinity "s" -> "Infinity"
+
+operation source: binary32
+0x0.ffffffp24 "s" -> "16777215"
+0x1p24 "s" -> "16777216"
+0x1.000008p25 "s" -> "33554448"
+0x1.000002p26 "s" -> "67108872"
+0x5f5e0f8p0 "s" -> "99999992"
+0x5f5e100p0 "s" -> "1e+8"  # switch to exponential notation at 10**8
+
+operation source: binary64
+0x1.c6bf526340000p49 "s" -> "1000000000000000"
+0x1.1c37937e07fffp53 "s" -> "9999999999999998"
+0x1.1c37937e08000p53 "s" -> "1e+16"  # switch to exponential notation at 10**16
+
+operation source: binary128
+0x1p113 "s" -> "10384593717069655257060992658440192"

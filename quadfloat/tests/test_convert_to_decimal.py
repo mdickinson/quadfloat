@@ -6,7 +6,7 @@ These conversions form the basis for the convertToDecimalCharacter function.
 import unittest
 
 from quadfloat.api import binary64, binary128
-from quadfloat.binary_interchange_format import (
+from quadfloat.printing import (
     _base_10_exponent,
     _fix_decimal_exponent,
 )

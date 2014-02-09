@@ -41,7 +41,6 @@ from quadfloat.exceptions import (
     SignalingNaNException,
     DivideByZeroException,
 )
-from quadfloat.interval import Interval as _Interval
 from quadfloat.parsing import (
     parse_finite_decimal,
     parse_finite_hexadecimal,
@@ -288,6 +287,20 @@ class BinaryInterchangeFormat(object):
 
         """
         return (1 << self.precision) - 1
+
+    @property
+    def _pmin(self):
+        """
+        Smallest number of decimal digits required for faithful representation.
+
+        Conversion of a finite value in this format to this number of
+        significant digits and back again will recover the original value
+        (assuming round to nearest for the conversion in both directions).
+        This is the quantity Pmin defined in section 5.12.2 of the standard,
+        equal to floor(log10(2**precision)) + 2.
+
+        """
+        return 1 + len(str(1 << self.precision))
 
     def _largest_finite(self, sign):
         """
@@ -1027,56 +1040,6 @@ class BinaryFloat(object):
         """
         assert self._type == _FINITE
         return -self._significand if self._sign else self._significand
-
-    def _shortest_decimal(self):
-        """
-        Convert to shortest Decimal instance that rounds back to the correct
-        value.
-
-        self should be finite and nonzero.
-
-        """
-        assert self._type == _FINITE and self._significand > 0
-
-        # General nonzero finite case.
-        I = self._bounding_interval()
-        exponent, digits = I.shortest_digit_string_floating()
-        return exponent, digits
-
-    def _bounding_interval(self):
-        """
-        Interval of values rounding to self.
-
-        Return the interval of real numbers that round to a nonzero finite self
-        under 'round ties to even'.  This is used when computing decimal string
-        representations of self.
-
-        """
-        is_boundary_case = (
-            self._significand == self._format._min_normal_significand and
-            self._exponent > self._format.qmin
-        )
-
-        if is_boundary_case:
-            shift = self._exponent - 2
-            high = (4 * self._significand + 2) << max(shift, 0)
-            target = (4 * self._significand) << max(shift, 0)
-            low = (4 * self._significand - 1) << max(shift, 0)
-            denominator = 1 << max(0, -shift)
-        else:
-            shift = self._exponent - 1
-            high = (2 * self._significand + 1) << max(shift, 0)
-            target = (2 * self._significand) << max(shift, 0)
-            low = (2 * self._significand - 1) << max(shift, 0)
-            denominator = 1 << max(0, -shift)
-
-        return _Interval(
-            low=low,
-            high=high,
-            target=target,
-            denominator=denominator,
-            closed=self._significand % 2 == 0,
-        )
 
     def __repr__(self):
         return '{0!r}({1!r})'.format(
@@ -2538,87 +2501,6 @@ def is_754_version_2008():
     return True
 
 
-###############################################################################
-# Support code for conversions to a decimal string.
-###############################################################################
-
-
-def compare_with_power_of_ten(source, n):
-    """
-    Return True iff abs(source) < 10**n.
-
-    """
-    shift = n - source._exponent
-    lhs = source._significand * 5**max(0, -n) << max(0, -shift)
-    rhs = 5**max(n, 0) << max(shift, 0)
-    return lhs < rhs
-
-
-def binary_hunt(predicate, start=0):
-    """
-    Find point at which a predicate changes from False to True.
-
-    Given a predicate `predicate` defined for all integers such that:
-
-       - predicate(n) is true for all sufficiently large n, and
-       - predicate(n) is false for all sufficiently small n,
-
-    find an integer n such that predicate(n-1) is false and predicate(n) is
-    true.
-
-    `start` should be a starting guess for the final value.  The closer it
-    is, the quicker the search will return.
-
-    """
-    low, high = start - 1, start
-    while predicate(low):
-        low = 2 * low - high
-    while not predicate(high):
-        high = 2 * high - low
-    while high - low > 1:
-        mid = (high + low) // 2
-        low, high = (low, mid) if predicate(mid) else (mid, high)
-    return high
-
-
-def _base_10_exponent(source):
-    """
-    Find the smallest integer n such that abs(source) < 10**n.
-
-    Equivalently, find the unique integer n such that
-    10**(n-1) <= abs(source) < 10**n.
-
-    Assumes that source is finite and nonzero.
-
-    For numbers greater than or equal to 1.0, this amounts to
-    counting the number of decimal digits in the integer part.
-
-    """
-    # Should only be called for nonzero finite numbers.
-    assert source._type == _FINITE and source._significand != 0
-    return binary_hunt(lambda n: compare_with_power_of_ten(source, n))
-
-
-def _fix_decimal_exponent(source, places):
-    """
-    Convert the given float to the nearest number of the
-    form +/- n * 10**places.
-
-    """
-    shift = source._exponent - places + 2
-    if places > 0:
-        q = _divide_to_odd(
-            source._significand << max(shift, 0),
-            5**places << max(0, -shift),
-        )
-    else:
-        q = _rshift_to_odd(
-            source._significand * 5**-places,
-            -shift,
-        )
-    return places, round_ties_to_even.round_quarters(q, source._sign)
-
-
 def convert_to_decimal_character(source, conversion_specification):
     """
     Convert the given binary float to a representative sequence,
@@ -2626,27 +2508,13 @@ def convert_to_decimal_character(source, conversion_specification):
 
     """
     # Parse conversion specification.
-    cs = ConversionSpecification.from_string(conversion_specification)
+    cs = ConversionSpecification.from_string(
+        conversion_specification,
+        source._format,
+    )
 
     if source._type == _FINITE:
-        # Convert to a decimal triple.
-        if source._significand == 0:
-            exponent, digits = 0, 0
-        elif cs.style == 'shortest':
-            exponent, digits = source._shortest_decimal()
-        else:
-            target_exponent = min(source._exponent, 0)
-            if cs.min_exponent is not None:
-                target_exponent = max(target_exponent, cs.min_exponent)
-            if cs.max_digits is not None:
-                e = _base_10_exponent(source) - cs.max_digits
-                target_exponent = max(target_exponent, e)
-            exponent, digits = _fix_decimal_exponent(source, target_exponent)
-        return cs.format_finite(
-            sign=source._sign,
-            exponent=exponent,
-            sdigits=str(digits) if digits else ''
-        )
+        return cs.format_finite_binary(source)
     elif source._type == _INFINITE:
         return cs.format_infinity(sign=source._sign)
     else:
