@@ -16,6 +16,8 @@ Documentation
 Features
 --------
 
+* Better package name!
+
 * Infix operators should use the 'preferredWidth' attribute to decide which
   output format to use.  (In general, Python special methods need work.)
 
@@ -42,6 +44,8 @@ Features
 * Ensure that we always return unicode strings from convertToHexCharacter and convertToDecimalCharacter.
 
 * Use enumerated type of some form for number classes.
+
+* Use exponents for small or large values with the 'shortest' representation.
 
 
 Internal refactoring
