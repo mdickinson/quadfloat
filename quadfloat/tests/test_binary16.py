@@ -306,8 +306,11 @@ class TestBinary16(BaseTestCase):
             (binary16(5 * TINY), '3e-7'),
             (binary16('0.015625'), '0.01563'),
             (binary16('1.23'), '1.23'),
-            (binary16('4152'), '415e1'),
+            # Next one doesn't strictly follow the shortest representation.
+            # See comments in the 'printing' module for an explanation.
+            (binary16('4152'), '4152'),
             (binary16('4148'), '4148'),
+            (binary16('4112'), '4112'),
         ]
         for input, output_string in test_pairs:
             input_string = str(input)

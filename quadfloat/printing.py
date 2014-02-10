@@ -1,61 +1,65 @@
-"""
-Support for formatting of floating-point numbers as decimal and hexadecimal
+"""Support for formatting of floating-point numbers as decimal and hexadecimal
 strings.
 
 Notes on conversion to shortest string:
 
-There are a few competing desirable conditions for formatting of numbers just
-outside the range where all integers are representable.
+There are a few competing desirable conditions for formatting of numbers in
+the region of 2**precision.
 
-0. Use non-scientific notation as far as possible, since scientific notation
-   is less readable.
+0. All other considerations being equal, use non-scientific notation in
+   preference to scientific notation, for the sake of familiarity and
+   readability.
 1. Don't give misleading information by padding with zeros in places where
    the true value doesn't have zeros.
 2. Represent the consecutive integer range in non-exponential notation.
 3. Have clear well-defined points for switching to exponential notation,
    preferably at a power-of-10 boundary.
-4. Base the digits on the shortest string that rounds correctly.
+4. Base the digits on the shortest string that rounds correctly.  This ensures
+   decimal -> binary -> decimal roundtripping for values whose decimal
+   significand has at most `q` digits, with q = floor(log10(2**(precision-1))).
 5. For binary64, match the formatting used by Python.
 
+Of the above: condition 0 is a general guideline.  Condition 1 is essential;
+conditions 2 through 5 are 'nice to have' conditions.
+
 For binary64 format, switching to exponential at 1e16 allows all of
-conditions 1-4 to be satisfied.
+conditions 1-5 to be satisfied.
 
-However, for binary32 format there's a conflict: all integers up to 2**24 are
-representable, and 2**24 is 16777216.  Between 2**24 and 2**25, only multiples
-of 2 are representable, and between 2**25 and 2**26, only multiples of 4 are
-representable.  Now consider the exactly representable number 2**26 + 8 ==
-67108872.  The shortest decimal value that rounds correctly is 6710887e+1.
-(Also consider 2**25 + 16, for a similar example.  Note that between 2**24 and
-2**25 there's no danger of getting incorrect values when padding with zeros,
-since all multiples of 10 in that range are exactly representable.)
+However, for binary32 format these conditions are in conflict: all integers up
+to 2**24 are representable, and 2**24 is 16777216, which lies between 10**7 and
+10**8.  Between 2**24 and 2**25, only multiples of 2 are representable, and
+between 2**25 and 2**26, only multiples of 4 are representable.  Now consider
+the exactly representable number 2**26 + 8 == 67108872.  The shortest decimal
+value that rounds correctly is 6710887e+1.  (Also consider 2**25 + 16, for a
+similar example.  Note that between 2**24 and 2**25 there's no danger of
+getting incorrect values when padding with zeros, since all multiples of 10 in
+that range are exactly representable.)
 
-So if base our output on the shortest string (condition 4) and we avoid
+So if we base our output on the shortest string (condition 4) and we avoid
 scientific notation for numbers less than 1e8 (condition 0), we risk printing
 67108870 for that value, which is misleading (condition 1).
 
 Possible solutions:
 
   (A) switch to exponential notation at a power of 2 (2**24 or 2**25) instead
-      of a power of 10.
+      of a power of 10.  This breaks condition 3.
 
   (B) for numbers in the range (10**7, 10**8), don't base the output on the
-      shortest digit string, and instead give the correct last digit.
+      shortest digit string, and instead give the correct last digit.  This
+      breaks condition 4.
 
-  (C) switch to exponential notation at 1e7.
+  (C) switch to exponential notation at 10**7.  This breaks condition 2.
 
-(A) breaks condition (3); (B) breaks condition (4), and (C) breaks condition
-(2).
+Note: it's safe to use non-scientific notation for values less than 10**7, and
+scientific notation for values not less than 10**8; it's the decade [10**7,
+10**8) that requires special attention.
 
-Note: it's safe to use non-scientific for values less than 10**7, and
-scientific for values not less than 10**8; it's the decade [10**7, 10**8) that
-requires special attention.
-
-So: for values up to 2**24, we use shortest representation (and pad with zeros
-if necessary).  For values between 2**24 and 10**8, which are guaranteed to be
-integers, we compute exact representations (round to exponent 0).
+So: for values up to 2**24, we use the shortest representation (and pad with
+zeros if necessary).  For values between 2**24 and 10**8, which are guaranteed
+to be integers, we compute exact representations (round to exponent 0).
 
 Generalizing to other formats: between 2**precision and the next highest power
-of 10, we round exponent to 0.
+of 10, we round exponent to 0.  This means that for binary64,
 
 """
 from quadfloat.arithmetic import (
