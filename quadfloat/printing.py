@@ -1,7 +1,8 @@
 """Support for formatting of floating-point numbers as decimal and hexadecimal
 strings.
 
-Notes on conversion to shortest string:
+Notes on conversion to shortest string
+======================================
 
 There are a few competing desirable conditions for formatting of numbers in
 the region of 2**precision.
@@ -58,8 +59,35 @@ So: for values up to 2**24, we use the shortest representation (and pad with
 zeros if necessary).  For values between 2**24 and 10**8, which are guaranteed
 to be integers, we compute exact representations (round to exponent 0).
 
-Generalizing to other formats: between 2**precision and the next highest power
-of 10, we round exponent to 0.  This means that for binary64,
+So when *is* it safe to pad with zeros to reach the decimal point?  When the
+value we're looking at is no larger than 2**(p+1).
+
+Proposition. Suppose that F is a binary format with precision p, that x is a
+nonnegative decimal value with nonnegative exponent (so it's integral), that
+rnd : R -> F represents the usual round-ties-to-even rounding operation from
+the real numbers to F, and that x is the shortest decimal string (and closest
+amongst short strings of equal length) that rounds to rnd(x).  Then if x <=
+2**(p+1), x is exactly representable in F.  Hence it's safe to pad with zeros
+up to the decimal point.
+
+Proof. (Sketch.) Since x is an integer, it's clear that x is exactly
+representable if x <= 2**p.  If x <= 2**(p+1) then and x is even, it's again
+exactly representable.  If 2**p < x <= 2**(p+1) and x is odd then x is not
+exactly representable in F, but either x+1 or x-1 is, and either of those
+numbers gives an equally short but closer (and so better) representation,
+contradicting the choice of x.
+
+So there appear to be two reasonable solutions: (1) switch to exponential
+notation at 2**(p+1).  (2) Switch to exponential notation at the largest power
+of 10 that doesn't exceed 2**(p+1).  Since this is all about *decimal*
+representations, (2) seems friendlier.
+
+This also means that it's safe to imitate Python and pad with zeros until
+there's at least one digit *following* the decimal point.  However, padding
+further than that would not be safe: e.g., (2**p-1) / 4 is exactly
+representable, but ends in .75.  The shortest decimal rounding to that value
+will end in .8.  Padding with zeros would give a misleading value ending
+in .80.
 
 """
 from quadfloat.arithmetic import (
@@ -298,7 +326,9 @@ class ConversionSpecification(object):
             cs.style = 'shortest'
             cs.show_payload = True
             cs.lower_exponent_threshold = -4
-            cs.upper_exponent_threshold = format._pmin - 1
+            # Switch at the largest power of 10 not exceeding 2**(p+1).
+            cs.upper_exponent_threshold = (
+                len(str(1 << format.precision + 1)) - 1)
             cs.min_exponent_digits = 1
         elif conversion_specification[:1] == '.':
             conversion_type = conversion_specification[-1]
@@ -341,18 +371,7 @@ class ConversionSpecification(object):
         if source._significand == 0:
             exponent, digits = 0, 0
         elif self.style == 'shortest':
-            # Some trickiness here: to avoid padding with misleading zeros, we
-            # don't always use the shortest decimal.  For values greater than
-            # or equal to 2**precision and less than the next higher power of
-            # 10, we round to exponent 0 instead.
-            use_simple = False
-            if source._exponent > 0:
-                if _base_10_exponent(source) < source._format._pmin:
-                    use_simple = True
-            if use_simple:
-                exponent, digits = _fix_decimal_exponent(source, 0)
-            else:
-                exponent, digits = _shortest_decimal(source)
+            exponent, digits = _shortest_decimal(source)
         else:
             target_exponent = min(source._exponent, 0)
             if self.min_exponent is not None:

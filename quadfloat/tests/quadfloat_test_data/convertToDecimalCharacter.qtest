@@ -192,25 +192,31 @@ operation source: binary16
 0x2.8p0 "s" -> "2.5"
 0xap0 "s" -> "10"
 0x64p0 "s" -> "100"
-0x3e8p0 "s" -> "1000"
-0x2708p0 "s" -> "9992"
+0x3e7p0 "s" -> "999"
+0x3e8p0 "s" -> "1e+3"  # switch to scientific notation at 10**3
+0x3e9p0 "s" -> "1.001e+3"
+0x2708p0 "s" -> "9.99e+3"
 0x2710p0 "s" -> "1e+4"
 0x0.ffep16 "s" -> "6.55e+4"
 -Infinity "s" -> "-Infinity"
 Infinity "s" -> "Infinity"
 
 operation source: binary32
-0x0.ffffffp24 "s" -> "16777215"
-0x1p24 "s" -> "16777216"
-0x1.000008p25 "s" -> "33554448"
-0x1.000002p26 "s" -> "67108872"
-0x5f5e0f8p0 "s" -> "99999992"
-0x5f5e100p0 "s" -> "1e+8"  # switch to exponential notation at 10**8
+0x98967fp0 "s" -> "9999999"
+0x989680p0 "s" -> "1e+7"  # switch to scientific notation at 10**7
+0x989681p0 "s" -> "1.0000001e+7"
+0x0.ffffffp24 "s" -> "1.6777215e+7"
+0x1p24 "s" -> "1.6777216e+7"
+0x1.000008p25 "s" -> "3.355445e+7"
+0x1.000002p26 "s" -> "6.710887e+7"
+0x5f5e0f8p0 "s" -> "9.999999e+7"
+0x5f5e100p0 "s" -> "1e+8"
 
 operation source: binary64
 0x1.c6bf526340000p49 "s" -> "1000000000000000"
 0x1.1c37937e07fffp53 "s" -> "9999999999999998"
-0x1.1c37937e08000p53 "s" -> "1e+16"  # switch to exponential notation at 10**16
+0x1.1c37937e08000p53 "s" -> "1e+16"  # switch to scientific notation at 10**16
+0x1.fffffffffffffp50 "s" -> "2251799813685247.8"
 
 operation source: binary128
-0x1p113 "s" -> "10384593717069655257060992658440192"
+0x1p113 "s" -> "1.0384593717069655257060992658440192e+34"
