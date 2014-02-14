@@ -76,6 +76,7 @@ from quadfloat.binary_interchange_format import (
     total_order,
     total_order_mag,
 )
+from quadfloat.bit_string import BitString
 
 
 __all__ = [
@@ -83,6 +84,9 @@ __all__ = [
     # Binary interchange format
     ###########################################################################
     'BinaryInterchangeFormat',
+
+    # Type used for encoding to and from bit strings.
+    'BitString',
 
     # The three basic formats, plus the half-precision format.
     'binary16',

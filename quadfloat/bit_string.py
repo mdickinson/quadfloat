@@ -57,6 +57,12 @@ class BitString(object):
     def __hash__(self):
         return hash(('BitString', self.width, self.value_as_int))
 
+    def __len__(self):
+        return self.width
+
+    def __int__(self):
+        return self.value_as_int
+
     if sys.version_info[0] == 2:
         # != is automatically inferred from == for Python 3.
         def __ne__(self, other):

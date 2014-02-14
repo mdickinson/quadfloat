@@ -478,6 +478,18 @@ def radix(source):
     )
 
 
+def decode(destination):
+    destination_format = binary_format(destination)
+    return TestOperation(
+        operation=FormatOfOperation(
+            destination_format,
+            'decode',
+        ),
+        operand_conversions=[BitString],
+        result_conversion=binary_conversion(destination_format),
+    )
+
+
 def encode(source):
     source_format = binary_format(source)
     return TestOperation(
@@ -567,5 +579,6 @@ operation_factories = {
     'is754version1985': nullary_predicate('is_754_version_1985'),
     'is754version2008': nullary_predicate('is_754_version_2008'),
 
+    'decode': decode,
     'encode': encode,
 }

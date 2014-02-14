@@ -7,6 +7,7 @@ from quadfloat.api import (
     binary32,
     binary64,
     binary128,
+    BitString,
 
     compare_quiet_equal,
     compare_quiet_not_equal,
@@ -38,6 +39,8 @@ from quadfloat.api import (
     convert_to_integer_toward_positive,
     convert_to_integer_toward_negative,
 
+    encode,
+
     is_finite,
     is_infinite,
     is_nan,
@@ -58,10 +61,10 @@ from quadfloat.tests.base_test_case import BaseTestCase
 
 class TestBinary128(BaseTestCase):
     def test_construction_no_args(self):
-        q = binary128()
-        encoded_q = q.encode()
-        self.assertIsInstance(encoded_q, bytes)
-        self.assertEqual(encoded_q, b'\0' * 16)
+        self.assertEqual(
+            binary128(),
+            binary128('0x0p0'),
+        )
 
     def test_construction_from_binary_float_base(self):
         input = binary128('2.3')
@@ -150,25 +153,21 @@ class TestBinary128(BaseTestCase):
         self.assertInterchangeable(q, binary128(-13))
 
         # Tiny values.
-        q = binary128('3.2e-4966')
         self.assertEqual(
-            q.encode(),
-            b'\x00' * 16,
+            binary128('3.2e-4966'),
+            binary128('0x0p0'),
         )
-        q = binary128('3.3e-4966')
         self.assertEqual(
-            q.encode(),
-            b'\x01' + b'\x00' * 15,
+            binary128('3.3e-4966'),
+            binary128('0x1p-16494'),
         )
-        q = binary128('-3.2e-4966')
         self.assertEqual(
-            q.encode(),
-            b'\x00' * 15 + b'\x80',
+            binary128('-3.2e-4966'),
+            binary128('-0x0p0'),
         )
-        q = binary128('-3.3e-4966')
         self.assertEqual(
-            q.encode(),
-            b'\x01' + b'\x00' * 14 + b'\x80',
+            binary128('-3.3e-4966'),
+            binary128('-0x1p-16494'),
         )
 
         # Huge values.
@@ -267,44 +266,25 @@ class TestBinary128(BaseTestCase):
         with self.assertRaises(TypeError):
             binary128([1, 2, 3])
 
-    def test_encode(self):
-        test_values = [
-            (binary128(0), b'\x00'*16),
-            (binary128(1), b'\x00'*14 + b'\xff\x3f'),
-            (binary128(2), b'\x00'*15 + b'\x40'),
-            (binary128(-1), b'\x00'*14 + b'\xff\xbf'),
-            (binary128(-2), b'\x00'*15 + b'\xc0'),
-        ]
-        for quad, expected in test_values:
-            actual = quad.encode()
-            self.assertEqual(
-                actual,
-                expected,
-            )
-
     def test_encode_decode_roundtrip(self):
         test_values = [
             binary128(0),
             binary128(1),
             binary128(-1),
-            binary128.decode(b'\x00'*14 + b'\xff\x7f'),  # inf
-            binary128.decode(b'\x00'*14 + b'\xff\xff'),  # -inf
-            binary128.decode(b'\x00'*13 + b'\x80\xff\x7f'),  # qnan
-            binary128.decode(b'\x00'*13 + b'\x80\xff\xff'),  # qnan
-            binary128.decode(b'\x01' + b'\x00'*12 + b'\x80\xff\x7f'),  # qnan
-            binary128.decode(b'\x01' + b'\x00'*12 + b'\x80\xff\xff'),  # qnan
-            binary128.decode(b'\x01' + b'\x00'*13 + b'\xff\x7f'),  # snan
-            binary128.decode(b'\x01' + b'\x00'*13 + b'\xff\xff'),  # snan
+            binary128('Infinity'),
+            binary128('-Infinity'),
+            binary128('nan(0)'),
+            binary128('nan(1)'),
+            binary128('snan(1)'),
+            binary128('-nan(0)'),
+            binary128('-nan(1)'),
+            binary128('-snan(1)'),
             binary128('inf'),
             binary128('-inf'),
-            binary128('nan'),
-            binary128('-nan'),
-            binary128('snan'),
-            binary128('-snan'),
         ]
         for value in test_values:
-            encoded_value = value.encode()
-            self.assertIsInstance(encoded_value, bytes)
+            encoded_value = encode(value)
+            self.assertIsInstance(encoded_value, BitString)
             decoded_value = binary128.decode(encoded_value)
             self.assertInterchangeable(value, decoded_value)
 
@@ -315,44 +295,27 @@ class TestBinary128(BaseTestCase):
 
     def test_decode_encode_roundtrip(self):
         test_values = [
-            b'\x00\x00\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x00\x00\x00',
-            b'\x01\x00\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x00\x00\x00',
-            b'\x00\x01\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x00\x00\x00',
-            b'\x00\x00\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x00\xff\x3f',
-            b'\x00\x00\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x00\x00\x40',
-            b'\x00\x00\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x00\xff\xbf',
-            b'\x00\x00\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x00\x00\xc0',
-            b'\x00\x00\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x00\xff\x7f',  # inf
-            b'\x00\x00\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x00\xff\xff',  # -inf
-            b'\x00\x00\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x80\xff\x7f',  # qnan
-            b'\x00\x00\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x80\xff\xff',  # qnan
-            b'\x01\x00\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x80\xff\x7f',  # qnan
-            b'\x01\x00\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x80\xff\xff',  # qnan
-            b'\x01\x00\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x00\xff\x7f',  # snan
-            b'\x01\x00\x00\x00\x00\x00\x00\x00' +
-            b'\x00\x00\x00\x00\x00\x00\xff\xff',  # snan
+            0x00000000000000000000000000000000,
+            0x00000000000000000000000000000001,
+            0x00000000000000000000000000000100,
+            0x3fff0000000000000000000000000000,
+            0x40000000000000000000000000000000,
+            0xbfff0000000000000000000000000000,
+            0xc0000000000000000000000000000000,
+            0x7fff0000000000000000000000000000,
+            0xffff0000000000000000000000000000,
+            0x7fff8000000000000000000000000000,
+            0xffff8000000000000000000000000000,
+            0x7fff8000000000000000000000000001,
+            0xffff8000000000000000000000000001,
+            0x7fff0000000000000000000000000001,
+            0xffff0000000000000000000000000001,
         ]
-        for value in test_values:
-            self.assertIsInstance(value, bytes)
-            decoded_value = binary128.decode(value)
-            encoded_value = decoded_value.encode()
-
-            self.assertIsInstance(encoded_value, bytes)
-            self.assertEqual(value, encoded_value)
+        for test_value in test_values:
+            bit_string = BitString.from_int(width=128, value_as_int=test_value)
+            decoded_float = binary128.decode(bit_string)
+            reencoded = encode(decoded_float)
+            self.assertEqual(bit_string, reencoded)
 
     def test_repr_construct_roundtrip(self):
         test_values = [

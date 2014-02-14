@@ -1,7 +1,7 @@
 import unittest
 
 
-from quadfloat.api import BinaryInterchangeFormat
+from quadfloat.api import BinaryInterchangeFormat, BitString
 from quadfloat.parsing import parse_finite_decimal
 
 
@@ -22,7 +22,7 @@ class TestShortRepr(unittest.TestCase):
 
         # Smallest representable positive binary256 value (subnormal).
         binary256 = BinaryInterchangeFormat(256)
-        TINY = binary256.decode(b'\x01' + 31 * b'\x00')
+        TINY = binary256.decode(BitString.from_int(width=256, value_as_int=1))
         test_pairs = [
             (TINY, '2e-78984'),
             (2 * TINY, '4e-78984'),

@@ -8,7 +8,7 @@ from quadfloat.bit_string import BitString
 
 
 class TestBitString(unittest.TestCase):
-    def test_str_roundtrip(self):
+    def test_str_and_repr(self):
         test_strings = [
             '',
             '0',
@@ -22,6 +22,10 @@ class TestBitString(unittest.TestCase):
         for test_string in test_strings:
             bit_string = BitString(test_string)
             self.assertEqual(str(bit_string), test_string)
+            self.assertEqual(
+                repr(bit_string),
+                "BitString({!r})".format(test_string),
+            )
 
     def test_bad_input(self):
         with self.assertRaises(ValueError):
@@ -53,3 +57,15 @@ class TestBitString(unittest.TestCase):
             BitString.from_int(3, 3),
             BitString('011'),
         )
+
+    def test_len(self):
+        self.assertEqual(len(BitString('')), 0)
+        self.assertEqual(len(BitString('1')), 1)
+        self.assertEqual(len(BitString('11')), 2)
+        self.assertEqual(len(BitString('1011011')), 7)
+
+    def test_int(self):
+        self.assertEqual(int(BitString('')), 0)
+        self.assertEqual(int(BitString('1')), 1)
+        self.assertEqual(int(BitString('11')), 3)
+        self.assertEqual(int(BitString('1011011')), 91)

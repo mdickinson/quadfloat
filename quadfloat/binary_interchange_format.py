@@ -23,8 +23,6 @@ from quadfloat.bit_string import (
 from quadfloat.compat import (
     bit_length,
     builtins,
-    _int_from_bytes,
-    _int_to_bytes,
     _PyHASH_INF,
     _PyHASH_NINF,
     _PyHASH_NAN,
@@ -1005,16 +1003,14 @@ class BinaryInterchangeFormat(object):
             exponent = (exponent_field >> self.precision - 1) + self.qmin
             return self._finite(sign, exponent, significand)
 
-    def decode(self, encoded_value):
+    def decode(self, bit_string):
         """
-        Decode a string of bytes to the corresponding Float<nnn> instance.
+        Decode a BitString instance.
 
         """
-        if len(encoded_value) != self.width // 8:
-            raise ValueError("Wrong number of bytes for format.")
-
-        n = _int_from_bytes(encoded_value)
-        return self._decode_from_int(n)
+        if len(bit_string) != self.width:
+            raise ValueError("Bitstring has wrong length.")
+        return self._decode_from_int(int(bit_string))
 
 
 _binary64 = BinaryInterchangeFormat(64)
@@ -1074,14 +1070,6 @@ class BinaryFloat(object):
 
         """
         return self._type == _NAN and not self._signaling
-
-    def encode(self):
-        """
-        Encode a Float<nnn> instance as a bytestring.
-
-        """
-        equivalent_int = self._format._encode_as_int(self)
-        return _int_to_bytes(equivalent_int, self._format.width // 8)
 
     def __pos__(self):
         return copy(self)

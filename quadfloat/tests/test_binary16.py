@@ -4,13 +4,13 @@ from quadfloat.api import (
     binary16,
     binary32,
     binary64,
-
+    BitString,
+    encode,
     min_num,
     max_num,
     min_num_mag,
     max_num_mag,
 )
-from quadfloat.compat import _bytes_from_iterable
 from quadfloat.parsing import parse_finite_decimal
 from quadfloat.tests.base_test_case import BaseTestCase
 
@@ -50,54 +50,93 @@ def string_to_decimal(s):
 class TestBinary16(BaseTestCase):
     def test_construction_from_int(self):
         # Test round-half-to-even
-        self.assertEqual(binary16(2048).encode(), b'\x00\x68')
-        self.assertEqual(binary16(2049).encode(), b'\x00\x68')
-        self.assertEqual(binary16(2050).encode(), b'\x01\x68')
-        self.assertEqual(binary16(2051).encode(), b'\x02\x68')
-        self.assertEqual(binary16(2052).encode(), b'\x02\x68')
-        self.assertEqual(binary16(2053).encode(), b'\x02\x68')
-        self.assertEqual(binary16(2054).encode(), b'\x03\x68')
-        self.assertEqual(binary16(2055).encode(), b'\x04\x68')
-        self.assertEqual(binary16(2056).encode(), b'\x04\x68')
+        self.assertEqual(encode(binary16(2048)), BitString('0110100000000000'))
+        self.assertEqual(encode(binary16(2049)), BitString('0110100000000000'))
+        self.assertEqual(encode(binary16(2050)), BitString('0110100000000001'))
+        self.assertEqual(encode(binary16(2051)), BitString('0110100000000010'))
+        self.assertEqual(encode(binary16(2052)), BitString('0110100000000010'))
+        self.assertEqual(encode(binary16(2053)), BitString('0110100000000010'))
+        self.assertEqual(encode(binary16(2054)), BitString('0110100000000011'))
+        self.assertEqual(encode(binary16(2055)), BitString('0110100000000100'))
+        self.assertEqual(encode(binary16(2056)), BitString('0110100000000100'))
 
     def test_construction_from_float(self):
         self.assertInterchangeable(binary16(0.9), binary16('0.89990234375'))
 
         # Test round-half-to-even
-        self.assertEqual(binary16(2048.0).encode(), b'\x00\x68')
-        self.assertEqual(binary16(2048.9999999999).encode(), b'\x00\x68')
-        self.assertEqual(binary16(2049.0).encode(), b'\x00\x68')
-        self.assertEqual(binary16(2049.0000000001).encode(), b'\x01\x68')
-        self.assertEqual(binary16(2050.0).encode(), b'\x01\x68')
-        self.assertEqual(binary16(2050.9999999999).encode(), b'\x01\x68')
-        self.assertEqual(binary16(2051.0).encode(), b'\x02\x68')
-        self.assertEqual(binary16(2051.0000000001).encode(), b'\x02\x68')
-        self.assertEqual(binary16(2052.0).encode(), b'\x02\x68')
-        self.assertEqual(binary16(2053.0).encode(), b'\x02\x68')
-        self.assertEqual(binary16(2054.0).encode(), b'\x03\x68')
-        self.assertEqual(binary16(2055.0).encode(), b'\x04\x68')
-        self.assertEqual(binary16(2056.0).encode(), b'\x04\x68')
+        self.assertEqual(
+            encode(binary16(2048.0)),
+            BitString('0110100000000000'),
+        )
+        self.assertEqual(
+            encode(binary16(2048.9999999999)),
+            BitString('0110100000000000'),
+        )
+        self.assertEqual(
+            encode(binary16(2049.0)),
+            BitString('0110100000000000'),
+        )
+        self.assertEqual(
+            encode(binary16(2049.0000000001)),
+            BitString('0110100000000001'),
+        )
+        self.assertEqual(
+            encode(binary16(2050.0)),
+            BitString('0110100000000001'),
+        )
+        self.assertEqual(
+            encode(binary16(2050.9999999999)),
+            BitString('0110100000000001'),
+        )
+        self.assertEqual(
+            encode(binary16(2051.0)),
+            BitString('0110100000000010'),
+        )
+        self.assertEqual(
+            encode(binary16(2051.0000000001)),
+            BitString('0110100000000010'),
+        )
+        self.assertEqual(
+            encode(binary16(2052.0)),
+            BitString('0110100000000010'),
+        )
+        self.assertEqual(
+            encode(binary16(2053.0)),
+            BitString('0110100000000010'),
+        )
+        self.assertEqual(
+            encode(binary16(2054.0)),
+            BitString('0110100000000011'),
+        )
+        self.assertEqual(
+            encode(binary16(2055.0)),
+            BitString('0110100000000100'),
+        )
+        self.assertEqual(
+            encode(binary16(2056.0)),
+            BitString('0110100000000100'),
+        )
 
         # Subnormals.
         eps = 1e-10
         tiny = 2.0 ** -24  # smallest positive representable binary16 subnormal
         test_values = [
-            (0.0, b'\x00\x00'),
-            (tiny * (0.5 - eps), b'\x00\x00'),
-            (tiny * 0.5, b'\x00\x00'),  # halfway case
-            (tiny * (0.5 + eps), b'\x01\x00'),
-            (tiny, b'\x01\x00'),
-            (tiny * (1.5 - eps), b'\x01\x00'),
-            (tiny * 1.5, b'\x02\x00'),  # halfway case
-            (tiny * (1.5 + eps), b'\x02\x00'),
-            (tiny * 2.0, b'\x02\x00'),
-            (tiny * (2.5 - eps), b'\x02\x00'),
-            (tiny * 2.5, b'\x02\x00'),  # halfway case
-            (tiny * (2.5 + eps), b'\x03\x00'),
-            (tiny * 3.0, b'\x03\x00'),
+            (0.0, BitString('0000000000000000')),
+            (tiny * (0.5 - eps), BitString('0000000000000000')),
+            (tiny * 0.5, BitString('0000000000000000')),  # halfway case
+            (tiny * (0.5 + eps), BitString('0000000000000001')),
+            (tiny, BitString('0000000000000001')),
+            (tiny * (1.5 - eps), BitString('0000000000000001')),
+            (tiny * 1.5, BitString('0000000000000010')),  # halfway case
+            (tiny * (1.5 + eps), BitString('0000000000000010')),
+            (tiny * 2.0, BitString('0000000000000010')),
+            (tiny * (2.5 - eps), BitString('0000000000000010')),
+            (tiny * 2.5, BitString('0000000000000010')),  # halfway case
+            (tiny * (2.5 + eps), BitString('0000000000000011')),
+            (tiny * 3.0, BitString('0000000000000011')),
         ]
         for x, bs in test_values:
-            self.assertEqual(binary16(x).encode(), bs)
+            self.assertEqual(encode(binary16(x)), bs)
 
     def test_division(self):
         # Test division, with particular attention to correct rounding.
@@ -275,11 +314,10 @@ class TestBinary16(BaseTestCase):
         ]
 
         # With binary16, it's feasible to test *all* the values.
-        for high_byte in range(256):
-            for low_byte in range(256):
-                value = binary16.decode(
-                    _bytes_from_iterable([low_byte, high_byte]))
-                test_values.append(value)
+        for value_as_int in range(2**16):
+            value = binary16.decode(
+                BitString.from_int(width=16, value_as_int=value_as_int))
+            test_values.append(value)
 
         for value in test_values:
             repr_value = repr(value)
@@ -363,7 +401,7 @@ class TestBinary16(BaseTestCase):
 
         width = 16
         format = BinaryInterchangeFormat(width)
-        TINY = format.decode(b'\x01' + b'\x00' * (width // 8 - 1))
+        TINY = format.decode(BitString('0000000000000001'))
         for n in range(1, 100):
             binary_value = n * TINY
 
