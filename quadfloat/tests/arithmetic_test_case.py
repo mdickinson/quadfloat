@@ -52,14 +52,14 @@ def flagging_underflow_handler(exception, attributes):
 
 
 def collect_signals():
-        return partial_attributes(
-            divide_by_zero_handler=exception_default_handler,
-            inexact_handler=exception_default_handler,
-            invalid_operation_handler=exception_default_handler,
-            overflow_handler=exception_default_handler,
-            underflow_handler=flagging_underflow_handler,
-            flag_set=set(),
-        )
+    return partial_attributes(
+        divide_by_zero_handler=exception_default_handler,
+        inexact_handler=exception_default_handler,
+        invalid_operation_handler=exception_default_handler,
+        overflow_handler=exception_default_handler,
+        underflow_handler=flagging_underflow_handler,
+        flag_set=set(),
+    )
 
 
 class ArithmeticOperation(object):
