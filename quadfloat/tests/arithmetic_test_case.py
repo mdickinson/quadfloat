@@ -6,6 +6,8 @@ from quadfloat.attributes import (
     partial_attributes,
     temporary_attributes,
 )
+from quadfloat.binary_interchange_format import BinaryFloat
+from quadfloat.bit_string import BitString
 from quadfloat.compat import STRING_TYPES
 from quadfloat.status_flags import underflow
 
@@ -27,10 +29,17 @@ def identifying_string(binary_float):
     if isinstance(binary_float, STRING_TYPES):
         return binary_float
 
-    return "{0} (format {1})".format(
-        quadfloat.api.encode(binary_float),
-        binary_float.format,
-    )
+    if isinstance(binary_float, BinaryFloat):
+        return "{0} (format {1})".format(
+            quadfloat.api.encode(binary_float),
+            binary_float.format,
+        )
+
+    if isinstance(binary_float, BitString):
+        return repr(binary_float)
+
+    raise ValueError(
+        "Don't know how to convert type {}.".format(type(binary_float)))
 
 
 def exception_default_handler(exception, attributes):

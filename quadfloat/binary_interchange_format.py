@@ -17,6 +17,9 @@ from quadfloat.attributes import (
     set_current_attributes,
     temporary_attributes,
 )
+from quadfloat.bit_string import (
+    BitString,
+)
 from quadfloat.compat import (
     bit_length,
     builtins,
@@ -2538,4 +2541,7 @@ def encode(source):
 
     """
     format = source._format
-    return format.width, format._encode_as_int(source)
+    return BitString.from_int(
+        width=format.width,
+        value_as_int=format._encode_as_int(source),
+    )

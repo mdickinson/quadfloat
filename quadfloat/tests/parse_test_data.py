@@ -9,6 +9,9 @@ from quadfloat.attributes import (
     Attributes,
     temporary_attributes,
 )
+from quadfloat.bit_string import (
+    BitString,
+)
 from quadfloat.exceptions import (
     UnderflowException,
 )
@@ -475,6 +478,15 @@ def radix(source):
     )
 
 
+def encode(source):
+    source_format = binary_format(source)
+    return TestOperation(
+        operation=HomogeneousOperation('encode'),
+        operand_conversions=[binary_conversion(source_format)],
+        result_conversion=BitString,
+    )
+
+
 _uso = unary_source_operation
 operation_factories = {
     # 5.3.1 General operations
@@ -554,4 +566,6 @@ operation_factories = {
 
     'is754version1985': nullary_predicate('is_754_version_1985'),
     'is754version2008': nullary_predicate('is_754_version_2008'),
+
+    'encode': encode,
 }
