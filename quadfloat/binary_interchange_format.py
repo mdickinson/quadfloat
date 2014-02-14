@@ -1,8 +1,8 @@
-from __future__ import absolute_import as _absolute_import
-from __future__ import division as _division
+from __future__ import absolute_import
+from __future__ import division
 
-import operator as _operator
-import sys as _sys
+import operator
+import sys
 
 from quadfloat.arithmetic import (
     _divide_to_odd,
@@ -205,7 +205,7 @@ class BinaryInterchangeFormat(object):
     def __eq__(self, other):
         return self.width == other.width
 
-    if _sys.version_info[0] == 2:
+    if sys.version_info[0] == 2:
         # != is automatically inferred from == for Python 3.
         def __ne__(self, other):
             return not (self == other)
@@ -1246,27 +1246,27 @@ class BinaryFloat(object):
             return -2 if ans == -1 else ans
 
     def __eq__(self, other):
-        return self._rich_compare_general(other, _operator.eq, False)
+        return self._rich_compare_general(other, operator.eq, False)
 
     def __lt__(self, other):
-        return self._rich_compare_general(other, _operator.lt, False)
+        return self._rich_compare_general(other, operator.lt, False)
 
     def __gt__(self, other):
-        return self._rich_compare_general(other, _operator.gt, False)
+        return self._rich_compare_general(other, operator.gt, False)
 
     def __le__(self, other):
-        return self._rich_compare_general(other, _operator.le, False)
+        return self._rich_compare_general(other, operator.le, False)
 
     def __ge__(self, other):
-        return self._rich_compare_general(other, _operator.ge, False)
+        return self._rich_compare_general(other, operator.ge, False)
 
-    if _sys.version_info[0] == 2:
+    if sys.version_info[0] == 2:
         def __long__(self):
             return long(int(self))
 
         # != is automatically inferred from == for Python 3.
         def __ne__(self, other):
-            return self._rich_compare_general(other, _operator.ne, True)
+            return self._rich_compare_general(other, operator.ne, True)
 
         # Make sure that Python 2 divisions involving these types behave the
         # same way regardless of whether the division __future__ import is in
@@ -2036,7 +2036,7 @@ def compare_quiet_equal(source1, source2):
     Return True if source1 and source2 are numerically equal, else False.
 
     """
-    return _compare_quiet_general(source1, source2, _operator.eq, False)
+    return _compare_quiet_general(source1, source2, operator.eq, False)
 
 
 def compare_quiet_not_equal(source1, source2):
@@ -2044,7 +2044,7 @@ def compare_quiet_not_equal(source1, source2):
     Return True if source1 and source2 are numerically equal, else False.
 
     """
-    return _compare_quiet_general(source1, source2, _operator.ne, True)
+    return _compare_quiet_general(source1, source2, operator.ne, True)
 
 
 def compare_quiet_greater(source1, source2):
@@ -2052,7 +2052,7 @@ def compare_quiet_greater(source1, source2):
     Return True if source1 > source2, else False.
 
     """
-    return _compare_quiet_general(source1, source2, _operator.gt, False)
+    return _compare_quiet_general(source1, source2, operator.gt, False)
 
 
 def compare_quiet_greater_equal(source1, source2):
@@ -2060,7 +2060,7 @@ def compare_quiet_greater_equal(source1, source2):
     Return True if source1 >= source2, else False.
 
     """
-    return _compare_quiet_general(source1, source2, _operator.ge, False)
+    return _compare_quiet_general(source1, source2, operator.ge, False)
 
 
 def compare_quiet_less(source1, source2):
@@ -2068,7 +2068,7 @@ def compare_quiet_less(source1, source2):
     Return True if source1 < source2, else False.
 
     """
-    return _compare_quiet_general(source1, source2, _operator.lt, False)
+    return _compare_quiet_general(source1, source2, operator.lt, False)
 
 
 def compare_quiet_less_equal(source1, source2):
@@ -2076,7 +2076,7 @@ def compare_quiet_less_equal(source1, source2):
     Return True if source1 <= source2, else False.
 
     """
-    return _compare_quiet_general(source1, source2, _operator.le, False)
+    return _compare_quiet_general(source1, source2, operator.le, False)
 
 
 def compare_quiet_unordered(source1, source2):
@@ -2095,7 +2095,7 @@ def compare_quiet_not_greater(source1, source2):
     Note that this function returns True if either source1 or source2 is a NaN.
 
     """
-    return _compare_quiet_general(source1, source2, _operator.le, True)
+    return _compare_quiet_general(source1, source2, operator.le, True)
 
 
 def compare_quiet_less_unordered(source1, source2):
@@ -2103,7 +2103,7 @@ def compare_quiet_less_unordered(source1, source2):
     Return True if either source1 < source2, or source1 or source2 is a NaN.
 
     """
-    return _compare_quiet_general(source1, source2, _operator.lt, True)
+    return _compare_quiet_general(source1, source2, operator.lt, True)
 
 
 def compare_quiet_not_less(source1, source2):
@@ -2113,7 +2113,7 @@ def compare_quiet_not_less(source1, source2):
     Note that this function returns True if either source1 or source2 is a NaN.
 
     """
-    return _compare_quiet_general(source1, source2, _operator.ge, True)
+    return _compare_quiet_general(source1, source2, operator.ge, True)
 
 
 def compare_quiet_greater_unordered(source1, source2):
@@ -2121,7 +2121,7 @@ def compare_quiet_greater_unordered(source1, source2):
     Return True if either source1 > source2, or source1 or source2 is a NaN.
 
     """
-    return _compare_quiet_general(source1, source2, _operator.gt, True)
+    return _compare_quiet_general(source1, source2, operator.gt, True)
 
 
 def compare_quiet_ordered(source1, source2):
@@ -2138,7 +2138,7 @@ def compare_signaling_equal(source1, source2):
     Return True if source1 and source2 are numerically equal, else False.
 
     """
-    return _compare_signaling_general(source1, source2, _operator.eq, False)
+    return _compare_signaling_general(source1, source2, operator.eq, False)
 
 
 def compare_signaling_greater(source1, source2):
@@ -2146,7 +2146,7 @@ def compare_signaling_greater(source1, source2):
     Return True if source1 > source2, else False.
 
     """
-    return _compare_signaling_general(source1, source2, _operator.gt, False)
+    return _compare_signaling_general(source1, source2, operator.gt, False)
 
 
 def compare_signaling_greater_equal(source1, source2):
@@ -2154,7 +2154,7 @@ def compare_signaling_greater_equal(source1, source2):
     Return True if source1 >= source2, else False.
 
     """
-    return _compare_signaling_general(source1, source2, _operator.ge, False)
+    return _compare_signaling_general(source1, source2, operator.ge, False)
 
 
 def compare_signaling_less(source1, source2):
@@ -2162,7 +2162,7 @@ def compare_signaling_less(source1, source2):
     Return True if source1 < source2, else False.
 
     """
-    return _compare_signaling_general(source1, source2, _operator.lt, False)
+    return _compare_signaling_general(source1, source2, operator.lt, False)
 
 
 def compare_signaling_less_equal(source1, source2):
@@ -2170,7 +2170,7 @@ def compare_signaling_less_equal(source1, source2):
     Return True if source1 <= source2, else False.
 
     """
-    return _compare_signaling_general(source1, source2, _operator.le, False)
+    return _compare_signaling_general(source1, source2, operator.le, False)
 
 
 def compare_signaling_not_equal(source1, source2):
@@ -2178,7 +2178,7 @@ def compare_signaling_not_equal(source1, source2):
     Return True if source1 and source2 are numerically equal, else False.
 
     """
-    return _compare_signaling_general(source1, source2, _operator.ne, True)
+    return _compare_signaling_general(source1, source2, operator.ne, True)
 
 
 def compare_signaling_not_greater(source1, source2):
@@ -2188,7 +2188,7 @@ def compare_signaling_not_greater(source1, source2):
     Note that this function returns True if either source1 or source2 is a NaN.
 
     """
-    return _compare_signaling_general(source1, source2, _operator.le, True)
+    return _compare_signaling_general(source1, source2, operator.le, True)
 
 
 def compare_signaling_less_unordered(source1, source2):
@@ -2196,7 +2196,7 @@ def compare_signaling_less_unordered(source1, source2):
     Return True if either source1 < source2, or source1 or source2 is a NaN.
 
     """
-    return _compare_signaling_general(source1, source2, _operator.lt, True)
+    return _compare_signaling_general(source1, source2, operator.lt, True)
 
 
 def compare_signaling_not_less(source1, source2):
@@ -2206,7 +2206,7 @@ def compare_signaling_not_less(source1, source2):
     Note that this function returns True if either source1 or source2 is a NaN.
 
     """
-    return _compare_signaling_general(source1, source2, _operator.ge, True)
+    return _compare_signaling_general(source1, source2, operator.ge, True)
 
 
 def compare_signaling_greater_unordered(source1, source2):
@@ -2214,7 +2214,7 @@ def compare_signaling_greater_unordered(source1, source2):
     Return True if either source1 > source2, or source1 or source2 is a NaN.
 
     """
-    return _compare_signaling_general(source1, source2, _operator.gt, True)
+    return _compare_signaling_general(source1, source2, operator.gt, True)
 
 
 def _total_order_key(source):
