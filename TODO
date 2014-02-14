@@ -45,8 +45,6 @@ Features
 
 * Use enumerated type of some form for number classes.
 
-* Use exponents for small or large values with the 'shortest' representation.
-
 
 Internal refactoring
 --------------------
